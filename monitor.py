@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
+
 class Monitor:
     def __init__(self, N, year_range, true_glacier, hist_true_y, res, dt):
         self.res = res
@@ -24,9 +25,6 @@ class Monitor:
         self.output_dir = 'plots/'
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
-
-
-
 
     def plot(self, year, state_x, ensemble_x, ensemble_y):
         self.hist_state_x.append(copy.copy(state_x))
@@ -55,7 +53,7 @@ class Monitor:
             ax[1, 2].plot(self.year_range[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
-        ax[1, 2].plot([2000,  2100], [0.009, 0.009], label='true', color=colorscale(8),
+        ax[1, 2].plot([2000, 2100], [0.009, 0.009], label='true', color=colorscale(8),
                       linewidth=3)
         ax[1, 2].plot(self.year_range[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),
@@ -69,7 +67,7 @@ class Monitor:
             ax[1, 3].plot(self.year_range[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 3],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
-        ax[1, 3].plot([2000,  2100], [0.005, 0.005], label='true', color=colorscale(8),
+        ax[1, 3].plot([2000, 2100], [0.005, 0.005], label='true', color=colorscale(8),
                       linewidth=3)
         ax[1, 3].plot(self.year_range[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 3], label='estimation',
                       color=colorscale(2),
@@ -91,7 +89,6 @@ class Monitor:
                       label='estimation', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
         ax[0, 1].set_title('Volume [$km^3$]')
         ax[0, 1].legend()
-
 
         # plot area
         for e in range(self.N):
@@ -124,10 +121,10 @@ class Monitor:
         ax[0, 3].legend()
 
         # plot thickness maps and smb
-        true_thk = self.true_glacier['thk'][int((year - self.start_year)/self.dt)][::-1]
-        true_smb = self.true_glacier['smb'][int((year - self.start_year)/self.dt)][::-1]
+        true_thk = self.true_glacier['thk'][int((year - self.start_year) / self.dt)][::-1]
+        true_smb = self.true_glacier['smb'][int((year - self.start_year) / self.dt)][::-1]
 
-        random_id = random.sample(range(self.N), 3)
+        random_id = random.sample(range(self.N), 4)
         for i, (id, glacier) in enumerate(zip(random_id, [self.hist_ensemble_x[-1][idx] for idx in random_id])):
             esti_thk = glacier[4:].reshape(self.bedrock.shape)[::-1]
 
@@ -138,8 +135,8 @@ class Monitor:
 
             smb *= np.where(np.less(smb, 0), gradabl, gradacc)
 
-            smb =  np.clip(smb,-100, maxacc)
-            #smb = np.clip_by_value(smb, -100, maxacc)
+            smb = np.clip(smb, -100, maxacc)
+            # smb = np.clip_by_value(smb, -100, maxacc)
             smb = np.where(esti_thk > 0.5, smb, -10)
 
             esti_smb = np.array(smb)
@@ -147,15 +144,16 @@ class Monitor:
             esti_smb[esti_thk <= 0.5] = None
             esti_thk[esti_thk <= 0.5] = None
 
-            pcm = ax[2, i + 1].imshow(esti_thk, cmap='Blues', vmin=0, vmax=450)
-            cbar = fig.colorbar(pcm, ax=ax[2, i + 1])
+            pcm = ax[2, i].imshow(esti_thk - true_thk, cmap='seismic_r', vmin=-10, vmax=10)
+            cbar = fig.colorbar(pcm, ax=ax[2, i ])
             # cbar.ax.invert_yaxis()
-            ax[2, i + 1].set(facecolor=colorscale(5))
-            ax[2, i + 1].set_title('Ensemble[%i]: thickness difference [m]' % id)
-            pcm = ax[3, i + 1].imshow(esti_smb- true_smb, cmap='seismic_r', vmin=-10, vmax=10)
-            cbar = fig.colorbar(pcm, ax=ax[3, i + 1])
-            ax[3, i + 1].set(facecolor='gold')
-            ax[3, i + 1].set_title('Ensemble[%i]: smb difference [m/yr]' % id)
+            ax[2, i].set(facecolor=colorscale(5))
+            ax[2, i].set_title('Ensemble[%i]: thickness difference [m]' % id)
+            pcm = ax[3, i ].imshow(esti_smb - true_smb, cmap='seismic_r', vmin=-10, vmax=10)
+            cbar = fig.colorbar(pcm, ax=ax[3, i ])
+            ax[3, i].set(facecolor='gold')
+            ax[3, i].set_title('Ensemble[%i]: smb difference [m/yr]' % id)
+
         def formatter(x, pos):
             del pos
             return str(x * self.res / 1000)

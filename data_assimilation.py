@@ -114,12 +114,12 @@ if __name__ == '__main__':
     # initialise prior (uncertainty)
     prior_x = np.zeros((len(state_x), len(state_x)))
     prior_x[0, 0] = 0
-    prior_x[1, 1] = 1000
+    prior_x[1, 1] = 100
     prior_x[2, 2] = 0
     prior_x[3, 3] = 0
 
     # ensemble parameters
-    N = 10  # number of ensemble members
+    N = 30  # number of ensemble members
     dt = 10  # time step [years]
     dim_z = map_shape_x * map_shape_y
 

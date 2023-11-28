@@ -4,7 +4,7 @@ import os.path
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-
+import json
 
 class Monitor:
     def __init__(self, N, year_range, true_glacier, hist_true_y, res, dt):
@@ -26,6 +26,11 @@ class Monitor:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
+        with open('synthetic_observations/params.json') as f:
+            params = json.load(f)
+            self.smb = params['smb_simple_array']
+
+
     def plot(self, year, state_x, ensemble_x, ensemble_y):
         self.hist_state_x.append(copy.copy(state_x))
         self.hist_ensemble_x.append(copy.copy(ensemble_x))
@@ -40,7 +45,7 @@ class Monitor:
             ax[1, 1].plot(self.year_range[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 1],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
-        ax[1, 1].plot([2000, 2100], [2900, 3300], label='true', color=colorscale(8),
+        ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
                       linewidth=3)
         ax[1, 1].plot(self.year_range[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1], label='estimation',
                       color=colorscale(2),
@@ -53,7 +58,7 @@ class Monitor:
             ax[1, 2].plot(self.year_range[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
-        ax[1, 2].plot([2000, 2100], [0.009, 0.009], label='true', color=colorscale(8),
+        ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true', color=colorscale(8),
                       linewidth=3)
         ax[1, 2].plot(self.year_range[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),
@@ -67,7 +72,7 @@ class Monitor:
             ax[1, 3].plot(self.year_range[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 3],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
-        ax[1, 3].plot([2000, 2100], [0.005, 0.005], label='true', color=colorscale(8),
+        ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
                       linewidth=3)
         ax[1, 3].plot(self.year_range[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 3], label='estimation',
                       color=colorscale(2),

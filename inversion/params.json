@@ -1,0 +1,22 @@
+{
+  "modules_preproc": ["oggm_shop", "optimize_v1", "iceflow_v1"],
+  "modules_process": [],
+  "modules_postproc": [],
+
+  "oggm_RGI_ID" : "RGI60-11.01238",
+  "oggm_vel_source": "millan_ice_velocity",
+
+
+  "opti_control": ["strflowctrl"],
+  "opti_cost": ["velsurf"],
+  "opti_velsurfobs_std" 	        : 1,
+
+  "opti_smooth_anisotropy_factor"	: 0.001,
+  "opti_convexity_weight":  0.002,
+  "opti_step_size": 0.1,
+  "opti_nbitmax"			: 300,
+
+  "opti_plot2d": true,
+  "opti_plot2d_live": true
+}
+

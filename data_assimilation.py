@@ -99,7 +99,7 @@ def generate_observation(state_x):
     :returns thickness map as 1D array
     """
     thickness_flat = state_x[4:]
-
+    thickness_flat[thickness_flat<0.01] = 0
     return thickness_flat
 
 
@@ -107,25 +107,26 @@ if __name__ == '__main__':
     # load true glacier
 
     # initialise state vector x
-    thk_x = true_glacier['thk'][0].astype(np.float16)
-    smb_x = np.array([2900, 0.009, 0.005]).astype(np.float16)
+    thk_x = true_glacier['thk'][0].astype(float)
+    smb_x = np.array([2950, 0.01, 0.004]).astype(float)
     state_x = np.concatenate(([int(start_year)], smb_x, thk_x.flatten()))
 
     # initialise prior (uncertainty)
     prior_x = np.zeros((len(state_x), len(state_x)))
-    prior_x[0, 0] = 0
-    prior_x[1, 1] = 100
-    prior_x[2, 2] = 0
-    prior_x[3, 3] = 0
+    prior_x[0, 0] = 0.0
+    prior_x[1, 1] = 1000
+    prior_x[2, 2] = 0.000001
+    prior_x[3, 3] = 0.000001
 
     # ensemble parameters
-    N = 30  # number of ensemble members
+    N = 10  # number of ensemble members
     dt = 10  # time step [years]
     dim_z = map_shape_x * map_shape_y
 
     ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=dt, N=N, hx=generate_observation, fx=forward_model)
     ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
-    ensemble.Q = prior_x
+    ensemble.Q = np.zeros_like(prior_x)
+    #ensemble.Q = prior_x
 
     hist_true_y = []
 
@@ -141,8 +142,9 @@ if __name__ == '__main__':
     for year in year_range[:-1]:
         print("==== %i ====" % year)
         thk_map = true_glacier['thk'][int((year - start_year) / dt) + 1].astype(np.float16)
+
+
         ensemble.predict()
         ensemble.update(np.asarray(thk_map.flatten()))
-
         ensemble_y = [glacier_properties(e[4:].reshape((map_shape_y, map_shape_x))) for e in ensemble.sigmas]
         monitor.plot(year + dt, ensemble.x, ensemble.sigmas, ensemble_y)

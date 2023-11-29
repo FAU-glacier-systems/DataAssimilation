@@ -7,14 +7,15 @@
   ],
   "modules_postproc": ["print_info",
                        "write_ncdf",
+                       "plot2d",
                        "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.009,     0.005,  3000,      2.0],
-                        [ 2020,      0.009,     0.005,  3000,      2.0]
+                        [ 2000,      0.009,     0.005,  2850,      2.0],
+                        [ 2020,      0.009,     0.005,  2850,      2.0]
                       ],
   "oggm_RGI_ID": "RGI60-11.01238",
-  "lncd_input_file": "input_cropped.nc",
+  "lncd_input_file": "../synthetic_observations/input_cropped.nc",
   "time_start": 2000.0,
-  "time_end": 2020.0
+  "time_end": 2020.0,
 }

@@ -8,10 +8,10 @@ output_file = '../synthetic_observations/input_cropped.nc'
 ds = xr.open_dataset(input_file)
 
 # Crop the dataset based on latitude and longitude ranges
-ds_cropped = ds.sel(y=ds.y[30:-30:2], x=ds.x[30:-30:2])
+#ds_cropped = ds.sel(y=ds.y[30:-30:2], x=ds.x[30:-30:2])
 
 # drop variables
-ds_cropped = ds_cropped.drop_vars(['usurfobs', 'thkobs', 'icemaskobs', 'uvelsurfobs', 'vvelsurfobs', 'thkinit'])
+ds_cropped = ds.drop_vars(['usurfobs', 'thkobs', 'icemaskobs', 'uvelsurfobs', 'vvelsurfobs', 'thkinit'])
 
 # Save the cropped and rescaled dataset to a new NetCDF file
 ds_cropped.to_netcdf(output_file)

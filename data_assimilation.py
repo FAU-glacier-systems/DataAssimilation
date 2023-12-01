@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 np.random.seed(1234)
 
-true_glacier = netCDF4.Dataset('synthetic_observations/output.nc')
+true_glacier = netCDF4.Dataset('data_synthetic_observations/output.nc')
 
 # extract meta_data
 map_resolution = 200
@@ -63,7 +63,7 @@ def forward_model(state_x, dt):
         json.dump(data, f, indent=4, separators=(',', ': '))
 
     # create new input.nc
-    input_file = "synthetic_observations/input_cropped.nc"
+    input_file = "data_synthetic_observations/input_cropped.nc"
     ds = xr.open_dataset(input_file)
 
     thickness = state_x[4:].reshape((map_shape_y, map_shape_x))

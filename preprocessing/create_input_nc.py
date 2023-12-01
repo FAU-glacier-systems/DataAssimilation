@@ -1,9 +1,9 @@
 import xarray as xr
 
 # Specify the input and output file paths
-optimized_file = '../inversion/geology-optimized.nc'
-input_file = '../synthetic_observations/input_saved.nc'
-output_file = '../synthetic_observations/input_merged.nc'
+optimized_file = '../data_inversion/v1/geology-optimized.nc'
+input_file = '../data_synthetic_observations/default/input_saved.nc'
+output_file = '../data_synthetic_observations/v1/input_merged.nc'
 
 opti_ds = xr.open_dataset(optimized_file)
 input_ds = xr.open_dataset(input_file)

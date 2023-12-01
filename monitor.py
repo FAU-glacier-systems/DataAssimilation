@@ -26,7 +26,7 @@ class Monitor:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-        with open('synthetic_observations/params.json') as f:
+        with open('data_synthetic_observations/params.json') as f:
             params = json.load(f)
             self.smb = params['smb_simple_array']
 

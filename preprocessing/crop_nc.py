@@ -1,8 +1,8 @@
 import xarray as xr
 
 # Specify the input and output file paths
-input_file = '../synthetic_observations/input_saved.nc'
-output_file = '../synthetic_observations/input_cropped.nc'
+input_file = '../data_synthetic_observations/input_saved.nc'
+output_file = '../data_synthetic_observations/input_cropped.nc'
 
 # Crop and rescale the NetCDF file
 ds = xr.open_dataset(input_file)

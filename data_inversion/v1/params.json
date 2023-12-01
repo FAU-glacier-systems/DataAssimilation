@@ -5,7 +5,9 @@
 
   "oggm_RGI_ID" : "RGI60-11.01238",
   "oggm_vel_source": "millan_ice_velocity",
-
+  "oggm_preprocess" : false,
+  "oggm_dx": 200,
+  "oggm_border": 10,
 
   "opti_control": ["strflowctrl"],
   "opti_cost": ["velsurf", "icemask"],
@@ -15,8 +17,6 @@
   "params.opti_regu_param_strflowctrl" : 1.0,
   "opti_nbitmax": 300,
 
-  "opti_plot2d": true,
-  "opti_plot2d_live": false,
-  "opti_editor_plot2d": "pc"
+  "opti_plot2d": false
 }
 

@@ -1,7 +1,7 @@
 {
   "modules_preproc": ["oggm_shop"],
   "modules_process": ["smb_simple",
-                      "iceflow_v1",
+                      "iceflow",
                       "time",
                       "thk"
   ],
@@ -13,7 +13,7 @@
                         [ 2020,      0.009,     0.005,  2900,      2.0]
                       ],
   "oggm_RGI_ID": "RGI60-11.01238",
-  "lncd_input_file": "input_merged.nc",
+  "lncd_input_file": "input_saved.nc",
 
   "oggm_preprocess" : false,
   "oggm_dx": 200,
@@ -21,6 +21,7 @@
 
   "time_start": 2000.0,
   "time_end": 2020.0,
+  "time_save": 5,
 
-  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco"]
+  "wncd_vars_to_save": ["topg","usurf", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask"]
 }

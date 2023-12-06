@@ -18,9 +18,10 @@ true_glacier = netCDF4.Dataset('data_synthetic_observations/default/output.nc')
 map_resolution = 200
 map_shape_x = true_glacier.dimensions['x'].size
 map_shape_y = true_glacier.dimensions['y'].size
-year_range = np.array(true_glacier['time'])
-icemask = np.array(true_glacier['icemask'][0])==1
+icemask = np.array(true_glacier['icemask'])[0]
 bedrock = true_glacier['topg'][0]
+
+year_range = np.array(true_glacier['time'])
 start_year = int(year_range[0])
 end_year = int(year_range[-1])
 
@@ -33,9 +34,9 @@ def glacier_properties(usurf):
     """
 
     thk_map = usurf - bedrock
-    volume = np.sum(thk_map) * map_resolution ** 2 / 1000 ** 3
-    area = len(thk_map[thk_map > 0.5]) * map_resolution ** 2 / 1000 ** 2
     icemask = thk_map > 0.5
+    volume = np.sum(thk_map) * map_resolution ** 2 / 1000 ** 3
+    area = len(thk_map[icemask]) * map_resolution ** 2 / 1000 ** 2
     contours = measure.find_contours(icemask, 0)
     outline_len = np.sum([len(line) for line in contours]) * map_resolution / 1000
 
@@ -47,6 +48,7 @@ def forward_model(state_x, dt):
     start_time = time.time()
     year = round(state_x[0])
     year_next = year + dt
+
     ela = state_x[1]
     grad_abl = state_x[2]
     grad_acc = state_x[3]
@@ -57,13 +59,11 @@ def forward_model(state_x, dt):
             "smb_simple_array": [
                 ["time", "gradabl", "gradacc", "ela", "accmax"],
                 [year, grad_abl, grad_acc, ela, 2.0],
-                [year_next, grad_abl, grad_acc, ela, 2.0]
-            ],
+                [year_next, grad_abl, grad_acc, ela, 2.0]],
             "lncd_input_file": 'input.nc',
             "wncd_output_file": 'output_' + str(year) + '.nc',
             "time_start": year,
-            "time_end": year_next
-            }
+            "time_end": year_next }
 
     with open('params.json', 'w') as f:
         json.dump(data, f, indent=4, separators=(',', ': '))
@@ -75,14 +75,8 @@ def forward_model(state_x, dt):
     usurf = state_x[4:].reshape((map_shape_y, map_shape_x))
 
     thickness = usurf - bedrock
-    #thickness[icemask==0] = 0
     thk_da = xr.DataArray(thickness, dims=('y', 'x'))
     ds['thk'] = thk_da
-
-    icemask = np.zeros_like(thickness)
-    icemask[thickness > 0.01] = 1
-    icemask_da = xr.DataArray(icemask, dims=('y', 'x'))
-    ds['icemask'] = icemask_da
 
     ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
     ds_drop = ds.drop_vars("thkinit")
@@ -98,7 +92,7 @@ def forward_model(state_x, dt):
     start_time = time.time()
     new_ds = xr.open_dataset('output_' + str(year) + '.nc')
     new_usurf = np.array(new_ds['usurf'][-1])
-    #new_usurf[icemask==0] = 0
+
     state_x[4:] = new_usurf.flatten()
     state_x[0] = year_next
     print("read output files: %f" % (time.time() - start_time))
@@ -120,7 +114,7 @@ if __name__ == '__main__':
 
     # initialise state vector xa
     surf_x = true_glacier['usurf'][0].astype(float)
-    smb_x = np.array([2950, 0.01, 0.004]).astype(float)
+    smb_x = np.array([2950, 0.011, 0.0039]).astype(float)
     state_x = np.concatenate(([int(start_year)], smb_x, surf_x.flatten()))
 
     # initialise prior (uncertainty)
@@ -136,7 +130,7 @@ if __name__ == '__main__':
     dim_z = map_shape_x * map_shape_y
 
     ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=dt, N=N, hx=generate_observation, fx=forward_model)
-    ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
+    ensemble.R = np.eye(dim_z) * 20  # high means high confidence in state and low confidence in observation
     ensemble.Q = np.zeros_like(prior_x)
 
     hist_true_y = []
@@ -165,6 +159,7 @@ if __name__ == '__main__':
 
         ### UPDATE ###
         usurf = true_glacier['usurf'][int((year - start_year) / dt) + 1].astype(np.float16)
+        #usurf_noise = usurf + np.random.normal(0, 10, usurf.shape)
         ensemble.update(np.asarray(usurf.flatten()))
 
         ensemble_y = [glacier_properties(e[4:].reshape((map_shape_y, map_shape_x))) for e in ensemble.sigmas]

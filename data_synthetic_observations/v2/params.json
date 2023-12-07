@@ -1,5 +1,5 @@
 {
-  "modules_preproc": ["oggm_shop"],
+  "modules_preproc": ["load_ncdf"],
   "modules_process": ["smb_simple",
                       "iceflow",
                       "time",
@@ -21,5 +21,5 @@
   "time_start": 2000.0,
   "time_end": 2020.0,
 
-  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco"]
+  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask"]
 }

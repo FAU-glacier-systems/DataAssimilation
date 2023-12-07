@@ -2,9 +2,9 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_file = 'data_synthetic_observations/v1/output.nc'
-optimized_file = 'data_inversion/v1/geology-optimized.nc'
-figure_path = "data_synthetic_observations/v1/sliding_arrhenius.png"
+output_file = 'data_synthetic_observations/v2/output.nc'
+optimized_file = 'data_inversion/v2/geology-optimized.nc'
+figure_path = "data_synthetic_observations/v2/sliding_arrhenius.png"
 
 ds = xr.open_dataset(output_file)
 ds_optimized = xr.open_dataset(optimized_file)
@@ -57,5 +57,5 @@ cbar = fig.colorbar(img)
 cbar.ax.set_ylabel('slidingco $[km MPa^{-3}a^{-1}]$', rotation=90)
 ax[1,1].invert_yaxis()
 ax[1,1].set_title("Optimized slidingco")
-
+fig.suptitle("First forward step", fontsize=32)
 plt.savefig(figure_path)

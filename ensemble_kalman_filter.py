@@ -203,7 +203,7 @@ class EnsembleKalmanFilter(object):
 
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
-        print("USE this")
+        print("OWN ENKF IMPLEMENTATION")
         #self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
         for i in range(self.N):

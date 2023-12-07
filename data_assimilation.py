@@ -5,6 +5,9 @@ import netCDF4
 import numpy as np
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
+import warnings
+os.environ['PYTHONWARNINGS'] ="ignore"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 np.random.seed(1234)
 
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     prior_x[3, 3] = 0.000001
 
     # ensemble parameters
-    N = 10  # number of ensemble members
+    N = 30  # number of ensemble members
     dt = int(true_glacier['time'][1] - true_glacier["time"][0])  # time step [years]
     dim_z = map_shape_x * map_shape_y
 

@@ -122,7 +122,7 @@ class Monitor:
         ax[0, 1].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 0], label='true',
                       color=colorscale(0),  linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        ax[0, 1].set_ylim(1.45, 1.51)
+        ax[0, 1].set_ylim(1.43, 1.51)
         ax[0, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 1].legend()
 

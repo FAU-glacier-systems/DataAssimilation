@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 np.random.seed(1234)
 
 # load true glacier
-true_glacier = netCDF4.Dataset('data_synthetic_observations/default/output.nc')
+true_glacier = netCDF4.Dataset('data_synthetic_observations/v2/output.nc')
 
 # extract metadata from ground truth glacier
 year_range = np.array(true_glacier['time'])

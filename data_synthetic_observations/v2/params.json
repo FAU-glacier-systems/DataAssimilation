@@ -12,6 +12,7 @@
                         [ 2000,      0.009,     0.005,  2850,      2.0],
                         [ 2020,      0.009,     0.005,  2850,      2.0]
                       ],
+  "iflo_emulator": "../../data_inversion/v2/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
   "lncd_input_file": "input_merged.nc",
   "oggm_preprocess" : false,
@@ -20,6 +21,8 @@
 
   "time_start": 2000.0,
   "time_end": 2020.0,
+  "time_save": 5,
+  "iflo_retrain_emulator_freq" : 0,
 
-  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask"]
+  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask", "usurf"]
 }

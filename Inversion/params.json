@@ -7,7 +7,7 @@
   "oggm_thk_source" : "millan_ice_thickness",
 
   "oggm_preprocess" : false,
-  "oggm_dx": 50,
+  "oggm_dx": 200,
   "oggm_border": 10,
 
   "opti_control": ["thk", "slidingco"],

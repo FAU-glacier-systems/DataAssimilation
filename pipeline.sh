@@ -3,7 +3,7 @@ cd /home/oskar/PycharmProjects/DataAssimilation/Inversion/
 igm_run
 
 # 2. Merge Input
-cd /home/oskar/PycharmProjects/DataAssimilation/preprocessing/
+cd /home/oskar/PycharmProjects/DataAssimilation/Preprocessing/
 python create_input_nc.py
 
 # 3. Reference Run

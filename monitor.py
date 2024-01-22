@@ -122,7 +122,7 @@ class Monitor:
         ax[0, 1].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 0], label='true',
                       color=colorscale(0),  linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        ax[0, 1].set_ylim(1.43, 1.51)
+        #ax[0, 1].set_ylim(1.43, 1.51)
         ax[0, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 1].legend()
 
@@ -139,7 +139,7 @@ class Monitor:
         ax[0, 2].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 1], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        ax[0, 2].set_ylim(15.2, 16.6)
+        #ax[0, 2].set_ylim(15.2, 16.6)
         ax[0, 2].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 2].legend()
 
@@ -156,7 +156,7 @@ class Monitor:
         ax[0, 3].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 2], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        ax[0, 3].set_ylim(26, 30)
+        #ax[0, 3].set_ylim(26, 30)
         ax[0, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 3].legend()
 
@@ -172,7 +172,7 @@ class Monitor:
         ax[1, 1].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1], label='estimation',
                       color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[1, 1].set_ylim(2800,3000)
+        ax[1, 1].set_ylim(2800,3100)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 1].legend()
 

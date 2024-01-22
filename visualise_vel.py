@@ -2,9 +2,9 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_file = 'data_synthetic_observations/v2/output.nc'
-optimized_file = 'data_inversion/v2/geology-optimized.nc'
-figure_path = "data_inversion/v2/sliding_arrhenius.png"
+output_file = 'ReferenceRun/v2/output.nc'
+optimized_file = 'Inversion/v2/geology-optimized.nc'
+figure_path = "Inversion/v2/sliding_arrhenius.png"
 
 ds = xr.open_dataset(output_file)
 ds_optimized = xr.open_dataset(optimized_file)

@@ -39,11 +39,11 @@ class Monitor:
             area, volume, outline_len = self.glacier_properties(usurf)
             self.hist_true_y.append([area, volume, outline_len])
 
-        with open('data_synthetic_observations/default/params.json') as f:
+        with open('ReferenceRun/default/params.json') as f:
             params = json.load(f)
             self.smb = params['smb_simple_array']
 
-        self.output_dir = 'plots/'
+        self.output_dir = 'Plots/'
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -89,7 +89,7 @@ class Monitor:
 
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 0].set_title(' True surface elevation [m]')
-        usurf_im = ax[0, 0].imshow(true_usurf, cmap='Blues_r', vmin=1500, vmax=3500, origin='lower')
+        usurf_im = ax[0, 0].imshow(true_usurf, cmap='Greens_r', vmin=1500, vmax=3500, origin='lower')
         fig.colorbar(usurf_im, ax=ax[0, 0])
         plt.setp(ax[0, 0].spines.values(), color=colorscale(0))
         for axis in ['top', 'bottom', 'left', 'right']:

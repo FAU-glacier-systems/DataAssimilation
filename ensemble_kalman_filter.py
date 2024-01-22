@@ -23,6 +23,8 @@ from __future__ import (absolute_import, division, print_function,
 
 import copy
 from copy import deepcopy
+
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import array, zeros, eye, dot
 from numpy.random import multivariate_normal
@@ -264,14 +266,24 @@ class EnsembleKalmanFilter(object):
             sigmas_h[i] = self.hx(self.sigmas[i])
 
         z_mean = np.mean(sigmas_h, axis=0)
+        plt.clf()
 
         P_zz = (outer_product_sum(sigmas_h - z_mean) / (N-1)) + R
+
+
         P_xz = outer_product_sum(
             self.sigmas - self.x, sigmas_h - z_mean) / (N - 1)
+
+
 
         self.S = P_zz
         self.SI = self.inv(self.S)
         self.K = dot(P_xz, self.SI)
+
+        P_zz_show = copy.copy(self.K)
+        P_zz_show[P_zz_show == 0] = None
+        plt.imshow(P_zz_show)
+        plt.savefig("Kalman_Gain.png")
 
         e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):

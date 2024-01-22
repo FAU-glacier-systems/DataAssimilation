@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 np.random.seed(1234)
 
 # load true glacier
-true_glacier = netCDF4.Dataset('data_synthetic_observations/v2/output.nc')
+true_glacier = netCDF4.Dataset('ReferenceRun/v2/output.nc')
 
 # extract metadata from ground truth glacier
 year_range = np.array(true_glacier['time'])
@@ -50,7 +50,7 @@ def forward_model(state_x, dt):
         json.dump(data, f, indent=4, separators=(',', ': '))
 
     # create new input.nc
-    input_file = "data_synthetic_observations/default/input_saved.nc"
+    input_file = "Inversion/v2/input_saved.nc"
     ds = xr.open_dataset(input_file)
 
     usurf = state_x[4:].reshape((map_shape_y, map_shape_x))
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     prior_x[3, 3] = 0.000001
 
     # ensemble parameters
-    N = 30  # number of ensemble members
+    N = 5  # number of ensemble members
     dt = int(true_glacier['time'][1] - true_glacier["time"][0])  # time step [years]
     dim_z = map_shape_x * map_shape_y
 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=dt, N=N, hx=generate_observation, fx=forward_model)
     # update Process noise (Q) and Observation noise (R)
     ensemble.Q = np.zeros_like(prior_x)
-    ensemble.R = np.eye(dim_z) * 20  # high means high confidence in state and low confidence in observation
+    ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
 
     # create a Monitor for visualisation
     monitor = monitor.Monitor(N, true_glacier)

@@ -12,7 +12,7 @@
                         [ 2000,      0.009,     0.005,  2850,      2.0],
                         [ 2020,      0.009,     0.005,  2850,      2.0]
                       ],
-  "iflo_emulator": "../../data_inversion/v2/iceflow-model",
+  "iflo_emulator": "../Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
   "lncd_input_file": "input_merged.nc",
   "oggm_preprocess" : false,

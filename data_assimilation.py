@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 np.random.seed(1234)
 
 # load true glacier
-true_glacier = netCDF4.Dataset('ReferenceRun/v2/output.nc')
+true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
 
 # extract metadata from ground truth glacier
 year_range = np.array(true_glacier['time'])
@@ -50,7 +50,7 @@ def forward_model(state_x, dt):
         json.dump(data, f, indent=4, separators=(',', ': '))
 
     # create new input.nc
-    input_file = "Inversion/v2/input_saved.nc"
+    input_file = "Inversion/input_saved.nc"
     ds = xr.open_dataset(input_file)
 
     usurf = state_x[4:].reshape((map_shape_y, map_shape_x))

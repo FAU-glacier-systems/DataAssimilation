@@ -6,22 +6,19 @@
                       "thk"
   ],
   "modules_postproc": ["print_info",
-                       "write_ncdf"],
+                       "write_ncdf", "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.009,     0.005,  2900,      2.0],
-                        [ 2020,      0.009,     0.005,  3000,      2.0]
+                        [ 2000,      0.01,     0.005,  2900,      2.0],
+                        [ 2020,      0.01,     0.005,  3000,      2.0]
                       ],
   "iflo_emulator": "../Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
   "lncd_input_file": "input_merged.nc",
-  "oggm_preprocess" : false,
-  "oggm_dx": 200,
-  "oggm_border": 10,
 
   "time_start": 2000.0,
   "time_end": 2020.0,
-  "time_save": 5,
+  "time_save": 2,
   "iflo_retrain_emulator_freq" : 0,
 
   "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask", "usurf"]

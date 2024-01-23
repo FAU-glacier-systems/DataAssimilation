@@ -54,19 +54,20 @@ class Monitor:
                  and thickness map
         """
         thk_map = usurf - self.bedrock
-        icemask = thk_map > 0.5
+        icemask = thk_map > 2
         volume = np.sum(thk_map) * self.res ** 2 / 1000 ** 3
         area = len(thk_map[icemask]) * self.res ** 2 / 1000 ** 2
         contours = measure.find_contours(icemask, 0)
         outline_len = np.sum([len(line) for line in contours]) * self.res / 1000
-
+        if area > 40:
+            print("area is to hight")
         return volume, area, outline_len
 
-    def plot(self, year, ensemble_x):
+    def plot(self, year, ensemble_x, ensemble_usurfs):
         # compute mean
         state_x = np.mean(ensemble_x, axis=0)
         # compute observations (y) form internal state (x)
-        ensemble_y = [self.glacier_properties(e[4:].reshape((self.map_shape_y, self.map_shape_x))) for e in ensemble_x]
+        ensemble_y = [self.glacier_properties(usurf_y) for usurf_y in ensemble_usurfs]
 
         # append to history
         self.hist_state_x.append(copy.copy(state_x))
@@ -163,13 +164,13 @@ class Monitor:
         # plot ela
         ax[1, 1].set_title('Equilibrium line altitude [m]')
         for e in range(self.N):
-            ax[1, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 1],
+            ax[1, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 0],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
         ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
                       linewidth=3, linestyle='-.')
 
-        ax[1, 1].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1], label='estimation',
+        ax[1, 1].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 0], label='estimation',
                       color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
         ax[1, 1].set_ylim(2800,3100)
@@ -179,11 +180,11 @@ class Monitor:
         # plot gradable
         ax[1, 2].set_title('Ablation gradient [m/yr/m]')
         for e in range(self.N):
-            ax[1, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
+            ax[1, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 1],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
 
-        ax[1, 2].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
+        ax[1, 2].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1], label='estimation',
                       color=colorscale(2),
                       marker='X', markersize=10, markevery=[-1])
 
@@ -198,13 +199,13 @@ class Monitor:
         # plot gradacc
         ax[1, 3].set_title('Accumulation gradient [m/yr/m]')
         for e in range(self.N):
-            ax[1, 3].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 3],
+            ax[1, 3].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
         ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
                       linewidth=3,linestyle='-.')
 
-        ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 3], label='estimation',
+        ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),marker='X', markersize=10, markevery=[-1])
 
         ax[1, 3].set_ylim(0, 0.01)
@@ -217,10 +218,10 @@ class Monitor:
         for i, (id, glacier) in enumerate(zip(random_id, [self.hist_ensemble_x[-1][idx] for idx in random_id])):
 
             # get surface elevation
-            esti_usurf = glacier[4:].reshape(self.bedrock.shape).astype(np.float32)
-
+            #esti_usurf = glacier[4:].reshape(self.bedrock.shape).astype(np.float32)
+            esti_usurf = ensemble_usurfs[i]
             # generate SMB field
-            ela, gradabl, gradacc = state_x[[1,2,3]]
+            ela, gradabl, gradacc = state_x[[0,1,2]]
             maxacc = 2.0
 
             smb = esti_usurf - ela
@@ -232,6 +233,7 @@ class Monitor:
 
             ax[2, i].set_title('Ensemble[%i]: surface elevation difference [m]' % id)
             pcm = ax[2, i].imshow(esti_usurf - true_usurf, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
+
             fig.colorbar(pcm, ax=ax[2, i ])
             plt.setp(ax[2, i].spines.values(), color=colorscale(5))
             for axis in ['top', 'bottom', 'left', 'right']:

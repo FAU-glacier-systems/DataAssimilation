@@ -158,7 +158,7 @@ class EnsembleKalmanFilter(object):
       Dynamic Systems. CRC Press, second edition. 2012. pp, 257-9.
     """
 
-    def __init__(self, x, P, dim_z, dt, N, hx, fx):
+    def __init__(self, x, P, dim_z, dt, N, hx, fx, start_year):
         if dim_z <= 0:
             raise ValueError('dim_z must be greater than zero')
 
@@ -187,6 +187,8 @@ class EnsembleKalmanFilter(object):
         self._mean = zeros(dim_x)
         self._mean_z = zeros(dim_z)
 
+        self.year = start_year
+
     def initialize(self, x, P):
         """
         Initializes the filter with the specified mean and
@@ -210,12 +212,12 @@ class EnsembleKalmanFilter(object):
         self.sigmas = []
         for i in range(self.N):
             sigma = copy.copy(x)
-            noise_ela = np.random.normal(0, np.sqrt(P[1,1]))
-            noise_grad_abl = np.random.normal(0, np.sqrt(P[2,2]))
-            noise_grad_acc = np.random.normal(0, np.sqrt(P[3,3]))
-            sigma[1]+=noise_ela
-            sigma[2]+=noise_grad_abl
-            sigma[3]+=noise_grad_acc
+            noise_ela = np.random.normal(0, np.sqrt(P[0,0]))
+            noise_grad_abl = np.random.normal(0, np.sqrt(P[1,1]))
+            noise_grad_acc = np.random.normal(0, np.sqrt(P[2,2]))
+            sigma[0]+=noise_ela
+            sigma[1]+=noise_grad_abl
+            sigma[2]+=noise_grad_acc
             self.sigmas.append(sigma)
 
         self.sigmas = np.ma.masked_array(self.sigmas)
@@ -263,7 +265,7 @@ class EnsembleKalmanFilter(object):
 
         # transform sigma points into measurement space
         for i in range(N):
-            sigmas_h[i] = self.hx(self.sigmas[i])
+            sigmas_h[i] = self.hx(self.sigmas[i], i)
 
         z_mean = np.mean(sigmas_h, axis=0)
         plt.clf()
@@ -282,8 +284,12 @@ class EnsembleKalmanFilter(object):
 
         P_zz_show = copy.copy(self.K)
         P_zz_show[P_zz_show == 0] = None
-        plt.imshow(P_zz_show)
-        plt.savefig("Kalman_Gain.png")
+        fig, ax = plt.subplots(figsize=(10, 3))
+        im = ax.imshow(P_zz_show, vmin=-1, vmax=1, cmap='coolwarm')
+        plt.colorbar(im, orientation='horizontal', ax=ax)
+
+        # Save the figure
+        fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
 
         e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
@@ -302,7 +308,7 @@ class EnsembleKalmanFilter(object):
 
         N = self.N
         for i, s in enumerate(self.sigmas):
-            self.sigmas[i] = self.fx(s, self.dt)
+            self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
 
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e

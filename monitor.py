@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 
 
 class Monitor:
-    def __init__(self, N, true_glacier):
+    def __init__(self, N, true_glacier, observation_points, dt):
 
         self.N = N
         self.true_glacier = true_glacier
+        self.observation_points = observation_points
 
-        self.year_range = np.array(true_glacier['time'])
-        self.dt = self.year_range[1] - self.year_range[0]
+        self.year_range = np.array(true_glacier['time'])[::dt]
+        self.dt = dt
         self.start_year = self.year_range[0]
         self.year_range_repeat = np.repeat(self.year_range, 2)[1:]
 
@@ -35,7 +36,7 @@ class Monitor:
         self.hist_true_y = []
 
         for year in self.year_range:
-            usurf = true_glacier['usurf'][int((year - self.year_range[0]) / self.dt)]
+            usurf = true_glacier['usurf'][int((year - self.year_range[0]))]
             area, volume, outline_len = self.glacier_properties(usurf)
             self.hist_true_y.append([area, volume, outline_len])
 
@@ -65,6 +66,7 @@ class Monitor:
 
     def plot(self, year, ensemble_x, ensemble_usurfs):
         # compute mean
+        dt = self.dt
         state_x = np.mean(ensemble_x, axis=0)
         # compute observations (y) form internal state (x)
         ensemble_y = [self.glacier_properties(usurf_y) for usurf_y in ensemble_usurfs]
@@ -84,13 +86,14 @@ class Monitor:
         colorscale = plt.get_cmap('tab20')
 
         # get true usurf
-        true_usurf = self.true_glacier['usurf'][int((year - self.start_year) / self.dt)]
+        true_usurf = self.true_glacier['usurf'][int((year - self.start_year))]
         # get true smb
-        true_smb = self.true_glacier['smb'][int((year - self.start_year) / self.dt)]
+        true_smb = self.true_glacier['smb'][int((year - self.start_year))]
 
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 0].set_title(' True surface elevation [m]')
         usurf_im = ax[0, 0].imshow(true_usurf, cmap='Blues_r', vmin=1500, vmax=3500, origin='lower')
+        usurf_ob = ax[0, 0].scatter(self.observation_points[:, 1], self.observation_points[:,0], edgecolors=colorscale(0), marker='s', c=None, facecolors='none')
         fig.colorbar(usurf_im, ax=ax[0, 0])
         plt.setp(ax[0, 0].spines.values(), color=colorscale(0))
         for axis in ['top', 'bottom', 'left', 'right']:
@@ -120,7 +123,7 @@ class Monitor:
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 0], axis=1),
                       label='estimation', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[0, 1].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 0], label='true',
+        ax[0, 1].plot(self.year_range, np.array(self.hist_true_y)[:,0], label='true',
                       color=colorscale(0),  linewidth=0, marker='o', fillstyle='none', markersize=10)
 
         #ax[0, 1].set_ylim(1.43, 1.51)
@@ -137,7 +140,7 @@ class Monitor:
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 1], axis=1),
                       label='estimation', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[0, 2].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 1], label='true',
+        ax[0, 2].plot(self.year_range, np.array(self.hist_true_y)[:, 1], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
         #ax[0, 2].set_ylim(15.2, 16.6)
@@ -154,7 +157,7 @@ class Monitor:
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 2], axis=1),
                       label='estimation', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[0, 3].plot(self.year_range[:len(self.hist_true_y)], np.array(self.hist_true_y)[:, 2], label='true',
+        ax[0, 3].plot(self.year_range, np.array(self.hist_true_y)[:, 2], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
         #ax[0, 3].set_ylim(26, 30)
@@ -167,11 +170,12 @@ class Monitor:
             ax[1, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 0],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
+        ax[1, 1].plot(self.year_range_repeat[:len(self.hist_state_x)],
+                      np.array(self.hist_state_x)[:, 0], label='estimation',
+                      color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
+
         ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
                       linewidth=3, linestyle='-.')
-
-        ax[1, 1].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 0], label='estimation',
-                      color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
         ax[1, 1].set_ylim(2800,3100)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
@@ -202,11 +206,11 @@ class Monitor:
             ax[1, 3].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
-        ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
-                      linewidth=3,linestyle='-.')
-
         ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),marker='X', markersize=10, markevery=[-1])
+
+        ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
+                      linewidth=3,linestyle='-.')
 
         ax[1, 3].set_ylim(0, 0.01)
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))
@@ -250,7 +254,7 @@ class Monitor:
             ax[3, i].xaxis.set_major_formatter(formatter)
             ax[3, i].yaxis.set_major_formatter(formatter)
 
-        fig.suptitle("%i, Ensemble Kalman Filter, Ensemble Size: %i" % (year, self.N), fontsize=32)
+        fig.suptitle(f"observation points: {len(self.observation_points)}, ensemble size: {self.N}, dt: {self.dt}", fontsize=32)
 
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:

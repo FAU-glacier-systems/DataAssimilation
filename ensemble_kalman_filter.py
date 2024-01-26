@@ -17,7 +17,6 @@ This is licensed under an MIT license. See the readme.MD file
 for more information.
 """
 
-
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
@@ -29,6 +28,7 @@ import numpy as np
 from numpy import array, zeros, eye, dot
 from numpy.random import multivariate_normal
 from filterpy.common import pretty_str, outer_product_sum
+from concurrent.futures import ThreadPoolExecutor
 
 
 class EnsembleKalmanFilter(object):
@@ -174,12 +174,12 @@ class EnsembleKalmanFilter(object):
         self.fx = fx
         self.K = zeros((dim_x, dim_z))
         self.z = array([[None] * self.dim_z]).T
-        self.S = zeros((dim_z, dim_z))   # system uncertainty
+        self.S = zeros((dim_z, dim_z))  # system uncertainty
         self.SI = zeros((dim_z, dim_z))  # inverse system uncertainty
 
         self.initialize(x, P)
-        self.Q = eye(dim_x)       # process uncertainty
-        self.R = eye(dim_z)       # state uncertainty
+        self.Q = eye(dim_x)  # process uncertainty
+        self.R = eye(dim_z)  # state uncertainty
         self.inv = np.linalg.inv
 
         # used to create error terms centered at 0 mean for
@@ -208,16 +208,16 @@ class EnsembleKalmanFilter(object):
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
         print("OWN ENKF IMPLEMENTATION")
-        #self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
+        # self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
         for i in range(self.N):
             sigma = copy.copy(x)
-            noise_ela = np.random.normal(0, np.sqrt(P[0,0]))
-            noise_grad_abl = np.random.normal(0, np.sqrt(P[1,1]))
-            noise_grad_acc = np.random.normal(0, np.sqrt(P[2,2]))
-            sigma[0]+=noise_ela
-            sigma[1]+=noise_grad_abl
-            sigma[2]+=noise_grad_acc
+            noise_ela = np.random.normal(0, np.sqrt(P[0, 0]))
+            noise_grad_abl = np.random.normal(0, np.sqrt(P[1, 1]))
+            noise_grad_acc = np.random.normal(0, np.sqrt(P[2, 2]))
+            sigma[0] += noise_ela
+            sigma[1] += noise_grad_abl
+            sigma[2] += noise_grad_acc
             self.sigmas.append(sigma)
 
         self.sigmas = np.ma.masked_array(self.sigmas)
@@ -249,7 +249,7 @@ class EnsembleKalmanFilter(object):
         """
 
         if z is None:
-            self.z = array([[None]*self.dim_z]).T
+            self.z = array([[None] * self.dim_z]).T
             self.x_post = self.x.copy()
             self.P_post = self.P.copy()
             return
@@ -270,13 +270,10 @@ class EnsembleKalmanFilter(object):
         z_mean = np.mean(sigmas_h, axis=0)
         plt.clf()
 
-        P_zz = (outer_product_sum(sigmas_h - z_mean) / (N-1)) + R
-
+        P_zz = (outer_product_sum(sigmas_h - z_mean) / (N - 1)) + R
 
         P_xz = outer_product_sum(
             self.sigmas - self.x, sigmas_h - z_mean) / (N - 1)
-
-
 
         self.S = P_zz
         self.SI = self.inv(self.S)
@@ -284,12 +281,10 @@ class EnsembleKalmanFilter(object):
 
         P_zz_show = copy.copy(self.K)
         P_zz_show[P_zz_show == 0] = None
-        fig, ax = plt.subplots(figsize=(10, 3))
-        im = ax.imshow(P_zz_show, vmin=-1, vmax=1, cmap='coolwarm')
-        plt.colorbar(im, orientation='horizontal', ax=ax)
-
-        # Save the figure
-        fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
+        #fig, ax = plt.subplots(figsize=(10, 3))
+        #im = ax.imshow(P_zz_show, vmin=-1, vmax=1, cmap='coolwarm')
+        #plt.colorbar(im, orientation='horizontal', ax=ax)
+        #fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
 
         e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
@@ -307,8 +302,23 @@ class EnsembleKalmanFilter(object):
         """ Predict next position. """
 
         N = self.N
-        for i, s in enumerate(self.sigmas):
-            self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
+        sigmas = self.sigmas
+        dt = self.dt
+        year = int(self.year)
+
+
+        def compute_sigma(i, s):
+            return self.fx(s, dt, i, year)
+
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
+
+            # Update self.sigmas with the computed values
+        for i, result in enumerate(results):
+            sigmas[i] = result
+
+        #for i, s in enumerate(self.sigmas):
+        #    self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
 
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e
@@ -337,4 +347,4 @@ class EnsembleKalmanFilter(object):
             pretty_str('sigmas', self.sigmas),
             pretty_str('hx', self.hx),
             pretty_str('fx', self.fx)
-            ])
+        ])

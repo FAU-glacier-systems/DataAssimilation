@@ -5,7 +5,7 @@ import os.path
 import numpy as np
 from skimage import measure
 import matplotlib.pyplot as plt
-
+import rasterio
 
 
 
@@ -39,6 +39,7 @@ class Monitor:
             usurf = true_glacier['usurf'][int((year - self.year_range[0]))]
             area, volume, outline_len = self.glacier_properties(usurf)
             self.hist_true_y.append([area, volume, outline_len])
+
 
         with open('ReferenceRun/params.json') as f:
             params = json.load(f)
@@ -174,10 +175,10 @@ class Monitor:
                       np.array(self.hist_state_x)[:, 0], label='estimation',
                       color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
-                      linewidth=3, linestyle='-.')
+        #ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
+        #              linewidth=3, linestyle='-.')
 
-        ax[1, 1].set_ylim(2800,3100)
+        #ax[1, 1].set_ylim(2800,3100)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 1].legend()
 
@@ -192,11 +193,10 @@ class Monitor:
                       color=colorscale(2),
                       marker='X', markersize=10, markevery=[-1])
 
-        ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
-                      color=colorscale(8),
-                      linewidth=3, linestyle='-.')
+        #ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
+        #              color=colorscale(8),linewidth=3, linestyle='-.')
 
-        ax[1, 2].set_ylim(0.004, 0.014)
+        #ax[1, 2].set_ylim(0.004, 0.014)
         ax[1, 2].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 2].legend()
 
@@ -209,10 +209,10 @@ class Monitor:
         ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),marker='X', markersize=10, markevery=[-1])
 
-        ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
-                      linewidth=3,linestyle='-.')
+        #ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
+        #              linewidth=3,linestyle='-.')
 
-        ax[1, 3].set_ylim(0, 0.01)
+        #ax[1, 3].set_ylim(0, 0.01)
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 3].legend()
 
@@ -236,7 +236,9 @@ class Monitor:
             esti_smb = np.array(smb)
 
             ax[2, i].set_title('Ensemble[%i]: surface elevation difference [m]' % id)
-            pcm = ax[2, i].imshow(esti_usurf - true_usurf, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
+            pcm = ax[2, i].imshow(esti_usurf - true_usurf, cmap='seismic_r'
+                                  , vmin=-10, vmax=10
+                                  , origin='lower')
 
             fig.colorbar(pcm, ax=ax[2, i ])
             plt.setp(ax[2, i].spines.values(), color=colorscale(5))
@@ -245,7 +247,7 @@ class Monitor:
             ax[2, i].xaxis.set_major_formatter(formatter)
             ax[2, i].yaxis.set_major_formatter(formatter)
 
-            ax[3, i].set_title('Ensemble[%i]: smb difference [m/yr]' % id)
+            ax[3, i].set_title('Ensemble[%i]: SMB [m/yr]' % id)
             pcm = ax[3, i ].imshow(esti_smb - true_smb, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
             fig.colorbar(pcm, ax=ax[3, i ])
             plt.setp(ax[3, i].spines.values(), color='gold')

@@ -268,7 +268,7 @@ class EnsembleKalmanFilter(object):
             sigmas_h[i] = self.hx(self.sigmas[i], i)
 
         z_mean = np.mean(sigmas_h, axis=0)
-        plt.clf()
+
 
         P_zz = (outer_product_sum(sigmas_h - z_mean) / (N - 1)) + R
 

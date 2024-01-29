@@ -4,8 +4,11 @@ import subprocess
 import time
 import os
 import json
+
+import matplotlib.pyplot as plt
 import netCDF4
 import numpy as np
+import rasterio
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from scipy.stats import qmc
@@ -25,7 +28,8 @@ class DataAssimilation:
         self.ensemble_size = ensemble_size
         self.dt = dt
 
-        self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
+        # self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
+        self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
         # extract metadata from ground truth glacier
         self.year_range = np.array(self.true_glacier['time'])[::dt]
 
@@ -61,14 +65,14 @@ class DataAssimilation:
         surf_x = self.true_glacier['usurf'][0].astype(float)
 
         # initial guess
-        state_x = np.array([2900, 0.011, 0.0039]).astype(float)
+        state_x = np.array([3000, 0.01, 0.002]).astype(float)
 
         # initialise prior (uncertainty) P
         prior_x = np.zeros((len(state_x), len(state_x)))
 
         prior_x[0, 0] = 1000
-        prior_x[1, 1] = 0.000001
-        prior_x[2, 2] = 0.000001
+        prior_x[1, 1] = 0.00001
+        prior_x[2, 2] = 0.00001
 
         # ensemble parameters
         # number of ensemble members
@@ -81,7 +85,7 @@ class DataAssimilation:
                         start_year=self.start_year)
         # update Process noise (Q) and Observation noise (R)
         ensemble.Q = np.zeros_like(prior_x)
-        # ensemble.Q[0,0] = 100
+        #ensemble.Q[0,0] = 100
         ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
 
         for i in range(self.ensemble_size):
@@ -106,19 +110,19 @@ class DataAssimilation:
             ensemble.predict()
             print("Prediction time: ", time.time() - start_time)
             ensemble.year = year + dt
-            #monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
+            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
 
             ### UPDATE ###
             usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
+
             real_observations = usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
             ensemble.update(real_observations)
             for i in range(self.ensemble_size):
                 self.ensemble_usurfs[i] = copy.copy(usurf)  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
-            #monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
+            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
 
         ### EVALUATION ###
-
         with open('ReferenceRun/params.json') as f:
             params = json.load(f)
         smb = params['smb_simple_array']
@@ -146,8 +150,8 @@ class DataAssimilation:
                 "modules_postproc": ["write_ncdf"],
                 "smb_simple_array": [
                     ["time", "gradabl", "gradacc", "ela", "accmax"],
-                    [year, grad_abl, grad_acc, ela, 2.0],
-                    [year_next, grad_abl, grad_acc, ela, 2.0]],
+                    [year, grad_abl, grad_acc, ela, 99],
+                    [year_next, grad_abl, grad_acc, ela, 99]],
                 "iflo_emulator": "iceflow-model",
                 "lncd_input_file": f'input_.nc',
                 "wncd_output_file": f'output_{year}.nc',
@@ -190,7 +194,9 @@ class DataAssimilation:
         h(x)
         :returns thickness map as 1D array
         """
+
         usurf = self.ensemble_usurfs[i]
+
         modelled_observations = usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
 
         return modelled_observations
@@ -205,6 +211,9 @@ if __name__ == '__main__':
     sampler = qmc.LatinHypercube(d=2)
     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
     random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
+
+    sample = [[400, 10]]
+    random_dt = [5]
 
     for (num_sample_points, ensemble_size), dt in zip(sample, random_dt):
         print(num_sample_points, ensemble_size, int(dt))

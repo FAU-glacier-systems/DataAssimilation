@@ -25,6 +25,6 @@
   "iflo_save_model" : true,
 
   "opti_vars_to_save": ["usurf", "thk", "slidingco", "velsurf_mag", "velsurfobs_mag", "divflux", "icemask", "arrhenius",
-  "thkobs"]
+  "thkobs", "topg"]
 }
 

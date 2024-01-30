@@ -14,5 +14,6 @@ igm_run
 cd /home/oskar/PycharmProjects/DataAssimilation
 python data_assimilation.py
 
+python evaluate.py
 
 

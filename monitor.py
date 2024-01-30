@@ -10,7 +10,7 @@ import rasterio
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, observation_points, dt):
+    def __init__(self, N, true_glacier, observation_points, dt, sythetic=True):
 
         self.N = N
         self.true_glacier = true_glacier
@@ -40,10 +40,12 @@ class Monitor:
             area, volume, outline_len = self.glacier_properties(usurf)
             self.hist_true_y.append([area, volume, outline_len])
 
-
-        with open('ReferenceRun/params.json') as f:
-            params = json.load(f)
-            self.smb = params['smb_simple_array']
+        if sythetic:
+            with open('ReferenceRun/params.json') as f:
+                params = json.load(f)
+                self.smb = params['smb_simple_array']
+        else:
+            self.smb = None
 
         self.output_dir = 'Plots/'
         if not os.path.exists(self.output_dir):
@@ -175,8 +177,9 @@ class Monitor:
                       np.array(self.hist_state_x)[:, 0], label='estimation',
                       color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
-        #ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
-        #              linewidth=3, linestyle='-.')
+        if not self.smb == None:
+            ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
+                          linewidth=3, linestyle='-.')
 
         #ax[1, 1].set_ylim(2800,3100)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
@@ -193,8 +196,9 @@ class Monitor:
                       color=colorscale(2),
                       marker='X', markersize=10, markevery=[-1])
 
-        #ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
-        #              color=colorscale(8),linewidth=3, linestyle='-.')
+        if not self.smb == None:
+            ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
+                          color=colorscale(8),linewidth=3, linestyle='-.')
 
         #ax[1, 2].set_ylim(0.004, 0.014)
         ax[1, 2].set_xticks(range(2000, 2020 + 1, 5))
@@ -209,8 +213,9 @@ class Monitor:
         ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
                       color=colorscale(2),marker='X', markersize=10, markevery=[-1])
 
-        #ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
-        #              linewidth=3,linestyle='-.')
+        if not self.smb == None:
+            ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
+                          linewidth=3,linestyle='-.')
 
         #ax[1, 3].set_ylim(0, 0.01)
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))

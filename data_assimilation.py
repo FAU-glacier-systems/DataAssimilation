@@ -28,8 +28,9 @@ class DataAssimilation:
         self.ensemble_size = ensemble_size
         self.dt = dt
 
-        # self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
+        #self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
         self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
+        self.synthetic = False
         # extract metadata from ground truth glacier
         self.year_range = np.array(self.true_glacier['time'])[::dt]
 
@@ -98,7 +99,7 @@ class DataAssimilation:
             shutil.copytree("Inversion/iceflow-model/", f"Experiments/{i}/iceflow-model")
 
         # create a Monitor for visualisation
-        monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt)
+        monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt, sythetic=self.synthetic)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs)
 
@@ -205,14 +206,14 @@ class DataAssimilation:
 if __name__ == '__main__':
     from scipy.stats import qmc
 
-    number_of_experiments = 20
-    l_bounds = [10, 4]
-    u_bounds = [1000, 30]
+    number_of_experiments = 100
+    l_bounds = [100, 4]
+    u_bounds = [2000, 30]
     sampler = qmc.LatinHypercube(d=2)
     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
     random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
 
-    sample = [[400, 10]]
+    sample = [[1000, 20]]
     random_dt = [5]
 
     for (num_sample_points, ensemble_size), dt in zip(sample, random_dt):

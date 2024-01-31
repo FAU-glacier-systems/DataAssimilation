@@ -12,6 +12,12 @@ import rasterio
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from scipy.stats import qmc
+import tensorflow as tf
+devices = tf.config.list_physical_devices('GPU')
+if devices:
+    print("GPU is available.")
+else:
+    print("No GPU found.")
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

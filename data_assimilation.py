@@ -28,9 +28,9 @@ class DataAssimilation:
         self.ensemble_size = ensemble_size
         self.dt = dt
 
-        #self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
-        self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
-        self.synthetic = False
+        self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
+        #self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
+        self.synthetic = True
         # extract metadata from ground truth glacier
         self.year_range = np.array(self.true_glacier['time'])[::dt]
 
@@ -207,16 +207,17 @@ if __name__ == '__main__':
     from scipy.stats import qmc
 
     number_of_experiments = 100
-    l_bounds = [100, 4]
-    u_bounds = [2000, 30]
+    l_bounds = [10, 4]
+    u_bounds = [44, 30]
     sampler = qmc.LatinHypercube(d=2)
     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
     random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
 
-    sample = [[1000, 20]]
-    random_dt = [5]
+    #sample = [[1000, 20]]
+    #random_dt = [5]
 
     for (num_sample_points, ensemble_size), dt in zip(sample, random_dt):
+        num_sample_points = num_sample_points**2
         print(num_sample_points, ensemble_size, int(dt))
         DA = DataAssimilation(int(num_sample_points), int(ensemble_size), int(dt))
         DA.start_ensemble()

@@ -62,10 +62,10 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
     bin_var_std = np.array([bins.std() for bins in bin_avgs_var])
 
     fig, ax = plt.subplots(figsize=(5, 5))
-    ax.fill_between(bin_centers, bin_means-bin_std, bin_means+bin_std, alpha=0.2, color='C0')
+    ax.fill_between(bin_centers, bin_means-bin_std, bin_means+bin_std, alpha=0.3, color='C0')
     ax.plot(bin_centers, bin_means, label='Mean Absolute Error')
     ax.scatter(df[hyperparameter], df['MAE'], alpha=0.2)
-    ax.fill_between(bin_centers, bin_var_mean-bin_var_std, bin_var_mean+bin_var_std, alpha=0.2, color='C1')
+    ax.fill_between(bin_centers, bin_var_mean-bin_var_std, bin_var_mean+bin_var_std, alpha=0.3, color='C1')
     ax.plot(bin_centers, bin_var_mean, label='Ensemble Variance')
     ax.scatter(df[hyperparameter], df['VAR'], alpha=0.2)
     if hyperparameter == 'area_ration_sample':

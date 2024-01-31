@@ -310,15 +310,16 @@ class EnsembleKalmanFilter(object):
         def compute_sigma(i, s):
             return self.fx(s, dt, i, year)
 
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
+        #with ThreadPoolExecutor() as executor:
+        #    results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
 
             # Update self.sigmas with the computed values
-        for i, result in enumerate(results):
-            sigmas[i] = result
+        #for i, result in enumerate(results):
+        #    sigmas[i] = result
 
-        #for i, s in enumerate(self.sigmas):
-        #    self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
+
+        for i, s in enumerate(self.sigmas):
+            self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
 
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e

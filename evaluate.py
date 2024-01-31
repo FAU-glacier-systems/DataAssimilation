@@ -63,53 +63,16 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
 
     fig, ax = plt.subplots(figsize=(5, 5))
     ax.fill_between(bin_centers, bin_means-bin_std, bin_means+bin_std, alpha=0.2, color='C0')
-    ax.plot(bin_centers, bin_means, label='MAE')
-
+    ax.plot(bin_centers, bin_means, label='Mean Absolute Error')
+    ax.scatter(df[hyperparameter], df['MAE'], alpha=0.2)
     ax.fill_between(bin_centers, bin_var_mean-bin_var_std, bin_var_mean+bin_var_std, alpha=0.2, color='C1')
-    ax.plot(bin_centers, bin_var_mean, label='Mean ensemble variance')
+    ax.plot(bin_centers, bin_var_mean, label='Ensemble Variance')
+    ax.scatter(df[hyperparameter], df['VAR'], alpha=0.2)
     if hyperparameter == 'area_ration_sample':
         ax.set_xlabel("Percentage of sampled area [%]")
     else:
         ax.set_xlabel(hyperparameter)
     ax.set_ylabel('Error of ELA estimate')
+    ax.set_ylim(0, 10)
     ax.legend()
     plt.savefig(f'Plots/{hyperparameter}.png')
-
-"""
-# Group by 'dt' and calculate the mean for each group
-df_grouped = df.groupby('dt').mean().reset_index()
-#df_grouped = df.sort_values(by='dt')
-# Plotting
-plt.figure(figsize=(5, 5))
-
-plt.plot(df_grouped['dt'], df_grouped['MAE'], label='Mean MAE')
-plt.plot(df_grouped['dt'], df_grouped['VAR'], label='Mean ensemble variance')
-plt.xlabel('Observation Interval')
-plt.ylabel('Error of ELA estimate')
-plt.legend()
-plt.savefig('Plots/dt.png')
-
-
-# Create histogram
-counts, edges = np.histogram(df['ensemble_size'], bins=5)
-bin_centers = (edges[:-1] + edges[1:]) / 2
-bin_avgs_mae_ens = [df['MAE'][(df['ensemble_size'] >= edges[i]) & (df['ensemble_size'] < edges[i+1])].mean() for i in range(len(edges)-1)]
-bin_avgs_var_ens = [df['VAR'][(df['ensemble_size'] >= edges[i]) & (df['ensemble_size'] < edges[i+1])].mean() for i in range(len(edges)-1)]
-
-
-plt.figure(figsize=(5, 5))
-plt.plot(bin_centers, bin_avgs_mae_ens, label='MAE')
-plt.plot(bin_centers, bin_avgs_var_ens, label='Mean ensemble variance')
-plt.xlabel('ensemble_size')
-plt.ylabel('Error of ELA estimate')
-plt.legend()
-plt.savefig('Plots/ensemble_size.png')
-
-
-fig = px.scatter_3d(df, x='ensemble_size', y='area_ration_sample', z='dt',
-              color='MAE', range_color=(0,5))
-fig.show()
-
-# Now 'data' contains the content of your JSON file as a Python dictionary or list
-print(results)
-"""

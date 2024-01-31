@@ -1,18 +1,21 @@
 # 1. Inversion
-cd /home/oskar/PycharmProjects/DataAssimilation/Inversion/
+cd Inversion/
 igm_run
+cd ..
 
 # 2. Merge Input
-cd /home/oskar/PycharmProjects/DataAssimilation/Preprocessing/
+cd Preprocessing/
 python create_input_nc.py
+cd ..
 
 # 3. Reference Run
-cd /home/oskar/PycharmProjects/DataAssimilation/ReferenceRun/
+cd ReferenceRun/
 igm_run
+cd..
 
 # 4. Data Assimilation
-cd /home/oskar/PycharmProjects/DataAssimilation
 python data_assimilation.py
 
+python evaulate.py
 
 

@@ -67,7 +67,7 @@ class Monitor:
             print("area is to hight")
         return volume, area, outline_len
 
-    def plot(self, year, ensemble_x, ensemble_usurfs):
+    def plot(self, year, ensemble_x, ensemble_usurfs, ensemble_velo):
         # compute mean
         dt = self.dt
         state_x = np.mean(ensemble_x, axis=0)
@@ -84,7 +84,7 @@ class Monitor:
             return str(x * self.res / 1000)
 
         # create canvas
-        fig, ax = plt.subplots(4, 4, figsize=(20, 20))
+        fig, ax = plt.subplots(4, 5, figsize=(20, 20))
         # define colorscale
         colorscale = plt.get_cmap('tab20')
 
@@ -92,6 +92,8 @@ class Monitor:
         true_usurf = self.true_glacier['usurf'][int((year - self.start_year))]
         # get true smb
         true_smb = self.true_glacier['smb'][int((year - self.start_year))]
+        # get true usurf
+        true_vel = self.true_glacier['velsurf_mag'][int((year - self.start_year))]
 
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 0].set_title(' True surface elevation [m]')
@@ -115,6 +117,32 @@ class Monitor:
         ax[1, 0].xaxis.set_major_formatter(formatter)
         ax[1, 0].yaxis.set_major_formatter(formatter)
         ax[1, 0].set_xlabel('[km]')
+
+        # draw true surface mass balance
+        ax[0, 4].set_title('True surface velocity [m/yr]')
+        vel_im =ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
+        fig.colorbar(vel_im, ax=ax[0, 4])
+        #plt.setp(ax[0, 4].spines.values(), color=colorscale(8))
+        #for axis in ['top', 'bottom', 'left', 'right']:
+        #    ax[0, 4].spines[axis].set_linewidth(5)
+        ax[0, 4].xaxis.set_major_formatter(formatter)
+        ax[0, 4].yaxis.set_major_formatter(formatter)
+        ax[0, 4].set_xlabel('[km]')
+
+        # draw true surface mass balance
+        index = random.sample(range(self.N), 1)[0]
+        esti_velo = ensemble_velo[index]
+        ax[1, 4].set_title(f'Ensemble velocity[{index}]')
+        #vel_im = ax[1, 4].imshow(esti_velo - true_vel, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
+        vel_im = ax[1, 4].imshow(esti_velo, cmap='magma', vmin=0, vmax=70, origin='lower')
+
+        fig.colorbar(vel_im, ax=ax[1, 4])
+        # plt.setp(ax[0, 4].spines.values(), color=colorscale(8))
+        # for axis in ['top', 'bottom', 'left', 'right']:
+        #    ax[0, 4].spines[axis].set_linewidth(5)
+        ax[1, 4].xaxis.set_major_formatter(formatter)
+        ax[1, 4].yaxis.set_major_formatter(formatter)
+        ax[1, 4].set_xlabel('[km]')
 
         # plot volume
         ax[0, 1].set_title('Volume [$km^3$]')
@@ -221,6 +249,8 @@ class Monitor:
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 3].legend()
 
+
+
         # draw randomly selected members of the ensemble
         random_id = random.sample(range(self.N), 4)
 
@@ -242,7 +272,7 @@ class Monitor:
 
             ax[2, i].set_title('Ensemble[%i]: surface elevation difference [m]' % id)
             pcm = ax[2, i].imshow(esti_usurf - true_usurf, cmap='seismic_r'
-                                  , vmin=-10, vmax=10
+                                  , vmin=-20, vmax=20
                                   , origin='lower')
 
             fig.colorbar(pcm, ax=ax[2, i ])

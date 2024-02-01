@@ -1,0 +1,30 @@
+{
+  "modules_preproc": ["oggm_shop", "optimize"],
+  "modules_process": [],
+  "modules_postprocess" : [],
+
+  "oggm_RGI_ID" : "RGI60-11.01238",
+  "oggm_thk_source" : "millan_ice_thickness",
+
+  "oggm_preprocess" : false,
+  "oggm_dx": 50,
+  "oggm_border": 10,
+
+  "opti_control": ["thk", "slidingco"],
+  "opti_regu_param_thk"			: 10,
+  "opti_regu_param_slidingco": 10,
+
+  "opti_cost": ["icemask","velsurf"],
+  "opti_velsurfobs_std" : 1,
+
+  "opti_nbitmax": 100,
+  "opti_step_size": 0.1,
+
+  "iflo_init_slidingco": 0.045,
+  "iflo_init_arrhenius": 78,
+  "iflo_save_model" : true,
+
+  "opti_vars_to_save": ["usurf", "thk", "slidingco", "velsurf_mag", "velsurfobs_mag", "divflux", "icemask", "arrhenius",
+  "thkobs", "topg"]
+}
+

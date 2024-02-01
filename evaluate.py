@@ -76,3 +76,7 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
     ax.set_ylim(0, 10)
     ax.legend()
     plt.savefig(f'Plots/{hyperparameter}.png')
+
+fig = px.scatter_3d(df, x='ensemble_size', y='area_ration_sample', z='dt',
+              color='MAE', range_color=(0,5))
+fig.show()

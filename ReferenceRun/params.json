@@ -9,8 +9,8 @@
                        "write_ncdf", "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.01,     0.005,  3000,      2.0],
-                        [ 2020,      0.01,     0.005,  3000,      2.0]
+                        [ 2000,      0.01,     0.005,  3000,      10],
+                        [ 2020,      0.01,     0.005,  3000,      10]
                       ],
   "iflo_emulator": "../Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",

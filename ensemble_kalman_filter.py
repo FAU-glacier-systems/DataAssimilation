@@ -29,6 +29,8 @@ from numpy import array, zeros, eye, dot
 from numpy.random import multivariate_normal
 from filterpy.common import pretty_str, outer_product_sum
 from concurrent.futures import ThreadPoolExecutor
+import tensorflow as tf
+
 
 
 class EnsembleKalmanFilter(object):
@@ -310,16 +312,25 @@ class EnsembleKalmanFilter(object):
         def compute_sigma(i, s):
             return self.fx(s, dt, i, year)
 
-        #with ThreadPoolExecutor() as executor:
-        #    results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
+        devices = tf.config.list_physical_devices('GPU')
+        if devices:
+            print("GPU is available.")
+            for i, s in enumerate(self.sigmas):
+                self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
 
-            # Update self.sigmas with the computed values
-        #for i, result in enumerate(results):
-        #    sigmas[i] = result
+        else:
+            print("No GPU found.")
+
+            with ThreadPoolExecutor() as executor:
+                results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
+
+                # Update self.sigmas with the computed values
+            for i, result in enumerate(results):
+                sigmas[i] = result
 
 
-        for i, s in enumerate(self.sigmas):
-            self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
+
+
 
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e

@@ -12,12 +12,7 @@ import rasterio
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from scipy.stats import qmc
-import tensorflow as tf
-devices = tf.config.list_physical_devices('GPU')
-if devices:
-    print("GPU is available.")
-else:
-    print("No GPU found.")
+
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -65,11 +60,13 @@ class DataAssimilation:
 
         # placeholder for ensemble surface elevation list
         self.ensemble_usurfs = []
+        self.ensemble_velo = []
 
     def start_ensemble(self):
         import monitor
         # initial surface elevation
         surf_x = self.true_glacier['usurf'][0].astype(float)
+        velo = self.true_glacier['velsurf_mag'][0].astype(float)
 
         # initial guess
         state_x = np.array([3000, 0.01, 0.002]).astype(float)
@@ -96,7 +93,8 @@ class DataAssimilation:
         ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
 
         for i in range(self.ensemble_size):
-            self.ensemble_usurfs.append(copy.copy(surf_x))  # + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
+            self.ensemble_usurfs.append(copy.copy(surf_x))
+            self.ensemble_velo.append(np.zeros_like(surf_x))# + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
             if not os.path.exists(f"Experiments/{i}"):
                 os.makedirs(f"Experiments/{i}")
             shutil.copy2("ReferenceRun/input_merged.nc", f"Experiments/{i}/init_input.nc")
@@ -107,7 +105,7 @@ class DataAssimilation:
         # create a Monitor for visualisation
         monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt, sythetic=self.synthetic)
         # draw plot of inital state
-        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs)
+        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
@@ -117,17 +115,19 @@ class DataAssimilation:
             ensemble.predict()
             print("Prediction time: ", time.time() - start_time)
             ensemble.year = year + dt
-            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
+            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
             ### UPDATE ###
             usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
+            velo = self.true_glacier['velsurf_mag'][int((ensemble.year - self.start_year))]
 
             real_observations = usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
             ensemble.update(real_observations)
             for i in range(self.ensemble_size):
-                self.ensemble_usurfs[i] = copy.copy(usurf)  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+                self.ensemble_usurfs[i] = copy.copy(usurf)
+                #self.ensemble_velo[i] = copy.copy(velo)# + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
-            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs)
+            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
         ### EVALUATION ###
         with open('ReferenceRun/params.json') as f:
@@ -157,8 +157,8 @@ class DataAssimilation:
                 "modules_postproc": ["write_ncdf"],
                 "smb_simple_array": [
                     ["time", "gradabl", "gradacc", "ela", "accmax"],
-                    [year, grad_abl, grad_acc, ela, 99],
-                    [year_next, grad_abl, grad_acc, ela, 99]],
+                    [year, grad_abl, grad_acc, ela, 10],
+                    [year_next, grad_abl, grad_acc, ela, 10]],
                 "iflo_emulator": "iceflow-model",
                 "lncd_input_file": f'input_.nc',
                 "wncd_output_file": f'output_{year}.nc',
@@ -191,8 +191,10 @@ class DataAssimilation:
         # update state x and return
         new_ds = xr.open_dataset(f'Experiments/{i}/output_{year}.nc')
         new_usurf = np.array(new_ds['usurf'][-1])
+        new_velo = np.array(new_ds['velsurf_mag'][-1])
 
         self.ensemble_usurfs[i] = new_usurf
+        self.ensemble_velo[i] = new_velo
 
         return state_x
 
@@ -219,8 +221,8 @@ if __name__ == '__main__':
     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
     random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
 
-    #sample = [[1000, 20]]
-    #random_dt = [5]
+    sample = [[22, 20]]
+    random_dt = [5]
 
     for (num_sample_points, ensemble_size), dt in zip(sample, random_dt):
         num_sample_points = num_sample_points**2

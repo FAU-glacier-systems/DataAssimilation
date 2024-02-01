@@ -54,7 +54,15 @@ icemask_variable = xr.DataArray(icemask_data, coords={'time': time_range, 'x': i
 smb = [np.zeros_like(elevation_change_crop)]*21
 smb_variable = xr.DataArray(smb, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
 
-merged_ds = input_ds.assign(thk=thk_variable, usurf=usurf_variable, topg=topg_variable, icemask=icemask_variable, smb=smb_variable)
+velo = [input_ds['velsurfobs_mag']]*21
+velo_variable = xr.DataArray(velo, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
+
+merged_ds = input_ds.assign(thk=thk_variable,
+                            usurf=usurf_variable,
+                            topg=topg_variable,
+                            icemask=icemask_variable,
+                            smb=smb_variable,
+                            velsurf_mag=velo_variable)
 
 merged_ds.to_netcdf('../Hugonnet/merged_dataset.nc')
 print()

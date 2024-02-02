@@ -2,8 +2,8 @@ import xarray as xr
 
 # Specify the input and output file paths
 optimized_file = '../Inversion/v2/geology-optimized.nc'
-input_file = '../ReferenceRun/default/input_saved.nc'
-output_file = '../ReferenceRun/v2/input_merged.nc'
+input_file = '../ReferenceSimulation/default/input_saved.nc'
+output_file = '../ReferenceSimulation/v2/input_merged.nc'
 
 opti_ds = xr.open_dataset(optimized_file)
 input_ds = xr.open_dataset(input_file)

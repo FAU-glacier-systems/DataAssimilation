@@ -14,7 +14,7 @@
                       ],
   "iflo_emulator": "../Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
-  "lncd_input_file": "input_merged.nc",
+  "lncd_input_file": "../Inversion/geology-optimized.nc",
 
   "time_start": 2000.0,
   "time_end": 2020.0,

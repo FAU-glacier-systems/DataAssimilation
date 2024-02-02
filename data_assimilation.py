@@ -29,9 +29,13 @@ class DataAssimilation:
         self.ensemble_size = ensemble_size
         self.dt = dt
 
-        self.true_glacier = netCDF4.Dataset('ReferenceRun/output.nc')
-        #self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
-        self.synthetic = True
+        ### Change between synthetic and real observations ###
+        self.synthetic = False
+        if self.synthetic:
+            self.true_glacier = netCDF4.Dataset('ReferenceSimulation/output.nc')
+        else:
+            self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
+
         # extract metadata from ground truth glacier
         self.year_range = np.array(self.true_glacier['time'])[::dt]
 
@@ -97,7 +101,7 @@ class DataAssimilation:
             self.ensemble_velo.append(np.zeros_like(surf_x))# + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
             if not os.path.exists(f"Experiments/{i}"):
                 os.makedirs(f"Experiments/{i}")
-            shutil.copy2("ReferenceRun/input_merged.nc", f"Experiments/{i}/init_input.nc")
+            shutil.copy2("Inversion/geology-optimized.nc", f"Experiments/{i}/init_input.nc")
             if os.path.exists(f"Experiments/{i}/iceflow-model"):
                 shutil.rmtree(f"Experiments/{i}/iceflow-model")
             shutil.copytree("Inversion/iceflow-model/", f"Experiments/{i}/iceflow-model")
@@ -125,12 +129,12 @@ class DataAssimilation:
             ensemble.update(real_observations)
             for i in range(self.ensemble_size):
                 self.ensemble_usurfs[i] = copy.copy(usurf)
-                #self.ensemble_velo[i] = copy.copy(velo)# + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+                self.ensemble_velo[i] = copy.copy(np.zeros_like(usurf))# + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
         ### EVALUATION ###
-        with open('ReferenceRun/params.json') as f:
+        with open('ReferenceSimulation/params.json') as f:
             params = json.load(f)
         smb = params['smb_simple_array']
         true_x = [smb[-1][3], smb[-1][1], smb[-1][2]]

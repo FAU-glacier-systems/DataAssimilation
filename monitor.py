@@ -41,7 +41,7 @@ class Monitor:
             self.hist_true_y.append([area, volume, outline_len])
 
         if sythetic:
-            with open('ReferenceRun/params.json') as f:
+            with open('ReferenceSimulation/params.json') as f:
                 params = json.load(f)
                 self.smb = params['smb_simple_array']
         else:

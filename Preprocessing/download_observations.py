@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
-from osgeo import gdal
+
 import xarray as xr
 import numpy as np
-import rasterio
 
 input_file = '../Inversion/geology-optimized.nc'
 input_ds = xr.open_dataset(input_file)
 
+"""
 input_tif_path = '../Hugonnet/N46E008_2000-01-01_2020-01-01_dhdt.tif'
 output_tif_path = '../Hugonnet/huggonnet20.tif'
 
@@ -25,27 +25,28 @@ gdal.Warp(output_tif_path, elevation_change, dstSRS=dst_crs,
 with rasterio.open(output_tif_path) as dataset:
     # Read the raster data
     elevation_change_crop = dataset.read(1)
-
+"""
 
 time_range = np.arange(2000, 2021)
 usurf_2000 = input_ds['usurf']
 thk_2000 = input_ds['thk']
 usurf_change = []
 thk_change = []
-bedrock = input_ds['topg']
-elevation_change_crop[elevation_change_crop==-9999] = 0
-elevation_change_crop = np.flip(elevation_change_crop, axis=0)
+bedrock = usurf_2000 - thk_2000
+elevation_change_crop = input_ds['dhdt']
+#elevation_change_crop[elevation_change_crop==-9999] = 0
+#elevation_change_crop = np.flip(elevation_change_crop, axis=0)
+
 for i,time in enumerate(time_range):
     print((i/20))
     usurf_change.append(usurf_2000 + elevation_change_crop*(i/20))
     thk_change.append(thk_2000 + elevation_change_crop*(i/20))
 
-
 usurf_variable = xr.DataArray(usurf_change, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
 thk_variable = xr.DataArray(thk_change, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
 
 
-topg_data = [input_ds['topg']]*21
+topg_data = [bedrock]*21
 topg_variable = xr.DataArray(topg_data, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
 
 icemask_data = [input_ds['icemask']]*21

@@ -2,7 +2,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_file = 'ReferenceRun/v2/output.nc'
+output_file = 'ReferenceSimulation/v2/output.nc'
 optimized_file = 'Inversion/v2/geology-optimized.nc'
 figure_path = "Inversion/v2/sliding_arrhenius.png"
 

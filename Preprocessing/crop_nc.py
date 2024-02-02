@@ -1,8 +1,8 @@
 import xarray as xr
 
 # Specify the input and output file paths
-input_file = '../ReferenceRun/input_saved.nc'
-output_file = '../ReferenceRun/input_cropped.nc'
+input_file = '../ReferenceSimulation/input_saved.nc'
+output_file = '../ReferenceSimulation/input_cropped.nc'
 
 # Crop and rescale the NetCDF file
 ds = xr.open_dataset(input_file)

@@ -16,10 +16,9 @@ cd..
 # 4. Data Assimilation
 python data_assimilation.py
 
-<<<<<<< HEAD
 python evaulate.py
 =======
 python evaluate.py
->>>>>>> a99125e0ac905f5a2970ef3ff423a4663d0f6e82
+
 
 

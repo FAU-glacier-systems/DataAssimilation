@@ -315,8 +315,8 @@ class EnsembleKalmanFilter(object):
         def compute_sigma(i, s):
             return self.fx(s, dt, i, year)
 
-        #devices = tf.config.list_physical_devices('GPU')
-        if True:
+        devices = tf.config.list_physical_devices('GPU')
+        if devices:
             print("GPU is available.")
             for i, s in enumerate(self.sigmas):
                 self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))

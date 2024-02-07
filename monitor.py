@@ -310,3 +310,6 @@ class Monitor:
                     self.initial_uncertainty))
             else:
                 plt.savefig(self.output_dir + 'report%i_predict.png' % year)
+
+    plt.clf()
+    plt.close()

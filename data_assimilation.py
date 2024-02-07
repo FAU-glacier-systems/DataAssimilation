@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
         number_of_experiments = 1000
         l_bounds = [10, 5, 1, 1]
-        u_bounds = [44, 50, 100, 100]
+        u_bounds = [39, 50, 100, 100]
         sampler = qmc.LatinHypercube(d=4)
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)

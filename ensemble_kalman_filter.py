@@ -221,7 +221,8 @@ class EnsembleKalmanFilter(object):
             sigma[0] += noise_ela
             sigma[1] += noise_grad_abl
             sigma[2] += noise_grad_acc
-            self.sigmas.append(sigma)
+            sigma = abs(sigma) # these SMB parameters are always positive
+            self.sigmas.append(abs(sigma))
 
         self.sigmas = np.ma.masked_array(self.sigmas)
         self.x = x
@@ -292,6 +293,7 @@ class EnsembleKalmanFilter(object):
         e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
             self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])
+            self.sigmas[i] = abs(self.sigmas[i])
 
         self.x = np.mean(self.sigmas, axis=0)
         self.P = self.P - dot(dot(self.K, self.S), self.K.T)

@@ -9,12 +9,12 @@
                        "write_ncdf", "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.01,     0.005,  3000,      10],
-                        [ 2020,      0.01,     0.005,  3000,      10]
+                        [ 2000,      0.009,     0.005,  3000,      100],
+                        [ 2020,      0.009,     0.005,  3000,      100]
                       ],
-  "iflo_emulator": "../Inversion/iceflow-model",
+  "iflo_emulator": "Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
-  "lncd_input_file": "../Inversion/geology-optimized.nc",
+  "lncd_input_file": "Inversion/geology-optimized.nc",
 
   "time_start": 2000.0,
   "time_end": 2020.0,

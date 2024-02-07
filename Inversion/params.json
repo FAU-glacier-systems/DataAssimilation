@@ -6,7 +6,7 @@
   "opti_control": ["thk", "usurf","slidingco"],
   "opti_cost": ["velsurf","icemask", "usurf", "thk", "divfluxfcz"],
 
-  "lncd_input_file": "../OGGM_shop/input_saved.nc",
+  "lncd_input_file": "OGGM_shop/input_saved.nc",
 
   "opti_usurfobs_std"			: 0.3,
   "opti_velsurfobs_std" 	: 0.25,

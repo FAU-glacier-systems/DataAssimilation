@@ -13,24 +13,27 @@ import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from scipy.stats import qmc
 
-
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-# np.random.seed(32)
+np.random.seed(32)
 
 
 class DataAssimilation:
-    def __init__(self, num_sample_points, ensemble_size, dt):
+    def __init__(self, num_sample_points, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset, initial_uncertainity, synthetic):
         # load true glacier
 
         self.num_sample_points = num_sample_points
         self.ensemble_size = ensemble_size
         self.dt = dt
+        self.initial_estimate = initial_estimate
+        self.initial_estimate_var = initial_estimate_var
+        self.initial_offset = initial_offset
+        self.initial_uncertainity = initial_uncertainity
 
         ### Change between synthetic and real observations ###
-        self.synthetic = False
+        self.synthetic = synthetic
         if self.synthetic:
             self.true_glacier = netCDF4.Dataset('ReferenceSimulation/output.nc')
         else:
@@ -73,32 +76,32 @@ class DataAssimilation:
         velo = self.true_glacier['velsurf_mag'][0].astype(float)
 
         # initial guess
-        state_x = np.array([3000, 0.01, 0.002]).astype(float)
+        state_x = np.array(self.initial_estimate).astype(float)
 
         # initialise prior (uncertainty) P
         prior_x = np.zeros((len(state_x), len(state_x)))
 
-        prior_x[0, 0] = 1000
-        prior_x[1, 1] = 0.00001
-        prior_x[2, 2] = 0.00001
+        prior_x[0, 0] = self.initial_estimate_var[0]
+        prior_x[1, 1] = self.initial_estimate_var[1]
+        prior_x[2, 2] = self.initial_estimate_var[2]
 
         # ensemble parameters
         # number of ensemble members
-        # dt = int(self.true_glacier['time'][1] - self.true_glacier["time"][0])  # time step [years]
         dim_z = len(self.observation_points)
 
         # create Ensemble Kalman Filter
         ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.dt, N=self.ensemble_size,
                         hx=self.generate_observation, fx=self.forward_model,
                         start_year=self.start_year)
+
         # update Process noise (Q) and Observation noise (R)
         ensemble.Q = np.zeros_like(prior_x)
-        #ensemble.Q[0,0] = 100
         ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
 
+        # make copy for parallel ensemble forward step
         for i in range(self.ensemble_size):
             self.ensemble_usurfs.append(copy.copy(surf_x))
-            self.ensemble_velo.append(np.zeros_like(surf_x))# + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
+            self.ensemble_velo.append(np.zeros_like(surf_x))  # + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
             if not os.path.exists(f"Experiments/{i}"):
                 os.makedirs(f"Experiments/{i}")
             shutil.copy2("Inversion/geology-optimized.nc", f"Experiments/{i}/init_input.nc")
@@ -107,9 +110,10 @@ class DataAssimilation:
             shutil.copytree("Inversion/iceflow-model/", f"Experiments/{i}/iceflow-model")
 
         # create a Monitor for visualisation
-        monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt, sythetic=self.synthetic)
+        monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
+                                  self.synthetic, self.initial_offset, self.initial_uncertainity)
         # draw plot of inital state
-        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo, )
 
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
@@ -129,7 +133,8 @@ class DataAssimilation:
             ensemble.update(real_observations)
             for i in range(self.ensemble_size):
                 self.ensemble_usurfs[i] = copy.copy(usurf)
-                self.ensemble_velo[i] = copy.copy(np.zeros_like(usurf))# + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+                self.ensemble_velo[i] = copy.copy(
+                    np.zeros_like(usurf))  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -143,11 +148,13 @@ class DataAssimilation:
                        esit_var=ensemble.P.tolist(),
                        ensemble_size=self.ensemble_size,
                        dt=int(dt),
+                       initial_offset = self.initial_offset,
+                       initial_uncertainity = self.initial_uncertainity,
                        map_resolution=int(self.map_resolution),
                        num_sample_points=self.num_sample_points,
                        )
 
-        with open(f"Experiments/result_{self.num_sample_points}_{dt}_{self.ensemble_size}.json", 'w') as f:
+        with open(f"Experiments/result_{self.num_sample_points}_{self.ensemble_size}_{self.dt}_{self.initial_offset}_{self.initial_uncertainity}.json", 'w') as f:
             json.dump(results, f, indent=4, separators=(',', ': '))
 
     def forward_model(self, state_x, dt, i, year):
@@ -161,8 +168,8 @@ class DataAssimilation:
                 "modules_postproc": ["write_ncdf"],
                 "smb_simple_array": [
                     ["time", "gradabl", "gradacc", "ela", "accmax"],
-                    [year, grad_abl, grad_acc, ela, 10],
-                    [year_next, grad_abl, grad_acc, ela, 10]],
+                    [year, grad_abl, grad_acc, ela, 100],
+                    [year_next, grad_abl, grad_acc, ela, 100]],
                 "iflo_emulator": "iceflow-model",
                 "lncd_input_file": f'input_.nc',
                 "wncd_output_file": f'output_{year}.nc',
@@ -218,18 +225,57 @@ class DataAssimilation:
 if __name__ == '__main__':
     from scipy.stats import qmc
 
-    number_of_experiments = 100
-    l_bounds = [10, 4]
-    u_bounds = [44, 30]
-    sampler = qmc.LatinHypercube(d=2)
-    sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
-    random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
+    synthetic = True
 
-    sample = [[22, 20]]
-    random_dt = [5]
+    if synthetic:
+        with open('ReferenceSimulation/params.json') as f:
+            params = json.load(f)
+            base_ela = params['smb_simple_array'][-1][3]
+            base_abl_grad = params['smb_simple_array'][-1][1]
+            base_acc_grad = params['smb_simple_array'][-1][2]
 
-    for (num_sample_points, ensemble_size), dt in zip(sample, random_dt):
-        num_sample_points = num_sample_points**2
-        print(num_sample_points, ensemble_size, int(dt))
-        DA = DataAssimilation(int(num_sample_points), int(ensemble_size), int(dt))
+        # [samplepoints^1/2, ensemble members, inital state, inital varianc]
+
+        number_of_experiments = 1000
+        l_bounds = [10, 5, 1, 1]
+        u_bounds = [44, 50, 100, 100]
+        sampler = qmc.LatinHypercube(d=4)
+        sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
+        random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
+        """
+        points = [22]*4
+        sizes = [30]*4
+        random_dt = [5]*4
+        offsets = [1000]
+        uncertainities = [100]
+        """
+
+    else:
+        base_ela = 3000
+        base_abl_grad = 0.0005
+        base_acc_grad = 0.0005
+
+        points = [22]*4
+        sizes = [20]*4
+        random_dt = [5]*4
+        offset = [1]
+        uncertainities = [10]
+
+    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
+    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
+
+        num_sample_points = num_sample_points ** 2
+
+        initial_est = [base_ela      + 1000 * (initial_offset/100),
+                       base_abl_grad + 0.01 * (initial_offset/100),
+                       base_acc_grad + 0.01 * (initial_offset/100)]
+
+        initial_est_var = [initial_uncertainity**2 * 100,
+                           initial_uncertainity**2 * 0.0000001,
+                           initial_uncertainity**2 * 0.0000001]
+
+        print(num_sample_points, ensemble_size, int(dt), initial_est, initial_est_var)
+
+        DA = DataAssimilation(int(num_sample_points), int(ensemble_size), int(dt), initial_est,
+                              initial_est_var, initial_offset, initial_uncertainity, synthetic)
         DA.start_ensemble()

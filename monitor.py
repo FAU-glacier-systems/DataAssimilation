@@ -8,13 +8,15 @@ import matplotlib.pyplot as plt
 import rasterio
 
 
-
 class Monitor:
-    def __init__(self, N, true_glacier, observation_points, dt, sythetic=True):
+    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty):
 
-        self.N = N
+        self.ensemble_size = N
         self.true_glacier = true_glacier
-        self.observation_points = observation_points
+        self.num_sample_points = num_sample_points
+        self.synthetic = synthetic
+        self.initial_offset = initial_offset
+        self.initial_uncertainty = initial_uncertainty
 
         self.year_range = np.array(true_glacier['time'])[::dt]
         self.dt = dt
@@ -26,9 +28,9 @@ class Monitor:
         self.map_shape_y = true_glacier.dimensions['y'].size
 
         self.bedrock = true_glacier['topg'][0]
-        #self.bedrock = self.bedrock[::-1]
+        # self.bedrock = self.bedrock[::-1]
         self.icemask = true_glacier['icemask'][0]
-        #self.icemask = self.icemask[::-1]
+        # self.icemask = self.icemask[::-1]
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
@@ -40,7 +42,7 @@ class Monitor:
             area, volume, outline_len = self.glacier_properties(usurf)
             self.hist_true_y.append([area, volume, outline_len])
 
-        if sythetic:
+        if synthetic:
             with open('ReferenceSimulation/params.json') as f:
                 params = json.load(f)
                 self.smb = params['smb_simple_array']
@@ -98,7 +100,8 @@ class Monitor:
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 0].set_title(' True surface elevation [m]')
         usurf_im = ax[0, 0].imshow(true_usurf, cmap='Blues_r', vmin=1500, vmax=3500, origin='lower')
-        usurf_ob = ax[0, 0].scatter(self.observation_points[:, 1], self.observation_points[:,0], edgecolors=colorscale(0), marker='s', c=None, facecolors='none')
+        usurf_ob = ax[0, 0].scatter(self.num_sample_points[:, 1], self.num_sample_points[:, 0],
+                                    edgecolors=colorscale(0), marker='s', c=None, facecolors='none')
         fig.colorbar(usurf_im, ax=ax[0, 0])
         plt.setp(ax[0, 0].spines.values(), color=colorscale(0))
         for axis in ['top', 'bottom', 'left', 'right']:
@@ -120,20 +123,20 @@ class Monitor:
 
         # draw true surface mass balance
         ax[0, 4].set_title('True surface velocity [m/yr]')
-        vel_im =ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
+        vel_im = ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
         fig.colorbar(vel_im, ax=ax[0, 4])
-        #plt.setp(ax[0, 4].spines.values(), color=colorscale(8))
-        #for axis in ['top', 'bottom', 'left', 'right']:
+        # plt.setp(ax[0, 4].spines.values(), color=colorscale(8))
+        # for axis in ['top', 'bottom', 'left', 'right']:
         #    ax[0, 4].spines[axis].set_linewidth(5)
         ax[0, 4].xaxis.set_major_formatter(formatter)
         ax[0, 4].yaxis.set_major_formatter(formatter)
         ax[0, 4].set_xlabel('[km]')
 
         # draw true surface mass balance
-        index = random.sample(range(self.N), 1)[0]
+        index = random.sample(range(self.ensemble_size), 1)[0]
         esti_velo = ensemble_velo[index]
         ax[1, 4].set_title(f'Ensemble velocity[{index}]')
-        #vel_im = ax[1, 4].imshow(esti_velo - true_vel, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
+        # vel_im = ax[1, 4].imshow(esti_velo - true_vel, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
         vel_im = ax[1, 4].imshow(esti_velo, cmap='magma', vmin=0, vmax=70, origin='lower')
 
         fig.colorbar(vel_im, ax=ax[1, 4])
@@ -146,7 +149,7 @@ class Monitor:
 
         # plot volume
         ax[0, 1].set_title('Volume [$km^3$]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[0, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 0],
                           color=colorscale(5), marker='o', markersize=10, markevery=[-1])
 
@@ -154,16 +157,16 @@ class Monitor:
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 0], axis=1),
                       label='estimation', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
 
-        ax[0, 1].plot(self.year_range, np.array(self.hist_true_y)[:,0], label='true',
-                      color=colorscale(0),  linewidth=0, marker='o', fillstyle='none', markersize=10)
+        ax[0, 1].plot(self.year_range, np.array(self.hist_true_y)[:, 0], label='true',
+                      color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        #ax[0, 1].set_ylim(1.43, 1.51)
+        # ax[0, 1].set_ylim(1.43, 1.51)
         ax[0, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 1].legend()
 
         # plot area
         ax[0, 2].set_title('Area [$km^2$]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[0, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 1],
                           color=colorscale(5), marker='o', markersize=10, markevery=[-1], )
 
@@ -174,13 +177,13 @@ class Monitor:
         ax[0, 2].plot(self.year_range, np.array(self.hist_true_y)[:, 1], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        #ax[0, 2].set_ylim(15.2, 16.6)
+        # ax[0, 2].set_ylim(15.2, 16.6)
         ax[0, 2].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 2].legend()
 
         # plot outline
         ax[0, 3].set_title('Outline length [$km$]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[0, 3].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 2],
                           color=colorscale(5), marker='o', markersize=10, markevery=[-1], )
 
@@ -191,13 +194,13 @@ class Monitor:
         ax[0, 3].plot(self.year_range, np.array(self.hist_true_y)[:, 2], label='true',
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
 
-        #ax[0, 3].set_ylim(26, 30)
+        # ax[0, 3].set_ylim(26, 30)
         ax[0, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[0, 3].legend()
 
         # plot ela
         ax[1, 1].set_title('Equilibrium line altitude [m]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[1, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 0],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
@@ -206,68 +209,70 @@ class Monitor:
                       color=colorscale(2), marker='X', markersize=10, markevery=[-1], linewidth=2)
 
         if not self.smb == None:
-            ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true', color=colorscale(8),
+            ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='true',
+                          color=colorscale(8),
                           linewidth=3, linestyle='-.')
 
-        #ax[1, 1].set_ylim(2800,3100)
+        ax[1, 1].set_ylim(2000, 4000)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 1].legend()
 
         # plot gradable
         ax[1, 2].set_title('Ablation gradient [m/yr/m]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[1, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 1],
                           color='gold',
                           marker='x', markersize=10, markevery=[-1])
 
-        ax[1, 2].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1], label='estimation',
+        ax[1, 2].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 1],
+                      label='estimation',
                       color=colorscale(2),
                       marker='X', markersize=10, markevery=[-1])
 
         if not self.smb == None:
             ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
-                          color=colorscale(8),linewidth=3, linestyle='-.')
+                          color=colorscale(8), linewidth=3, linestyle='-.')
 
-        #ax[1, 2].set_ylim(0.004, 0.014)
+        ax[1, 2].set_ylim(0, 0.04)
         ax[1, 2].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 2].legend()
 
         # plot gradacc
         ax[1, 3].set_title('Accumulation gradient [m/yr/m]')
-        for e in range(self.N):
+        for e in range(self.ensemble_size):
             ax[1, 3].plot(self.year_range_repeat[:len(self.hist_ensemble_x)], np.array(self.hist_ensemble_x)[:, e, 2],
                           color='gold', marker='x', markersize=10, markevery=[-1])
 
-        ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2], label='estimation',
-                      color=colorscale(2),marker='X', markersize=10, markevery=[-1])
+        ax[1, 3].plot(self.year_range_repeat[:len(self.hist_state_x)], np.array(self.hist_state_x)[:, 2],
+                      label='estimation',
+                      color=colorscale(2), marker='X', markersize=10, markevery=[-1])
 
         if not self.smb == None:
-            ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true', color=colorscale(8),
-                          linewidth=3,linestyle='-.')
+            ax[1, 3].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='true',
+                          color=colorscale(8),
+                          linewidth=3, linestyle='-.')
 
-        #ax[1, 3].set_ylim(0, 0.01)
+        ax[1, 3].set_ylim(0, 0.04)
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 3].legend()
 
-
-
         # draw randomly selected members of the ensemble
-        random_id = random.sample(range(self.N), 4)
+        random_id = random.sample(range(self.ensemble_size), 4)
 
         for i, (id, glacier) in enumerate(zip(random_id, [self.hist_ensemble_x[-1][idx] for idx in random_id])):
 
             # get surface elevation
-            #esti_usurf = glacier[4:].reshape(self.bedrock.shape).astype(np.float32)
+            # esti_usurf = glacier[4:].reshape(self.bedrock.shape).astype(np.float32)
             esti_usurf = ensemble_usurfs[i]
             # generate SMB field
-            ela, gradabl, gradacc = state_x[[0,1,2]]
+            ela, gradabl, gradacc = state_x[[0, 1, 2]]
             maxacc = 2.0
 
             smb = esti_usurf - ela
             smb *= np.where(np.less(smb, 0), gradabl, gradacc)
             smb = np.clip(smb, -100, maxacc)
 
-            smb = np.where((smb < 0)|(self.icemask > 0.5), smb, -10)
+            smb = np.where((smb < 0) | (self.icemask > 0.5), smb, -10)
             esti_smb = np.array(smb)
 
             ax[2, i].set_title('Ensemble[%i]: surface elevation difference [m]' % id)
@@ -275,7 +280,7 @@ class Monitor:
                                   , vmin=-20, vmax=20
                                   , origin='lower')
 
-            fig.colorbar(pcm, ax=ax[2, i ])
+            fig.colorbar(pcm, ax=ax[2, i])
             plt.setp(ax[2, i].spines.values(), color=colorscale(5))
             for axis in ['top', 'bottom', 'left', 'right']:
                 ax[2, i].spines[axis].set_linewidth(5)
@@ -283,18 +288,25 @@ class Monitor:
             ax[2, i].yaxis.set_major_formatter(formatter)
 
             ax[3, i].set_title('Ensemble[%i]: SMB [m/yr]' % id)
-            pcm = ax[3, i ].imshow(esti_smb - true_smb, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
-            fig.colorbar(pcm, ax=ax[3, i ])
+            pcm = ax[3, i].imshow(esti_smb - true_smb, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
+            fig.colorbar(pcm, ax=ax[3, i])
             plt.setp(ax[3, i].spines.values(), color='gold')
             for axis in ['top', 'bottom', 'left', 'right']:
                 ax[3, i].spines[axis].set_linewidth(5)
             ax[3, i].xaxis.set_major_formatter(formatter)
             ax[3, i].yaxis.set_major_formatter(formatter)
 
-        fig.suptitle(f"observation points: {len(self.observation_points)}, ensemble size: {self.N}, dt: {self.dt}", fontsize=32)
+        fig.suptitle(
+            f"observation points: {len(self.num_sample_points)}, ensemble size: {self.ensemble_size}, dt: {self.dt},\n initial_offset: {self.initial_offset}, initial_uncertainty: {self.initial_uncertainty}",
+            fontsize=32)
 
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
             plt.savefig(self.output_dir + 'report%i_update.png' % year)
         else:
-            plt.savefig(self.output_dir + 'report%i_predict.png' % year)
+            if year == 2020:
+                plt.savefig('%sreport_%s_%s_%s_%s_%s.png' % (
+                    self.output_dir, len(self.num_sample_points), self.ensemble_size, self.dt, self.initial_offset,
+                    self.initial_uncertainty))
+            else:
+                plt.savefig(self.output_dir + 'report%i_predict.png' % year)

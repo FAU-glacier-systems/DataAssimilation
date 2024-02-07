@@ -148,8 +148,8 @@ class DataAssimilation:
                        esit_var=ensemble.P.tolist(),
                        ensemble_size=self.ensemble_size,
                        dt=int(dt),
-                       initial_offset = self.initial_offset,
-                       initial_uncertainity = self.initial_uncertainity,
+                       initial_offset = int(self.initial_offset),
+                       initial_uncertainity = int(self.initial_uncertainity),
                        map_resolution=int(self.map_resolution),
                        num_sample_points=self.num_sample_points,
                        )

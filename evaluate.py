@@ -9,11 +9,16 @@ import xarray as xr
 # Specify the path to your JSON file
 
 results = []
-experiment_folder = 'Experiments/first_run/'
+experiment_folder = 'HPC/'
 for file in os.listdir(experiment_folder):
     if file.endswith('.json'):
+        print(file)
         with open(experiment_folder+file, 'r') as f:
-            results.append(json.load(f))
+            try:
+                results.append(json.load(f))
+            except:
+                print("Error")
+
 
 input_file = 'Inversion/geology-optimized.nc'
 input_ds = xr.open_dataset(input_file)

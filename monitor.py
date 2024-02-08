@@ -213,7 +213,7 @@ class Monitor:
                           color=colorscale(8),
                           linewidth=3, linestyle='-.')
 
-        ax[1, 1].set_ylim(2000, 4000)
+        ax[1, 1].set_ylim(2000, 4500)
         ax[1, 1].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 1].legend()
 
@@ -233,7 +233,7 @@ class Monitor:
             ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='true',
                           color=colorscale(8), linewidth=3, linestyle='-.')
 
-        ax[1, 2].set_ylim(0, 0.04)
+        ax[1, 2].set_ylim(0, 0.03)
         ax[1, 2].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 2].legend()
 
@@ -252,7 +252,7 @@ class Monitor:
                           color=colorscale(8),
                           linewidth=3, linestyle='-.')
 
-        ax[1, 3].set_ylim(0, 0.04)
+        ax[1, 3].set_ylim(0, 0.03)
         ax[1, 3].set_xticks(range(2000, 2020 + 1, 5))
         ax[1, 3].legend()
 

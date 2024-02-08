@@ -10,7 +10,7 @@
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
                         [ 2000,      0.009,     0.005,  3000,      100],
-                        [ 2020,      0.009,     0.005,  3000,      100]
+                        [ 2020,      0.009,     0.005,  3300,      100]
                       ],
   "iflo_emulator": "Inversion/iceflow-model",
   "oggm_RGI_ID": "RGI60-11.01238",
@@ -19,7 +19,9 @@
   "time_start": 2000.0,
   "time_end": 2020.0,
   "time_save": 1,
+  "time_step_max": 0.2,
   "iflo_retrain_emulator_freq" : 0,
+
 
   "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask", "usurf"]
 }

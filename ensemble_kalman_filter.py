@@ -32,8 +32,6 @@ from concurrent.futures import ThreadPoolExecutor
 import tensorflow as tf
 
 
-
-
 class EnsembleKalmanFilter(object):
     """
     This implements the ensemble Kalman filter (EnKF). The EnKF uses
@@ -210,7 +208,7 @@ class EnsembleKalmanFilter(object):
 
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
-        print("OWN ENKF IMPLEMENTATION")
+        print("Initialize ensemble")
         # self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
         for i in range(self.N):
@@ -221,7 +219,7 @@ class EnsembleKalmanFilter(object):
             sigma[0] += noise_ela
             sigma[1] += noise_grad_abl
             sigma[2] += noise_grad_acc
-            sigma = abs(sigma) # these SMB parameters are always positive
+            sigma = abs(sigma)  # these SMB parameters are always positive
             self.sigmas.append(abs(sigma))
 
         self.sigmas = np.ma.masked_array(self.sigmas)
@@ -273,7 +271,6 @@ class EnsembleKalmanFilter(object):
 
         z_mean = np.mean(sigmas_h, axis=0)
 
-
         P_zz = (outer_product_sum(sigmas_h - z_mean) / (N - 1)) + R
 
         P_xz = outer_product_sum(
@@ -285,10 +282,10 @@ class EnsembleKalmanFilter(object):
 
         P_zz_show = copy.copy(self.K)
         P_zz_show[P_zz_show == 0] = None
-        #fig, ax = plt.subplots(figsize=(10, 3))
-        #im = ax.imshow(P_zz_show, vmin=-1, vmax=1, cmap='coolwarm')
-        #plt.colorbar(im, orientation='horizontal', ax=ax)
-        #fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
+        # fig, ax = plt.subplots(figsize=(10, 3))
+        # im = ax.imshow(P_zz_show, vmin=-1, vmax=1, cmap='coolwarm')
+        # plt.colorbar(im, orientation='horizontal', ax=ax)
+        # fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
 
         e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
@@ -311,7 +308,6 @@ class EnsembleKalmanFilter(object):
         dt = self.dt
         year = int(self.year)
 
-
         def compute_sigma(i, s):
             return self.fx(s, dt, i, year)
 
@@ -331,10 +327,6 @@ class EnsembleKalmanFilter(object):
             for i, result in enumerate(results):
                 sigmas[i] = result
 
-
-
-
-
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e
 
@@ -344,6 +336,7 @@ class EnsembleKalmanFilter(object):
         # save prior
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
+
 
     def __repr__(self):
         return '\n'.join([

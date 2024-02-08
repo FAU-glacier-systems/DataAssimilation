@@ -164,18 +164,20 @@ class DataAssimilation:
         ela, grad_abl, grad_acc = state_x[[0, 1, 2]]
 
         data = {"modules_preproc": ["load_ncdf"],
-                "modules_process": ["smb_simple", "iceflow", "time", "thk"],
-                "modules_postproc": ["write_ncdf"],
+                "modules_process": ["smb_simple", "iceflow", "time", "thk", ],
+                "modules_postproc": ["write_ncdf", "print_info"],
                 "smb_simple_array": [
                     ["time", "gradabl", "gradacc", "ela", "accmax"],
                     [year, grad_abl, grad_acc, ela, 100],
                     [year_next, grad_abl, grad_acc, ela, 100]],
                 "iflo_emulator": "iceflow-model",
-                "lncd_input_file": f'input_.nc',
+                "lncd_input_file": 'input_.nc',
                 "wncd_output_file": f'output_{year}.nc',
                 "time_start": year,
-                "time_end": year_next,
-                "iflo_retrain_emulator_freq": 0}
+                "time_end": year_next+1,
+                "iflo_retrain_emulator_freq": 0,
+                "time_step_max": 0.2,
+                }
 
         with open(f'Experiments/{i}/params.json', 'w') as f:
             json.dump(data, f, indent=4, separators=(',', ': '))
@@ -230,25 +232,26 @@ if __name__ == '__main__':
     if synthetic:
         with open('ReferenceSimulation/params.json') as f:
             params = json.load(f)
-            base_ela = params['smb_simple_array'][-1][3]
-            base_abl_grad = params['smb_simple_array'][-1][1]
-            base_acc_grad = params['smb_simple_array'][-1][2]
+            base_ela = params['smb_simple_array'][1][3]
+            base_abl_grad = params['smb_simple_array'][1][1]
+            base_acc_grad = params['smb_simple_array'][1][2]
 
         # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
-        number_of_experiments = 1000
-        l_bounds = [10, 5, 1, 1]
+        """
+        number_of_experiments = 100
+        l_bounds = [10, 5, -100, -100]
         u_bounds = [39, 50, 100, 100]
         sampler = qmc.LatinHypercube(d=4)
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
         points = [22]*4
-        sizes = [30]*4
+        sizes = [5]*4
         random_dt = [5]*4
-        offsets = [1000]
-        uncertainities = [100]
-        """
+        offsets = [0, 0, 100, 100]
+        uncertainities = [0, 100, 100, 0,]
+
 
     else:
         base_ela = 3000
@@ -258,11 +261,11 @@ if __name__ == '__main__':
         points = [22]*4
         sizes = [20]*4
         random_dt = [5]*4
-        offset = [1]
+        offset = []
         uncertainities = [10]
 
-    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
-    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
+    for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
+    #for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
 
         num_sample_points = num_sample_points ** 2
 
@@ -271,8 +274,8 @@ if __name__ == '__main__':
                        base_acc_grad + 0.01 * (initial_offset/100)]
 
         initial_est_var = [initial_uncertainity**2 * 100,
-                           initial_uncertainity**2 * 0.0000001,
-                           initial_uncertainity**2 * 0.0000001]
+                           initial_uncertainity**2 * 0.00000001,
+                           initial_uncertainity**2 * 0.00000001]
 
         print(num_sample_points, ensemble_size, int(dt), initial_est, initial_est_var)
 

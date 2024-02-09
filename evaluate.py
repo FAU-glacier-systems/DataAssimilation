@@ -40,8 +40,8 @@ df = pd.DataFrame({'MAE': MAE,
                    'ensemble_size': ensemble_size,
                    'dt': dt,})
 
-df = df[df['MAE'] <= 10]
-df = df[df['area_ration_sample']>0.02]
+#df = df[df['MAE'] <= 10]
+#df = df[df['area_ration_sample']>0.02]
 for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
     # Create histogram
     if hyperparameter == 'dt':

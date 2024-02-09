@@ -17,7 +17,7 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-np.random.seed(32)
+np.random.seed(1233)
 
 
 class DataAssimilation:
@@ -96,6 +96,10 @@ class DataAssimilation:
 
         # update Process noise (Q) and Observation noise (R)
         ensemble.Q = np.zeros_like(prior_x)
+        ensemble.Q[0, 0] = 1000
+        ensemble.Q[1, 1] = 0.0000001
+        ensemble.Q[2, 2] = 0.0000001
+
         ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
 
         # make copy for parallel ensemble forward step
@@ -152,6 +156,8 @@ class DataAssimilation:
                        initial_uncertainity = int(self.initial_uncertainity),
                        map_resolution=int(self.map_resolution),
                        num_sample_points=self.num_sample_points,
+                       initial_estimate=[int(i) for i in self.initial_estimate],
+                       initial_estimate_var = [int(j) for j in self.initial_estimate_var]
                        )
 
         with open(f"Experiments/result_{self.num_sample_points}_{self.ensemble_size}_{self.dt}_{self.initial_offset}_{self.initial_uncertainity}.json", 'w') as f:
@@ -238,19 +244,19 @@ if __name__ == '__main__':
 
         # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
-        """
         number_of_experiments = 100
-        l_bounds = [10, 5, -100, -100]
+        l_bounds = [10, 5, 0, 0]
         u_bounds = [39, 50, 100, 100]
         sampler = qmc.LatinHypercube(d=4)
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
         points = [22]*4
-        sizes = [5]*4
+        sizes = [30]*4
         random_dt = [5]*4
-        offsets = [0, 0, 100, 100]
-        uncertainities = [0, 100, 100, 0,]
+        offsets = [100, 0, 100, 0]
+        uncertainities = [0, 100, 100, 0]
+        """
 
 
     else:
@@ -261,17 +267,18 @@ if __name__ == '__main__':
         points = [22]*4
         sizes = [20]*4
         random_dt = [5]*4
-        offset = []
+        offset = [0]
         uncertainities = [10]
 
-    for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
-    #for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
+    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
+    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
 
         num_sample_points = num_sample_points ** 2
+        sign = np.random.choice([-1,1], 3)
 
-        initial_est = [base_ela      + 1000 * (initial_offset/100),
-                       base_abl_grad + 0.01 * (initial_offset/100),
-                       base_acc_grad + 0.01 * (initial_offset/100)]
+        initial_est = [base_ela      + 1000 * (initial_offset/100) * sign[0],
+                       base_abl_grad + 0.01 * (initial_offset/100) * sign[1],
+                       base_acc_grad + 0.01 * (initial_offset/100) * sign[2]]
 
         initial_est_var = [initial_uncertainity**2 * 100,
                            initial_uncertainity**2 * 0.00000001,

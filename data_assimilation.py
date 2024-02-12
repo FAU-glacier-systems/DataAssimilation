@@ -271,8 +271,8 @@ if __name__ == '__main__':
         offset = [0]
         uncertainities = [10]
 
-    for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
-    #for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
+    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
+    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
 
         num_sample_points = num_sample_points ** 2
         sign = np.random.choice([-1,1], 3)

@@ -180,7 +180,7 @@ class DataAssimilation:
                 "lncd_input_file": 'input_.nc',
                 "wncd_output_file": f'output_{year}.nc',
                 "time_start": year,
-                "time_end": year_next+1,
+                "time_end": year_next,
                 "iflo_retrain_emulator_freq": 0,
                 "time_step_max": 0.2,
                 }

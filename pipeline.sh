@@ -19,7 +19,7 @@ conda activate igm_p3.11
 python data_assimilation.py
 
 # 4. Evaluation
-python evaulate.py
+python evaluate.py
 
 
 

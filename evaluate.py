@@ -24,25 +24,30 @@ input_file = 'Inversion/geology-optimized.nc'
 input_ds = xr.open_dataset(input_file)
 icemask = input_ds['icemask']
 
-area = np.sum(icemask) * 50 ** 2 / 1000 ** 2
+area = np.sum(icemask) * 100 ** 2 / 1000 ** 2
 
 MAE = [abs(exp['true_parameter'][0]-exp['esti_parameter'][0]) for exp in results]
 VAR = [exp['esit_var'][0][0] for exp in results]
 ensemble_size = [exp['ensemble_size'] for exp in results]
 dt = [exp['dt'] for exp in results]
+offset = [exp['initial_offset'] for exp in results]
+uncertainty = [exp['initial_uncertainity'] for exp in results]
+
 num_sample_points = [exp['num_sample_points'] for exp in results]
-area_ration_sample = np.array([(num_p * 50 ** 2 / 1000 ** 2)/area for num_p in num_sample_points])
+#area_ration_sample = np.array([(num_p * 100 ** 2 / 1000 ** 2)/area for num_p in num_sample_points])
 
 
 df = pd.DataFrame({'MAE': MAE,
-                   'area_ration_sample':area_ration_sample,
+                   'area_ration_sample':num_sample_points,
                    'VAR': VAR,
                    'ensemble_size': ensemble_size,
-                   'dt': dt,})
+                   'dt': dt,
+                   'initial_offset':offset,
+                   'initial_uncertainity':uncertainty})
 
-#df = df[df['MAE'] <= 10]
+df = df[df['MAE'] <= 200]
 #df = df[df['area_ration_sample']>0.02]
-for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
+for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', 'initial_offset', 'initial_uncertainity']:
     # Create histogram
     if hyperparameter == 'dt':
         bin_centers = [1,2,4,5,10,20.5]
@@ -70,9 +75,9 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
     ax.fill_between(bin_centers, bin_means-bin_std, bin_means+bin_std, alpha=0.3, color='C0')
     ax.plot(bin_centers, bin_means, label='Mean Absolute Error')
     ax.scatter(df[hyperparameter], df['MAE'], alpha=0.2)
-    ax.fill_between(bin_centers, bin_var_mean-bin_var_std, bin_var_mean+bin_var_std, alpha=0.3, color='C1')
-    ax.plot(bin_centers, bin_var_mean, label='Ensemble Variance')
-    ax.scatter(df[hyperparameter], df['VAR'], alpha=0.2)
+    #ax.fill_between(bin_centers, bin_var_mean-bin_var_std, bin_var_mean+bin_var_std, alpha=0.3, color='C1')
+    #ax.plot(bin_centers, bin_var_mean, label='Ensemble Variance')
+    #ax.scatter(df[hyperparameter], df['VAR'], alpha=0.2)
     if hyperparameter == 'area_ration_sample':
         ax.set_xlabel("Percentage of sampled area [%]")
     else:
@@ -82,6 +87,6 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', ]:
     ax.legend()
     plt.savefig(f'Plots/{hyperparameter}.png')
 
-fig = px.scatter_3d(df, x='ensemble_size', y='area_ration_sample', z='dt',
-              color='MAE', )
-fig.show()
+#fig = px.scatter_3d(df, x='ensemble_size', y='area_ration_sample', z='dt',
+#              color='MAE', range_color=[0, 500])
+#fig.show()

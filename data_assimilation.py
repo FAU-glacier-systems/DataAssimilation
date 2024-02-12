@@ -17,7 +17,7 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-np.random.seed(1233)
+#np.random.seed(1233)
 
 
 class DataAssimilation:
@@ -244,6 +244,7 @@ if __name__ == '__main__':
 
         # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
+        """
         number_of_experiments = 100
         l_bounds = [10, 5, 0, 0]
         u_bounds = [39, 50, 100, 100]
@@ -251,12 +252,12 @@ if __name__ == '__main__':
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
-        points = [22]*4
-        sizes = [30]*4
-        random_dt = [5]*4
+        points = [22]
+        sizes = [30]
+        random_dt = [5]
         offsets = [100, 0, 100, 0]
         uncertainities = [0, 100, 100, 0]
-        """
+
 
 
     else:
@@ -270,8 +271,8 @@ if __name__ == '__main__':
         offset = [0]
         uncertainities = [10]
 
-    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
-    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
+    for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
+    #for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
 
         num_sample_points = num_sample_points ** 2
         sign = np.random.choice([-1,1], 3)

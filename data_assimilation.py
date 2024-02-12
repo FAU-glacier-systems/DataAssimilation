@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
         # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
-        """
+
         number_of_experiments = 100
         l_bounds = [10, 5, 0, 0]
         u_bounds = [39, 50, 100, 100]
@@ -257,7 +257,7 @@ if __name__ == '__main__':
         random_dt = [5]
         offsets = [100, 0, 100, 0]
         uncertainities = [0, 100, 100, 0]
-
+        """
 
 
     else:

@@ -31,6 +31,7 @@ class Monitor:
         # self.bedrock = self.bedrock[::-1]
         self.icemask = true_glacier['icemask'][0]
         # self.icemask = self.icemask[::-1]
+        self.random_id = random.sample(range(self.ensemble_size), 4)
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
@@ -86,7 +87,7 @@ class Monitor:
             return str(x * self.res / 1000)
 
         # create canvas
-        fig, ax = plt.subplots(4, 5, figsize=(20, 20))
+        fig, ax = plt.subplots(4, 4, figsize=(20, 20))
         # define colorscale
         colorscale = plt.get_cmap('tab20')
 
@@ -133,9 +134,9 @@ class Monitor:
         ax[0, 4].set_xlabel('[km]')
 
         # draw true surface mass balance
-        index = random.sample(range(self.ensemble_size), 1)[0]
-        esti_velo = ensemble_velo[index]
-        ax[1, 4].set_title(f'Ensemble velocity[{index}]')
+
+        esti_velo = ensemble_velo[self.random_id[0]]
+        ax[1, 4].set_title(f'Ensemble velocity[{self.random_id[0]}]')
         # vel_im = ax[1, 4].imshow(esti_velo - true_vel, cmap='seismic_r', vmin=-10, vmax=10, origin='lower')
         vel_im = ax[1, 4].imshow(esti_velo, cmap='magma', vmin=0, vmax=70, origin='lower')
 
@@ -257,9 +258,9 @@ class Monitor:
         ax[1, 3].legend()
 
         # draw randomly selected members of the ensemble
-        random_id = random.sample(range(self.ensemble_size), 4)
 
-        for i, (id, glacier) in enumerate(zip(random_id, [self.hist_ensemble_x[-1][idx] for idx in random_id])):
+
+        for i, (id, glacier) in enumerate(zip(self.random_id, [self.hist_ensemble_x[-1][idx] for idx in self.random_id])):
 
             # get surface elevation
             # esti_usurf = glacier[4:].reshape(self.bedrock.shape).astype(np.float32)
@@ -308,8 +309,8 @@ class Monitor:
                 plt.savefig('%sreport_%s_%s_%s_%s_%s.png' % (
                     self.output_dir, len(self.num_sample_points), self.ensemble_size, self.dt, self.initial_offset,
                     self.initial_uncertainty))
-            else:
-                plt.savefig(self.output_dir + 'report%i_predict.png' % year)
+
+            plt.savefig(self.output_dir + 'report%i_predict.pdf' % year, format='pdf')
 
     plt.clf()
     plt.close()

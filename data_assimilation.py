@@ -70,7 +70,7 @@ class DataAssimilation:
         self.ensemble_velo = []
 
     def start_ensemble(self):
-        import monitor
+        import monitor_small
         # initial surface elevation
         surf_x = self.true_glacier['usurf'][0].astype(float)
         velo = self.true_glacier['velsurf_mag'][0].astype(float)
@@ -114,7 +114,7 @@ class DataAssimilation:
             shutil.copytree("Inversion/iceflow-model/", f"Experiments/{i}/iceflow-model")
 
         # create a Monitor for visualisation
-        monitor = monitor.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
+        monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
                                   self.synthetic, self.initial_offset, self.initial_uncertainity)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo, )
@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
         # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
-
+        """
         number_of_experiments = 100
         l_bounds = [10, 5, 0, 0]
         u_bounds = [39, 50, 100, 100]
@@ -252,12 +252,13 @@ if __name__ == '__main__':
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
-        points = [22]
-        sizes = [30]
-        random_dt = [5]
-        offsets = [100, 0, 100, 0]
-        uncertainities = [0, 100, 100, 0]
-        """
+        points = 20
+        sizes = 30
+        random_dt = [2]
+        offsets = 50
+        uncertainities = 84
+        sample = [[points, sizes, offsets, uncertainities]]
+
 
 
     else:

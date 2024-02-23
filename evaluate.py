@@ -46,10 +46,11 @@ df = pd.DataFrame({'MAE': MAE,
                    'initial_uncertainity':uncertainty})
 
 
-#df = df[df['dt'] <= 5]
+#df = df[df['MAE'] <= 100]
 #df = df[df['area_ration_sample']>0.02]
-df_best = df[df['MAE'] <= 100]
+df_best = df[df['MAE'] <= 10]
 print(len(df))
+print(len(df_best))
 
 for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', 'initial_offset', 'initial_uncertainity']:
     # Create histogram
@@ -90,7 +91,7 @@ for hyperparameter in ['dt', 'area_ration_sample', 'ensemble_size', 'initial_off
     else:
         ax.set_xlabel(hyperparameter)
     ax.set_ylabel('Error of ELA estimate')
-    ax.set_ylim(0, 1000)
+    ax.set_ylim(0, 100)
     ax.set_xticks(range(len(bin_centers)+1), ["0"]+["{:.2f}".format(bin) for bin in bin_centers])
     ax.legend()
     plt.savefig(f'Plots/{hyperparameter}.png')

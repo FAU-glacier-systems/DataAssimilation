@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
         """
         number_of_experiments = 100
-        l_bounds = [10, 5, 0, 0]
+        l_bounds = [100, 5, 0, 0]
         u_bounds = [39, 50, 100, 100]
         sampler = qmc.LatinHypercube(d=4)
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)

@@ -75,6 +75,7 @@ for i, hyperparameter in enumerate(['ensemble_size', 'area_ration_sample', 'dt',
         counts, edges = np.histogram(df[hyperparameter], bins=bins)
         bin_centers = (edges[:-1] + edges[1:]) / 2
 
+
     # Calculate the average value for each bin
     bin_list = [df['MAE'][(df[hyperparameter] >= edges[i]) & (df[hyperparameter] < edges[i + 1])] for i in
                 range(len(edges) - 1)]
@@ -89,27 +90,33 @@ for i, hyperparameter in enumerate(['ensemble_size', 'area_ration_sample', 'dt',
     #bin_var_std = np.array([bins.std() for bins in bin_avgs_var])
     print(hyperparameter)
     print([len(bin) for bin in bin_list])
+    bplot = ax[i].boxplot(bin_list, showmeans=True, showfliers=False, patch_artist=True,
+                  meanprops=dict(marker='o', markeredgecolor='none', markersize=8,
+                                 markerfacecolor=mean_color),
+                  medianprops=dict(linestyle='-', linewidth=4, color=median_color))
     ax[i].plot(np.arange(1, len(bin_centers) + 1), bin_var_mean, color=var_color, marker='v')
     ax[i].plot(np.arange(1,len(bin_centers)+1), bin_means,  color=mean_color)
     ax[i].plot(np.arange(1, len(bin_centers) + 1), bin_medians, color=median_color)
-    ax[i].boxplot(bin_list, showmeans=True, showfliers = False,
-                  meanprops=dict(marker='o', markeredgecolor='none', markersize=8,
-                      markerfacecolor=mean_color),
-                  medianprops=dict(linestyle='-', linewidth=4, color=median_color))
 
+    for patch in bplot['boxes']:
+        patch.set_facecolor(colorscale(15))
 
     if hyperparameter == 'area_ration_sample':
-        ax[i].set_xticks(np.arange(1, len(bin_list)+1), ["%i" % (bin*100) for bin in bin_centers])
+        labels = sum([["%i" % (edge*100), ""] for edge in edges], [])[:-1]
+        ax[i].set_xticks(np.arange(0.5, len(bin_list) + 1, 0.5), labels)
         ax[i].set_xlabel("Covered area [%]")
     elif hyperparameter == 'dt':
         ax[i].set_xticks(np.arange(1, len(bin_list)+1), bin_centers)
         ax[i].set_xlabel("Observation interval [years]")
     elif hyperparameter == 'ensemble_size':
-        ax[i].set_xticks(np.arange(1, len(bin_list) + 1), ["%i" % (bin) for bin in bin_centers])
+        edges = [5,10,15,20,25,30,35,40,45,50]
+        labels = sum([["%i" % edge, ""] for edge in edges], [])[:-1]
+        ax[i].set_xticks(np.arange(0.5, len(bin_list) + 1, 0.5), labels)
         ax[i].set_xlabel('Ensemble size')
 
     ax[i].set_ylabel('Normalized Mean Absolute Error')
-    ax[i].set_ylim(0, 0.15)
+    ax[i].set_ylim(0, 0.2)
+    ax[i].set_yticks(np.arange(0, 0.21, 0.02),)
     #ax[i].set_yscale('log')
     mean_legend = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=mean_color, markersize=10, label='Mean')
     median_legend = plt.Line2D([0], [0], color=median_color, lw=4, label='Median')
@@ -128,19 +135,12 @@ fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 5),layout="tight")
 
 for i, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty']):
     # Create histogram
-    if hyperparameter == 'dt':
-        bin_centers = [1, 2, 4, 5, 10, 20.5]
-        edges = [0, 1.5, 3, 4.5, 7.5, 15, 20.5]
 
-    elif hyperparameter == 'area_ration_sample':
-        edges = np.arange(10, 39)[::3] ** 2
-        edges = np.array([(num_p * 100 ** 2 / 1000 ** 2) / area for num_p in edges])
-        bin_centers = edges[:-1]
 
-    else:
-        bins = np.linspace(df[hyperparameter].min(), df[hyperparameter].max(), 10)
-        counts, edges = np.histogram(df[hyperparameter], bins=bins)
-        bin_centers = (edges[:-1] + edges[1:]) / 2
+    bins = np.linspace(df[hyperparameter].min(), df[hyperparameter].max(), 11)
+    counts, edges = np.histogram(df[hyperparameter], bins=bins)
+    edges = np.array([0,10,20,30,40,50,60,70,80,90, 100])
+    bin_centers = (edges[:-1] + edges[1:]) / 2
 
     # Calculate the average value for each bin
     bin_list = [df['MAE'][(df[hyperparameter] >= edges[i]) & (df[hyperparameter] < edges[i + 1])] for i in
@@ -156,21 +156,30 @@ for i, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty']):
     print(hyperparameter)
     print([len(bin) for bin in bin_list])
 
+    bplot = ax[i].boxplot(bin_list, showmeans=True, showfliers=False, patch_artist=True,
+                          meanprops=dict(marker='o', markeredgecolor='none', markersize=8,
+                                         markerfacecolor=mean_color),
+                          medianprops=dict(linestyle='-', linewidth=4, color=median_color))
     ax[i].plot(np.arange(1, len(bin_centers) + 1), bin_var_mean, color=var_color, marker='v')
     ax[i].plot(np.arange(1,len(bin_centers)+1), bin_means,  color=mean_color)
     ax[i].plot(np.arange(1,len(bin_centers)+1), bin_medians, color = median_color)
-    ax[i].boxplot(bin_list, showmeans=True, showfliers = False,
-                  meanprops=dict(marker='o', markeredgecolor='none', markersize=8,
-                      markerfacecolor=mean_color),
-                  medianprops=dict(linestyle='-', linewidth=4, color=median_color))
+
+
+
+    for patch in bplot['boxes']:
+        patch.set_facecolor(colorscale(15))
+
     if hyperparameter == 'initial_offset':
-        ax[i].set_xticks(np.arange(1, len(bin_list) + 1), ["%i" % bin for bin in bin_centers])
+
         ax[i].set_xlabel("Initial offset [%]")
     elif hyperparameter == 'initial_uncertainty':
-        ax[i].set_xticks(np.arange(1, len(bin_list) + 1), ["%i" % bin for bin in bin_centers])
+
         ax[i].set_xlabel("Initial uncertainty [%]")
 
-    ax[i].set_ylim(0, 0.15)
+    labels = sum([["%i"%edge, ""] for edge in edges], [])[:-1]
+    ax[i].set_xticks(np.arange(0.5, len(bin_list)+1,0.5), labels)
+    ax[i].set_ylim(0, 0.2)
+    ax[i].set_yticks(np.arange(0, 0.21, 0.02), )
     ax[i].set_ylabel('Normalized Mean Absolute Error')
     mean_legend = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=mean_color, markersize=10, label='Mean')
     var_legend = plt.Line2D([0], [0], marker='v', color='w', markerfacecolor=var_color, markersize=10, label='Final Uncertainty')

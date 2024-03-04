@@ -17,11 +17,11 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-#np.random.seed(1233)
+np.random.seed(1233)
 
 
 class DataAssimilation:
-    def __init__(self, num_sample_points, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset, initial_uncertainity, synthetic):
+    def __init__(self, num_sample_points, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset, initial_uncertainity, specal_noise, synthetic):
         # load true glacier
 
         self.num_sample_points = num_sample_points
@@ -31,6 +31,7 @@ class DataAssimilation:
         self.initial_estimate_var = initial_estimate_var
         self.initial_offset = initial_offset
         self.initial_uncertainity = initial_uncertainity
+        self.specal_noise = specal_noise
 
         ### Change between synthetic and real observations ###
         self.synthetic = synthetic
@@ -100,11 +101,17 @@ class DataAssimilation:
         ensemble.Q[1, 1] = 0.0000001
         ensemble.Q[2, 2] = 0.0000001
 
-        ensemble.R = np.eye(dim_z)  # high means high confidence in state and low confidence in observation
+        ensemble.R = np.eye(dim_z) * specal_noise# high means high confidence in state and low confidence in observation
+
+        usurfs = np.array(self.true_glacier['usurf'])
+        self.noisey_usruf = usurfs + np.random.normal(0, specal_noise, size=usurfs.shape)
 
         # make copy for parallel ensemble forward step
         for i in range(self.ensemble_size):
-            self.ensemble_usurfs.append(copy.copy(surf_x))
+            ensemble_noisey_usruf = self.noisey_usruf[0] + np.random.normal(0, specal_noise,
+                                                                            size= self.noisey_usruf[0].shape)
+
+            self.ensemble_usurfs.append(ensemble_noisey_usruf)
             self.ensemble_velo.append(np.zeros_like(surf_x))  # + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
             if not os.path.exists(f"Experiments/{i}"):
                 os.makedirs(f"Experiments/{i}")
@@ -113,11 +120,15 @@ class DataAssimilation:
                 shutil.rmtree(f"Experiments/{i}/iceflow-model")
             shutil.copytree("Inversion/iceflow-model/", f"Experiments/{i}/iceflow-model")
 
+        self.ensemble_usurfs = np.array(self.ensemble_usurfs)
+        self.ensemble_velo = np.array(self.ensemble_velo)
+
+
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
-                                  self.synthetic, self.initial_offset, self.initial_uncertainity)
+                                  self.synthetic, self.initial_offset, self.initial_uncertainity, self.noisey_usruf)
         # draw plot of inital state
-        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo, )
+        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
@@ -127,18 +138,25 @@ class DataAssimilation:
             ensemble.predict()
             print("Prediction time: ", time.time() - start_time)
             ensemble.year = year + dt
-            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
-            ### UPDATE ###
+            # get observations
             usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
             velo = self.true_glacier['velsurf_mag'][int((ensemble.year - self.start_year))]
 
-            real_observations = usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
-            ensemble.update(real_observations)
-            for i in range(self.ensemble_size):
-                self.ensemble_usurfs[i] = copy.copy(usurf)
-                self.ensemble_velo[i] = copy.copy(
-                    np.zeros_like(usurf))  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+            noisey_usurf = self.noisey_usruf[int((ensemble.year - self.start_year))]
+            sampled_observations = noisey_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
+
+            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+
+            ### UPDATE ###
+
+            observation_noise = np.random.normal(0, specal_noise, size=(ensemble_size,) + noisey_usurf.shape)
+            e_r = observation_noise[:,self.observation_points[:, 0], self.observation_points[:, 1]]
+
+            ensemble.update(sampled_observations, e_r)
+            ### UPDATE ###
+
+            self.ensemble_usurfs =  np.array([noisey_usurf + noise for noise in observation_noise]) # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -190,27 +208,25 @@ class DataAssimilation:
 
         # create new input.nc
         input_file = f"Experiments/{i}/init_input.nc"
-        ds = xr.open_dataset(input_file)
+        with xr.open_dataset(input_file) as ds:
+            # load usurf from ensemble
+            usurf = self.ensemble_usurfs[i]
+            ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
 
-        # load usurf from ensemble
-        usurf = self.ensemble_usurfs[i]
-        ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
+            thickness = usurf - self.bedrock
+            thk_da = xr.DataArray(thickness, dims=('y', 'x'))
+            ds['thk'] = thk_da
 
-        thickness = usurf - self.bedrock
-        thk_da = xr.DataArray(thickness, dims=('y', 'x'))
-        ds['thk'] = thk_da
-
-        # ds_drop = ds.drop_vars("thkinit")
-        ds.to_netcdf(f'Experiments/{i}/input_.nc')
-        ds.close()
+            # ds_drop = ds.drop_vars("thkinit")
+            ds.to_netcdf(f'Experiments/{i}/input_.nc')
 
         ### IGM RUN ###
         subprocess.run(["igm_run"], cwd=f'Experiments/{i}', shell=True)
 
         # update state x and return
-        new_ds = xr.open_dataset(f'Experiments/{i}/output_{year}.nc')
-        new_usurf = np.array(new_ds['usurf'][-1])
-        new_velo = np.array(new_ds['velsurf_mag'][-1])
+        with xr.open_dataset(f'Experiments/{i}/output_{year}.nc') as new_ds:
+            new_usurf = np.array(new_ds['usurf'][-1])
+            new_velo = np.array(new_ds['velsurf_mag'][-1])
 
         self.ensemble_usurfs[i] = new_usurf
         self.ensemble_velo[i] = new_velo
@@ -252,12 +268,14 @@ if __name__ == '__main__':
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
-        points = 20
-        sizes = 30
-        random_dt = [2]
-        offsets = 50
-        uncertainities = 84
+        points = 22
+        sizes = 20
+        random_dt = [4]
+        offsets = 0
+        uncertainities = 50
+        specal_noise = 1
         sample = [[points, sizes, offsets, uncertainities]]
+
 
 
 
@@ -289,5 +307,5 @@ if __name__ == '__main__':
         print(num_sample_points, ensemble_size, int(dt), initial_est, initial_est_var)
 
         DA = DataAssimilation(int(num_sample_points), int(ensemble_size), int(dt), initial_est,
-                              initial_est_var, initial_offset, initial_uncertainity, synthetic)
+                              initial_est_var, initial_offset, initial_uncertainity, specal_noise, synthetic)
         DA.start_ensemble()

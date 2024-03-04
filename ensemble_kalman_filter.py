@@ -234,7 +234,7 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update(self, z, R=None):
+    def update(self, z, e_r, R=None, ):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -287,7 +287,7 @@ class EnsembleKalmanFilter(object):
         # plt.colorbar(im, orientation='horizontal', ax=ax)
         # fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
 
-        e_r = multivariate_normal(self._mean_z, R, N)
+        #e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
             self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])
             self.sigmas[i] = abs(self.sigmas[i])

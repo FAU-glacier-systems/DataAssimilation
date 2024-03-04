@@ -12,7 +12,7 @@ import matplotlib.font_manager as fm
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty):
+    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty, noise_observation):
 
         self.ensemble_size = N
         self.true_glacier = true_glacier
@@ -32,7 +32,7 @@ class Monitor:
 
         self.bedrock = true_glacier['topg'][0]
         # self.bedrock = self.bedrock[::-1]
-        self.icemask = true_glacier['icemask'][0]
+        self.icemask = np.array(true_glacier['icemask'][0])
         # self.icemask = self.icemask[::-1]
         self.random_id = random.sample(range(self.ensemble_size), 4)
 
@@ -40,13 +40,22 @@ class Monitor:
         self.hist_ensemble_x = []
         self.hist_ensemble_y = []
         self.hist_true_y = []
-        self.low_point = self.num_sample_points[10]
-        self.high_point = self.num_sample_points[-10]
+        self.low_point = self.num_sample_points[5]
+        self.high_point = self.num_sample_points[-5]
+        self.noise_observation = noise_observation
+
+
+        self.hist_true_y_noisy = []
 
         for year in self.year_range:
             usurf = true_glacier['usurf'][int((year - self.year_range[0]))]
-            area, volume, outline_len = self.glacier_properties(usurf)
-            self.hist_true_y.append([area, volume, outline_len])
+            area, low_point, high_point = self.glacier_properties(usurf)
+            area_n, low_point_n, high_point_n = self.glacier_properties(noise_observation[int((year - self.year_range[0]))])
+            self.hist_true_y.append([area, low_point, high_point])
+            self.hist_true_y_noisy.append([area_n, low_point_n, high_point_n])
+        self.hist_true_y = np.array(self.hist_true_y)
+        self.hist_true_y_noisy = np.array(self.hist_true_y_noisy)
+
 
         if synthetic:
             with open('ReferenceSimulation/params.json') as f:
@@ -66,8 +75,8 @@ class Monitor:
                  and thickness map
         """
         thk_map = usurf - self.bedrock
-        icemask = thk_map > 2
-        volume = np.sum(thk_map) * self.res ** 2 / 1000 ** 3
+        #icemask = np.logical_and(self.icemask,)
+        volume = np.sum(thk_map[self.icemask==1]) * (self.res ** 2) / (1000 ** 3)
         low_sample = usurf[self.low_point[0], self.low_point[1]]
         high_sample = usurf[self.high_point[0], self.high_point[1]]
 
@@ -90,7 +99,7 @@ class Monitor:
             return str(int(x * self.res / 1000))
 
         # create canvas
-        fig, ax = plt.subplots(2, 4, figsize=(20, 10), layout="tight")
+        fig, ax = plt.subplots(2, 5, figsize=(25, 10), layout="tight")
         #fig.subplots_adjust(left=0.01, right=0.99, top=0.9, bottom=0.1)
 
         # define colorscale
@@ -106,14 +115,16 @@ class Monitor:
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 3].set_title(f'Surface Elevation in {int(year)}')
 
-        usurf_im = ax[0, 3].imshow(true_usurf, cmap='Blues_r', vmin=1500, vmax=3500, origin='lower')
+        observations = self.noise_observation[int((year - self.start_year))]
+
+        usurf_im = ax[0, 3].imshow(observations, cmap='Blues_r', vmin=1500, vmax=3500, origin='lower')
         usurf_ob = ax[0, 3].scatter(self.num_sample_points[:, 1], self.num_sample_points[:, 0],
                                     edgecolors='gray', marker='s', c=None, facecolors='none', s=10, label='Covered Area')
 
         ax[0, 3].scatter(self.high_point[1], self.high_point[0],
-                         edgecolors=colorscale(0), marker='^', c=None, facecolors=colorscale(0), s=100, label='High Point')
+                         edgecolors='black', marker='^', c=None, facecolors='white', lw=2,  s=120, label='High Point')
         ax[0, 3].scatter(self.low_point[1], self.low_point[0],
-                         edgecolors=colorscale(0), marker='v', c=None, facecolors=colorscale(0), s=100,label='Low Point')
+                         edgecolors='black', marker='v', c=None, facecolors=colorscale(0),lw=2, s=120,label='Low Point')
 
         ax[0, 3].legend()
         cbar = fig.colorbar(usurf_im, ax=ax[0, 3], location='right')
@@ -140,19 +151,43 @@ class Monitor:
         ax[1, 3].set_xlabel('$km$')
         ax[1, 3].set_yticks([])
 
+        # draw true velocity
+        ax[0, 4].set_title(f'Velocity in {int(year)}')
+        smb_im = ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
+        fig.colorbar(smb_im, ax=ax[0, 4], location='right')
+        ax[0, 4].set_title('[$m/yr$]', loc='right', x=1.15)
+        ax[0, 4].xaxis.set_major_formatter(formatter)
+        ax[0, 4].yaxis.set_major_formatter(formatter)
+        ax[0, 4].set_xlabel('$km$')
+        ax[0, 4].set_yticks([])
+
+        # draw true velocity
+        ax[1, 4].set_title(f'Mean Ensemble Velocity in {int(year)}')
+        smb_im = ax[1, 4].imshow(np.mean(ensemble_velo, axis=0), cmap='magma', vmin=0, vmax=70, origin='lower')
+        fig.colorbar(smb_im, ax=ax[1, 4], location='right')
+        ax[1, 4].set_title('[$m/yr$]', loc='right', x=1.15)
+        ax[1, 4].xaxis.set_major_formatter(formatter)
+        ax[1, 4].yaxis.set_major_formatter(formatter)
+        ax[1, 4].set_xlabel('$km$')
+        ax[1, 4].set_yticks([])
 
         # plot volume
         ax[0, 0].set_title('Volume')
         for e in range(self.ensemble_size):
             ax[0, 0].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 0],
-                          color=colorscale(5), marker='o', markersize=10, markevery=[-1])
+                          color=colorscale(5), marker='o', markersize=10, markevery=[-1], zorder=1)
 
         ax[0, 0].plot(self.year_range_repeat[:len(self.hist_ensemble_y)],
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 0], axis=1),
-                      label='Ensemble Kalman Filter', color=colorscale(4), marker='o', markersize=10, markevery=[-1], linewidth=2)
+                      label='Ensemble Kalman Filter', color=colorscale(4), marker='o', markersize=10,
+                      markevery=[-1], linewidth=2,  zorder=2)
 
-        ax[0, 0].plot(self.year_range, np.array(self.hist_true_y)[:, 0], label='Observable Parameter',
-                      color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10)
+        ax[0, 0].plot(self.year_range,self.hist_true_y[:, 0], label='True Variable',
+                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
+
+        ax[0, 0].plot(self.year_range, self.hist_true_y_noisy[:,0], label="Noisy Observation",
+                      color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10, markeredgewidth=2,
+                      zorder=3)
 
         # ax[0, 1].set_ylim(1.43, 1.51)
         ax[0, 0].set_xticks(range(2000, 2020 + 1, 4))
@@ -166,14 +201,19 @@ class Monitor:
         ax[0, 1].set_title('Elevation of Low Point')
         for e in range(self.ensemble_size):
             ax[0, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 1],
-                          color=colorscale(5), marker='v', markersize=10, markevery=[-1], )
+                          color=colorscale(5), marker='v', markersize=10, markevery=[-1], zorder=1)
 
         ax[0, 1].plot(self.year_range_repeat[:len(self.hist_ensemble_y)],
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 1], axis=1),
-                      label='Ensemble Kalman Filter', color=colorscale(4), marker='v', markersize=10, markevery=[-1], linewidth=2)
+                      label='Ensemble Kalman Filter', color=colorscale(4), marker='v', markersize=10, markevery=[-1],
+                      linewidth=2, zorder=2)
 
-        ax[0, 1].plot(self.year_range, np.array(self.hist_true_y)[:, 1], label='Observable Parameter',
-                      color=colorscale(0), linewidth=0, marker='v', fillstyle='none', markersize=10)
+        ax[0, 1].plot(self.year_range, self.hist_true_y[:, 1], label='Observable Parameter',
+                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
+
+        ax[0, 1].plot(self.year_range, self.hist_true_y_noisy[:,1], label="Noisy Observation",
+                      color=colorscale(0), linewidth=0, marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
+                      zorder=3)
 
         ax[0, 1].set_xticks(range(2000, 2020 + 1, 4))
         ax[0, 1].set_xlabel('$year$')
@@ -185,15 +225,19 @@ class Monitor:
         ax[0, 2].set_title('Elevation of High Point')
         for e in range(self.ensemble_size):
             ax[0, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 2],
-                          color=colorscale(5), marker='^', markersize=10, markevery=[-1], )
+                          color=colorscale(5), marker='^', markersize=10, markevery=[-1], zorder=1)
 
         ax[0, 2].plot(self.year_range_repeat[:len(self.hist_ensemble_y)],
                       np.mean(np.array(self.hist_ensemble_y)[:, :, 2], axis=1),
-                      label='Ensemble Kalman Filter', color=colorscale(4), marker='^', markersize=10, markevery=[-1], linewidth=2)
+                      label='Ensemble Kalman Filter', color=colorscale(4), marker='^', markersize=10, markevery=[-1],
+                      linewidth=2, zorder=2)
 
-        ax[0, 2].plot(self.year_range, np.array(self.hist_true_y)[:, 2], label='Observable Parameter',
-                      color=colorscale(0), linewidth=0, marker='^', fillstyle='none', markersize=10)
+        ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label='Observable Parameter',
+                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
 
+        ax[0, 2].plot(self.year_range, self.hist_true_y_noisy[:,2], label="Noisy Observation",
+                      color=colorscale(0), linewidth=0, marker='^', fillstyle='none', markersize=10, markeredgewidth=2,
+                      zorder=3)
 
         ax[0, 2].set_xticks(range(2000, 2020 + 1, 4))
         ax[0, 2].set_xlabel('$year$')

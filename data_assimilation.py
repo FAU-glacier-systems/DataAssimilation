@@ -201,7 +201,6 @@ class DataAssimilation:
                        bias= int(self.bias),
                        specal_noise = int(self.specal_noise),
                        map_resolution=int(self.map_resolution),
-                       num_sample_points=self.num_sample_points,
                        covered_area = self.covered_area,
                        initial_estimate=[int(i) for i in self.initial_estimate],
                        initial_estimate_var=[int(j) for j in self.initial_estimate_var]

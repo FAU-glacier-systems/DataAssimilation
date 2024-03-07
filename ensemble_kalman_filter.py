@@ -30,7 +30,6 @@ from numpy.random import multivariate_normal
 from filterpy.common import pretty_str, outer_product_sum
 from concurrent.futures import ThreadPoolExecutor
 import tensorflow as tf
-from timeout_decorator import timeout
 
 class EnsembleKalmanFilter(object):
     """

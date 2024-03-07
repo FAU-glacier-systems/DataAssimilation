@@ -19,7 +19,7 @@ for more information.
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
+import threading
 import copy
 from copy import deepcopy
 
@@ -30,7 +30,7 @@ from numpy.random import multivariate_normal
 from filterpy.common import pretty_str, outer_product_sum
 from concurrent.futures import ThreadPoolExecutor
 import tensorflow as tf
-
+from timeout_decorator import timeout
 
 class EnsembleKalmanFilter(object):
     """
@@ -234,7 +234,7 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update(self, z, R=None):
+    def update(self, z, e_r, R=None, ):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -287,7 +287,7 @@ class EnsembleKalmanFilter(object):
         # plt.colorbar(im, orientation='horizontal', ax=ax)
         # fig.savefig("Plots/Kalman_Gain" + str(self.year) + ".png")
 
-        e_r = multivariate_normal(self._mean_z, R, N)
+        #e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
             self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])
             self.sigmas[i] = abs(self.sigmas[i])
@@ -308,10 +308,12 @@ class EnsembleKalmanFilter(object):
         dt = self.dt
         year = int(self.year)
 
-        def compute_sigma(i, s):
-            return self.fx(s, dt, i, year)
+
+
+
 
         devices = tf.config.list_physical_devices('GPU')
+
         if devices:
             print("GPU is available.")
             for i, s in enumerate(self.sigmas):
@@ -320,12 +322,17 @@ class EnsembleKalmanFilter(object):
         else:
             print("No GPU found.")
 
-            with ThreadPoolExecutor() as executor:
-                results = list(executor.map(lambda args: compute_sigma(*args), enumerate(sigmas)))
 
-                # Update self.sigmas with the computed values
-            for i, result in enumerate(results):
-                sigmas[i] = result
+            threads = []
+            for i, s in enumerate(self.sigmas):
+                thread = threading.Thread(target=self.fx, args=(s, dt, i, year))
+                thread.start()
+                threads.append(thread)
+
+                # Wait for all threads to complete
+            for thread in threads:
+                thread.join(timeout=60)
+
 
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e

@@ -1,5 +1,5 @@
 {
-  "modules_preproc": ["oggm_shop"],
+  "modules_preproc": ["load_ncdf"],
   "modules_process": ["smb_simple",
                       "iceflow",
                       "time",

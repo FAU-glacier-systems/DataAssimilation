@@ -16,14 +16,15 @@ from scipy.stats import qmc
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-
 np.random.seed(1233)
 
 
 class DataAssimilation:
-    def __init__(self, num_sample_points, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset, initial_uncertainity, specal_noise, synthetic):
+    def __init__(self, num_sample_points, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,
+                 initial_uncertainity, specal_noise, bias, synthetic):
         # load true glacier
 
+        self.noisey_usruf = None
         self.num_sample_points = num_sample_points
         self.ensemble_size = ensemble_size
         self.dt = dt
@@ -32,6 +33,7 @@ class DataAssimilation:
         self.initial_offset = initial_offset
         self.initial_uncertainity = initial_uncertainity
         self.specal_noise = specal_noise
+        self.bias = bias
 
         ### Change between synthetic and real observations ###
         self.synthetic = synthetic
@@ -101,15 +103,31 @@ class DataAssimilation:
         ensemble.Q[1, 1] = 0.0000001
         ensemble.Q[2, 2] = 0.0000001
 
-        ensemble.R = np.eye(dim_z) * specal_noise# high means high confidence in state and low confidence in observation
+        ensemble.R = np.eye(
+            dim_z) * specal_noise  # high means high confidence in state and low confidence in observation
 
         usurfs = np.array(self.true_glacier['usurf'])
-        self.noisey_usruf = usurfs + np.random.normal(0, specal_noise, size=usurfs.shape)
+        self.noisey_usruf = []
+        for usurf in usurfs:
+            min = np.min(usurf[self.icemask==1])
+            max = np.max(usurf[self.icemask==1])
+            elevation_bias = self.icemask * usurf
+            elevation_bias[self.icemask==1] = (elevation_bias[self.icemask==1]-min)/(max-min)
+            white_noise = np.random.normal(0, self.specal_noise, size=usurf.shape)
+
+            noisy_usurf =  usurf + elevation_bias* self.bias + white_noise
+
+            self.noisey_usruf.append(noisy_usurf)
+
+
+        self.noisey_usruf = np.array(self.noisey_usruf)
+
+
 
         # make copy for parallel ensemble forward step
         for i in range(self.ensemble_size):
             ensemble_noisey_usruf = self.noisey_usruf[0] + np.random.normal(0, specal_noise,
-                                                                            size= self.noisey_usruf[0].shape)
+                                                                            size=self.noisey_usruf[0].shape)
 
             self.ensemble_usurfs.append(ensemble_noisey_usruf)
             self.ensemble_velo.append(np.zeros_like(surf_x))  # + np.random.normal(0, np.sqrt(ensemble.R[0,0])))
@@ -123,10 +141,10 @@ class DataAssimilation:
         self.ensemble_usurfs = np.array(self.ensemble_usurfs)
         self.ensemble_velo = np.array(self.ensemble_velo)
 
-
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
-                                  self.synthetic, self.initial_offset, self.initial_uncertainity, self.noisey_usruf)
+                                        self.synthetic, self.initial_offset, self.initial_uncertainity,
+                                        self.noisey_usruf)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -151,16 +169,19 @@ class DataAssimilation:
             ### UPDATE ###
 
             observation_noise = np.random.normal(0, specal_noise, size=(ensemble_size,) + noisey_usurf.shape)
-            e_r = observation_noise[:,self.observation_points[:, 0], self.observation_points[:, 1]]
+
+            e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
 
             ensemble.update(sampled_observations, e_r)
+            print(ensemble.P)
             ### UPDATE ###
 
-            self.ensemble_usurfs =  np.array([noisey_usurf + noise for noise in observation_noise]) # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+            self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in
+                                             observation_noise])  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
-        ### EVALUATION ###
+        ### EVALUATION ###k
         with open('ReferenceSimulation/params.json') as f:
             params = json.load(f)
         smb = params['smb_simple_array']
@@ -170,15 +191,17 @@ class DataAssimilation:
                        esit_var=ensemble.P.tolist(),
                        ensemble_size=self.ensemble_size,
                        dt=int(dt),
-                       initial_offset = int(self.initial_offset),
-                       initial_uncertainity = int(self.initial_uncertainity),
+                       initial_offset=int(self.initial_offset),
+                       initial_uncertainity=int(self.initial_uncertainity),
                        map_resolution=int(self.map_resolution),
                        num_sample_points=self.num_sample_points,
                        initial_estimate=[int(i) for i in self.initial_estimate],
-                       initial_estimate_var = [int(j) for j in self.initial_estimate_var]
+                       initial_estimate_var=[int(j) for j in self.initial_estimate_var]
                        )
 
-        with open(f"Experiments/result_{self.num_sample_points}_{self.ensemble_size}_{self.dt}_{self.initial_offset}_{self.initial_uncertainity}.json", 'w') as f:
+        with open(
+                f"Experiments/result_{self.num_sample_points}_{self.ensemble_size}_{self.dt}_{self.initial_offset}_{self.initial_uncertainity}.json",
+                'w') as f:
             json.dump(results, f, indent=4, separators=(',', ': '))
 
     def forward_model(self, state_x, dt, i, year):
@@ -214,6 +237,7 @@ class DataAssimilation:
             ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
 
             thickness = usurf - self.bedrock
+            thk_da = xr.DataArray(thickness, dims=('y', 'x'))
             thk_da = xr.DataArray(thickness, dims=('y', 'x'))
             ds['thk'] = thk_da
 
@@ -268,44 +292,42 @@ if __name__ == '__main__':
         sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
         random_dt = np.random.choice([1, 2, 4, 5, 10, 20], size=number_of_experiments)
         """
-        points = 22
-        sizes = 20
-        random_dt = [4]
-        offsets = 0
-        uncertainities = 50
-        specal_noise = 1
+        points = 20
+        sizes = 25
+        random_dt = [2]
+        offsets = 50
+        uncertainities = 84
+        specal_noise = 0.1
+        bias = 0
         sample = [[points, sizes, offsets, uncertainities]]
-
-
-
 
     else:
         base_ela = 3000
         base_abl_grad = 0.0005
         base_acc_grad = 0.0005
 
-        points = [22]*4
-        sizes = [20]*4
-        random_dt = [5]*4
+        points = [22] * 4
+        sizes = [20] * 4
+        random_dt = [5] * 4
         offset = [0]
         uncertainities = [10]
 
-    #for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt, offsets, uncertainities):
-    for (num_sample_points, ensemble_size,  initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
-
+    # for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt,
+    # offsets, uncertainities):
+    for (num_sample_points, ensemble_size, initial_offset, initial_uncertainity), dt in zip(sample, random_dt):
         num_sample_points = num_sample_points ** 2
-        sign = np.random.choice([-1,1], 3)
+        sign = np.random.choice([-1, 1], 3)
 
-        initial_est = [base_ela      + 1000 * (initial_offset/100) * sign[0],
-                       base_abl_grad + 0.01 * (initial_offset/100) * sign[1],
-                       base_acc_grad + 0.01 * (initial_offset/100) * sign[2]]
+        initial_est = [base_ela + 1000 * (initial_offset / 100) * sign[0],
+                       base_abl_grad + 0.01 * (initial_offset / 100) * sign[1],
+                       base_acc_grad + 0.01 * (initial_offset / 100) * sign[2]]
 
-        initial_est_var = [initial_uncertainity**2 * 100,
-                           initial_uncertainity**2 * 0.00000001,
-                           initial_uncertainity**2 * 0.00000001]
+        initial_est_var = [initial_uncertainity ** 2 * 100,
+                           initial_uncertainity ** 2 * 0.00000001,
+                           initial_uncertainity ** 2 * 0.00000001]
 
         print(num_sample_points, ensemble_size, int(dt), initial_est, initial_est_var)
 
         DA = DataAssimilation(int(num_sample_points), int(ensemble_size), int(dt), initial_est,
-                              initial_est_var, initial_offset, initial_uncertainity, specal_noise, synthetic)
+                              initial_est_var, initial_offset, initial_uncertainity, specal_noise, bias, synthetic)
         DA.start_ensemble()

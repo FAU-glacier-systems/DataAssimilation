@@ -62,7 +62,7 @@ colorscale = plt.get_cmap('tab20')
 mean_color = colorscale(6)
 median_color = colorscale(0)
 var_color = colorscale(2)
-fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(5, 7), layout="tight")
+fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(4, 7), layout="tight")
 for i, hyperparameter in enumerate(['ensemble_size', 'area_ration_sample', 'dt',]):
 
     # Create histogram

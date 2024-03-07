@@ -99,7 +99,7 @@ class Monitor:
             return str(int(x * self.res / 1000))
 
         # create canvas
-        fig, ax = plt.subplots(2, 5, figsize=(25, 10), layout="tight")
+        fig, ax = plt.subplots(2, 4, figsize=(17, 8.5), layout="tight")
         #fig.subplots_adjust(left=0.01, right=0.99, top=0.9, bottom=0.1)
 
         # define colorscale
@@ -140,9 +140,10 @@ class Monitor:
 
         # draw true surface mass balance
         ax[1, 3].set_title(f'Surface Mass Balance in {int(year)}')
+        #true_smb[self.icemask==0] = None
         smb_im = ax[1, 3].imshow(true_smb, cmap='RdBu', vmin=-10, vmax=10, origin='lower')
         fig.colorbar(smb_im, ax=ax[1, 3], location='right', ticks=range(-10, 11, 5) )
-        ax[1, 3].set_title('[$m/yr$]', loc='right', x=1.15)
+        ax[1, 3].set_title('[$m/yr$]', loc='right', x=1.25)
         plt.setp(ax[1, 3].spines.values(), color=colorscale(8))
         for axis in ['top', 'bottom', 'left', 'right']:
             ax[1, 3].spines[axis].set_linewidth(5)
@@ -152,6 +153,7 @@ class Monitor:
         ax[1, 3].set_yticks([])
 
         # draw true velocity
+        """
         ax[0, 4].set_title(f'Velocity in {int(year)}')
         smb_im = ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
         fig.colorbar(smb_im, ax=ax[0, 4], location='right')
@@ -170,7 +172,7 @@ class Monitor:
         ax[1, 4].yaxis.set_major_formatter(formatter)
         ax[1, 4].set_xlabel('$km$')
         ax[1, 4].set_yticks([])
-
+        """
         # plot volume
         ax[0, 0].set_title('Volume')
         for e in range(self.ensemble_size):
@@ -182,10 +184,10 @@ class Monitor:
                       label='Ensemble Kalman Filter', color=colorscale(4), marker='o', markersize=10,
                       markevery=[-1], linewidth=2,  zorder=2)
 
-        ax[0, 0].plot(self.year_range,self.hist_true_y[:, 0], label='True Variable',
-                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
+        #ax[0, 0].plot(self.year_range,self.hist_true_y[:, 0], label='True Variable',
+        #              color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
 
-        ax[0, 0].plot(self.year_range, self.hist_true_y_noisy[:,0], label="Noisy Observation",
+        ax[0, 0].plot(self.year_range, self.hist_true_y_noisy[:,0], label="Observation",
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=3)
 
@@ -208,10 +210,10 @@ class Monitor:
                       label='Ensemble Kalman Filter', color=colorscale(4), marker='v', markersize=10, markevery=[-1],
                       linewidth=2, zorder=2)
 
-        ax[0, 1].plot(self.year_range, self.hist_true_y[:, 1], label='Observable Parameter',
-                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
+        #ax[0, 1].plot(self.year_range, self.hist_true_y[:, 1], label='True Variable',
+        #              color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
 
-        ax[0, 1].plot(self.year_range, self.hist_true_y_noisy[:,1], label="Noisy Observation",
+        ax[0, 1].plot(self.year_range, self.hist_true_y_noisy[:,1], label="Observation",
                       color=colorscale(0), linewidth=0, marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=3)
 
@@ -232,10 +234,10 @@ class Monitor:
                       label='Ensemble Kalman Filter', color=colorscale(4), marker='^', markersize=10, markevery=[-1],
                       linewidth=2, zorder=2)
 
-        ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label='Observable Parameter',
-                      color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
+        #ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label='Observable Parameter',
+        #              color=colorscale(1), linewidth=3, linestyle='-.', zorder=0)
 
-        ax[0, 2].plot(self.year_range, self.hist_true_y_noisy[:,2], label="Noisy Observation",
+        ax[0, 2].plot(self.year_range, self.hist_true_y_noisy[:,2], label="Observation",
                       color=colorscale(0), linewidth=0, marker='^', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=3)
 

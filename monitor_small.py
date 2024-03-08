@@ -12,7 +12,7 @@ import matplotlib.font_manager as fm
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty, noise_observation):
+    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty, noise_observation, specal_noise, bias):
 
         self.ensemble_size = N
         self.true_glacier = true_glacier
@@ -43,6 +43,8 @@ class Monitor:
         self.low_point = self.num_sample_points[5]
         self.high_point = self.num_sample_points[-5]
         self.noise_observation = noise_observation
+        self.specal_noise = specal_noise
+        self.bias = bias
 
 
         self.hist_true_y_noisy = []
@@ -327,14 +329,15 @@ class Monitor:
         """
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
-            plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
+            pass#plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
 
         else:
             plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
             if year == self.year_range[-1]:
-                plt.savefig('%sreport_%s_%s_%s_%s_%s.pdf' % (
-                    self.output_dir, len(self.num_sample_points), self.ensemble_size, self.dt, self.initial_offset,
-                    self.initial_uncertainty), format='pdf')
+                plt.savefig(self.output_dir+f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.pdf", format='pdf')
+                plt.savefig(self.output_dir +
+                    f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.png",
+                    format='png')
 
     plt.clf()
     plt.close()

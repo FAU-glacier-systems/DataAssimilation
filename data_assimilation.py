@@ -12,6 +12,7 @@ import rasterio
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from scipy.stats import qmc
+from filterpy.common import pretty_str, outer_product_sum
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -149,7 +150,7 @@ class DataAssimilation:
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
                                         self.synthetic, self.initial_offset, self.initial_uncertainity,
-                                        self.noisey_usruf)
+                                        self.noisey_usruf, self.specal_noise,self.bias,)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -177,7 +178,17 @@ class DataAssimilation:
 
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
 
-            ensemble.update(sampled_observations, e_r)
+            try:
+                ensemble.update(sampled_observations, e_r)
+            except:
+                print("ERROR")
+                print(self.bias, self.specal_noise, self.dt, self.covered_area, ensemble.sigmas)
+                # transform sigma points into measurement space
+                sigmas_h = [ensemble.hx(ensemble.sigmas[i], i) for i in range(self.ensemble_size)]
+                z_mean = np.mean(sigmas_h, axis=0)
+                P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
+                np.save("P_zz.npy", P_zz)
+                return
             print(ensemble.P)
             ### UPDATE ###
 

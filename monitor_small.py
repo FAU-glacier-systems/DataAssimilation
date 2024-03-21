@@ -12,7 +12,8 @@ import matplotlib.font_manager as fm
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty, noise_observation, specal_noise, bias):
+    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty,
+                 noise_observation, specal_noise, bias, hyperparameter):
 
         self.ensemble_size = N
         self.true_glacier = true_glacier
@@ -45,6 +46,7 @@ class Monitor:
         self.noise_observation = noise_observation
         self.specal_noise = specal_noise
         self.bias = bias
+        self.hyperparameter = hyperparameter
 
 
         self.hist_true_y_noisy = []
@@ -66,7 +68,7 @@ class Monitor:
         else:
             self.smb = None
 
-        self.output_dir = 'Plots/'
+        self.output_dir = f"Results_{hyperparameter}/Plots/"
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -332,7 +334,7 @@ class Monitor:
             pass#plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
 
         else:
-            plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
+            pass #plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
             if year == self.year_range[-1]:
                 plt.savefig(self.output_dir+f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.pdf", format='pdf')
                 plt.savefig(self.output_dir +

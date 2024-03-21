@@ -60,7 +60,7 @@ class DataAssimilation:
 
         gx, gy = np.where(self.icemask)
         glacier_points = np.array(list(zip(gx, gy)))
-        num_sample_points = int(covered_area/100 * np.sum(self.icemask))
+        num_sample_points = int(covered_area / 100 * np.sum(self.icemask))
         observation_index = np.random.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
 
@@ -106,29 +106,29 @@ class DataAssimilation:
         ensemble.Q[1, 1] = 0.00000001 * self.process_noise * self.dt
         ensemble.Q[2, 2] = 0.00000001 * self.process_noise * self.dt
 
-      # high means high confidence in state and low confidence in observation
+        # high means high confidence in state and low confidence in observation
 
         usurfs = np.array(self.true_glacier['usurf'])
         self.noisey_usruf = []
         elevation_bias_2000 = None
         for i, usurf in enumerate(usurfs):
-            min = np.min(usurf[self.icemask==1])
-            max = np.max(usurf[self.icemask==1])
+            min = np.min(usurf[self.icemask == 1])
+            max = np.max(usurf[self.icemask == 1])
             elevation_bias = self.icemask * usurf
-            elevation_bias[self.icemask==1] = (elevation_bias[self.icemask==1]-min)/(max-min)
-            if i ==0:
+            elevation_bias[self.icemask == 1] = (elevation_bias[self.icemask == 1] - min) / (max - min)
+            if i == 0:
                 elevation_bias_2000 = elevation_bias
             white_noise = np.random.normal(0, self.specal_noise, size=usurf.shape)
 
-            noisy_usurf =  usurf + elevation_bias * self.bias + white_noise
+            noisy_usurf = usurf + elevation_bias * self.bias + white_noise
 
             self.noisey_usruf.append(noisy_usurf)
-
 
         self.noisey_usruf = np.array(self.noisey_usruf)
 
         ensemble.R = np.eye(
-            dim_z) * specal_noise * elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10
+            dim_z) * (specal_noise ** 2 * (
+                    elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
 
         # make copy for parallel ensemble forward step
         for i in range(self.ensemble_size):
@@ -150,7 +150,7 @@ class DataAssimilation:
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
                                         self.synthetic, self.initial_offset, self.initial_uncertainity,
-                                        self.noisey_usruf, self.specal_noise,self.bias,)
+                                        self.noisey_usruf, self.specal_noise, self.bias, hyperparameter)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -177,16 +177,28 @@ class DataAssimilation:
             observation_noise = np.random.normal(0, specal_noise, size=(ensemble_size,) + noisey_usurf.shape)
 
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
+            R_diag = ensemble.R.diagonal()
+            e_r = e_r * R_diag
 
             try:
                 ensemble.update(sampled_observations, e_r)
+
             except:
                 print("ERROR")
                 print(self.bias, self.specal_noise, self.dt, self.covered_area, ensemble.sigmas)
+                with open("debug_info.txt", "w") as file:
+                    # Write each piece of information to the file
+                    file.write(f"bias: {self.bias}\n")
+                    file.write(f"specal_noise: {self.specal_noise}\n")
+                    file.write(f"dt: {self.dt}\n")
+                    file.write(f"covered_area: {self.covered_area}\n")
+                    file.write(f"ensemble.sigmas: {ensemble.sigmas}\n")
+                    file.write(f"process_noise: {self.process_noise}\n")
                 # transform sigma points into measurement space
                 sigmas_h = [ensemble.hx(ensemble.sigmas[i], i) for i in range(self.ensemble_size)]
                 z_mean = np.mean(sigmas_h, axis=0)
                 P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
+
                 np.save("P_zz.npy", P_zz)
                 return
             print(ensemble.P)
@@ -209,12 +221,13 @@ class DataAssimilation:
                        dt=int(dt),
                        initial_offset=int(self.initial_offset),
                        initial_uncertainity=int(self.initial_uncertainity),
-                       bias= int(self.bias),
-                       specal_noise = int(self.specal_noise),
+                       bias=int(self.bias),
+                       specal_noise=int(self.specal_noise),
                        map_resolution=int(self.map_resolution),
-                       covered_area = self.covered_area,
+                       covered_area=self.covered_area,
                        initial_estimate=[int(i) for i in self.initial_estimate],
-                       initial_estimate_var=[int(j) for j in self.initial_estimate_var]
+                       initial_estimate_var=[int(j) for j in self.initial_estimate_var],
+                       process_noise=self.process_noise
                        )
 
         if not os.path.exists(f"Results_{hyperparameter}/"):
@@ -303,21 +316,22 @@ if __name__ == '__main__':
 
     # [samplepoints^1/2, ensemble members, inital state, inital varianc]
     hyperparameter_range = {
-        #"Area": [1, 2, 4, 8, 16, 32, 64],
-        #"Observation_Interval" : [1, 2, 4, 5, 10, 20],
+        "Area": [1, 2, 4, 8, 16, 32, 64],
+        "Observation_Interval": [1, 2, 4, 5, 10, 20],
         "Process_Noise": [0, 0.5, 1, 2, 4],
         "Ensemble_Size": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     }
     for hyperparamter in hyperparameter_range.keys():
+        print("Start Hyperparameter: ", hyperparamter)
 
         for value in hyperparameter_range[hyperparamter]:
-            if hyperparamter=='Area':
+            if hyperparamter == 'Area':
                 covered_area = value
                 dt = 2
                 ensemble_size = 25
                 process_noise = 1
 
-            elif hyperparamter=='Observation_Interval':
+            elif hyperparamter == 'Observation_Interval':
                 covered_area = 16
                 dt = value
                 ensemble_size = 25
@@ -354,19 +368,27 @@ if __name__ == '__main__':
 
             # for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt,
             # offsets, uncertainities):
-            for initial_offset, initial_uncertainity, bias, specal_noise in sample:
-
+            for initial_offset, initial_uncertainty, bias, specal_noise in sample:
+                print("initial_offset:", initial_offset)
+                print("initial_uncertainty:", initial_uncertainty)
+                print("bias:", bias)
+                print("special_noise:", specal_noise)
+                print("covered_area:", covered_area)
+                print("process_noise:", process_noise)
+                print("ensemble_size:", ensemble_size)
+                print("dt:", dt)
 
                 sign = np.random.choice([-1, 1], 3)
 
-                initial_est = [(base_ela + 1000 * (initial_offset / 100) )* sign[0],
+                initial_est = [(base_ela + 1000 * (initial_offset / 100)) * sign[0],
                                (base_abl_grad + 0.01 * (initial_offset / 100)) * sign[1],
-                                (base_acc_grad + 0.01 * (initial_offset / 100)) * sign[2]]
+                               (base_acc_grad + 0.01 * (initial_offset / 100)) * sign[2]]
 
-                initial_est_var = [initial_uncertainity ** 2 * 100,
-                                   initial_uncertainity ** 2 * 0.00000001,
-                                   initial_uncertainity ** 2 * 0.00000001]
+                initial_est_var = [initial_uncertainty ** 2 * 100,
+                                   initial_uncertainty ** 2 * 0.00000001,
+                                   initial_uncertainty ** 2 * 0.00000001]
 
                 DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
-                                      initial_est_var, initial_offset, initial_uncertainity, specal_noise, bias, process_noise, synthetic)
+                                      initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
+                                      process_noise, synthetic)
                 DA.start_ensemble(hyperparamter)

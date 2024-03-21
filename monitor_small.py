@@ -334,7 +334,7 @@ class Monitor:
             pass#plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
 
         else:
-            plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
+            pass #plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
             if year == self.year_range[-1]:
                 plt.savefig(self.output_dir+f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.pdf", format='pdf')
                 plt.savefig(self.output_dir +

@@ -119,7 +119,7 @@ class DataAssimilation:
             # make a copy of first usurf for every ensemble member
             self.ensemble_usurfs.append(copy.copy(self.noisey_usurf[0]))
             # make a velocity field for every ensemble member
-            self.ensemble_velo.append(np.zeros_like(surf_x))
+            self.ensemble_velo.append(np.zeros_like(self.noisey_usurf[0]))
             # create folder for every ensemble member
             if not os.path.exists(f"Ensemble/{i}"):
                 os.makedirs(f"Ensemble/{i}")
@@ -250,11 +250,11 @@ class DataAssimilation:
                 "time_step_max": 0.2,
                 }
 
-        with open(f'Experiments/{i}/params.json', 'w') as f:
+        with open(f'Ensemble/{i}/params.json', 'w') as f:
             json.dump(data, f, indent=4, separators=(',', ': '))
 
         # create new input.nc
-        input_file = f"Experiments/{i}/init_input.nc"
+        input_file = f"Ensemble/{i}/init_input.nc"
         try:
             with xr.open_dataset(input_file) as ds:
                 # load usurf from ensemble
@@ -267,19 +267,19 @@ class DataAssimilation:
                 ds['thk'] = thk_da
 
                 # ds_drop = ds.drop_vars("thkinit")
-                ds.to_netcdf(f'Experiments/{i}/input_.nc')
+                ds.to_netcdf(f'Ensemble/{i}/input_.nc')
         except:
             print("Could not open 1")
 
         ### IGM RUN ###
         try:
-            subprocess.run(["igm_run"], cwd=f'Experiments/{i}', shell=True)
+            subprocess.run(["igm_run"], cwd=f'Ensemble/{i}', shell=True)
         except:
             print("Could not run IGM")
 
         # update state x and return
         try:
-            with xr.open_dataset(f'Experiments/{i}/output_{year}.nc') as new_ds:
+            with xr.open_dataset(f'Ensemble/{i}/output_{year}.nc') as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:

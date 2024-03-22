@@ -327,7 +327,7 @@ if __name__ == '__main__':
         for value in hyperparameter_range[hyperparamter]:
             if hyperparamter == 'Area':
                 covered_area = value
-                dt = 2
+                dt = 4
                 ensemble_size = 25
                 process_noise = 1
 
@@ -339,13 +339,13 @@ if __name__ == '__main__':
 
             elif hyperparamter == 'Process_Noise':
                 covered_area = 16
-                dt = 2
+                dt = 4
                 ensemble_size = 25
                 process_noise = value
 
             elif hyperparamter == 'Ensemble_Size':
                 covered_area = 16
-                dt = 2
+                dt = 4
                 ensemble_size = value
                 process_noise = 1
 

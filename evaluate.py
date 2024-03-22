@@ -14,13 +14,13 @@ for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'dt',
 
     results = []
     if hyperparameter == 'ensemble_size':
-        experiment_folder = 'HPC/Results_Ensemble_Size/'
+        experiment_folder = 'Results_Ensemble_Size/'
     elif hyperparameter == 'covered_area':
-        experiment_folder = 'HPC/Results_Area/'
+        experiment_folder = 'Results_Area/'
     elif hyperparameter == 'dt':
-        experiment_folder = 'HPC/Results_Observation_Interval/'
+        experiment_folder = 'Results_Observation_Interval/'
     elif hyperparameter == 'process_noise':
-        experiment_folder = 'HPC/Results_Process_Noise/'
+        experiment_folder = 'Results_Process_Noise/'
 
     for file in os.listdir(experiment_folder):
         if file.endswith('.json'):

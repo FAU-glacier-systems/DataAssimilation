@@ -9,22 +9,22 @@ import xarray as xr
 # Specify the path to your JSON file
 fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(10, 3), layout="tight")
 
-#for i, hyperparameter in enumerate(['ensemble_size', 'area_ration_sample', 'dt', 'process_noise']):
-for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise']):
+for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'dt', 'process_noise']):
+#for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise']):
 
     results = []
     if hyperparameter == 'ensemble_size':
-        experiment_folder = 'HPC/Results_Ensemble_Size/'
+        experiment_folder = 'Results_Ensemble_Size/'
     elif hyperparameter == 'covered_area':
-        experiment_folder = 'HPC/Results_Area/'
+        experiment_folder = 'Results_Area/'
     elif hyperparameter == 'dt':
-        experiment_folder = 'HPC/Results_Observation_Interval/'
+        experiment_folder = 'Results_Observation_Interval/'
     elif hyperparameter == 'process_noise':
-        experiment_folder = 'HPC/Results_Process_Noise/'
+        experiment_folder = 'Results_Process_Noise/'
 
     for file in os.listdir(experiment_folder):
         if file.endswith('.json'):
-            print(file)
+            #print(file)
             with open(experiment_folder + file, 'r') as f:
                 results.append(json.load(f))
 
@@ -51,7 +51,7 @@ for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise'
                        # 'VAR': VAR,
                        })
 
-    # df = df[df['MAE'] <= 100]
+    #df = df[df['MAE'] <= 100]
     #df_best = df[df['MAE'] <= 10]
     print(len(df))
     #print(len(df_best))
@@ -67,8 +67,11 @@ for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise'
     elif hyperparameter == 'covered_area':
         bin_centers = [1, 2, 4, 8, 16, 32, 64]
 
-    else:
+    elif hyperparameter=='ensemble_size':
         bin_centers = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+
+    elif hyperparameter == 'process_noise':
+        bin_centers = [0, 0.5, 1, 2, 4]
 
 
 
@@ -115,7 +118,7 @@ for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise'
     grad_axis.set_ylabel('Gradient Error [m/yr/m]')
     grad_axis.set_yticks(np.arange(0, 0.21, 0.1), ['%.3f'%e for e in [0, max_gradient/10, max_gradient/5]])
     ax[fig_num].set_ylabel('ELA Error [m]')
-    ax[fig_num].set_ylim(0, 0.2)
+    #ax[fig_num].set_ylim(0, 0.2)
     ax[fig_num].set_yticks(np.arange(0, 0.21, 0.1),[0, int(MAX[0]/10), int(MAX[0]/5)])
     #ax[i].set_yscale('log')
     mean_legend = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=mean_color, markersize=10, label='Mean')

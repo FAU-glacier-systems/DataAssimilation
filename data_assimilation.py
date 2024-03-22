@@ -14,7 +14,10 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 np.random.seed(1233)
+import logging
 
+# Configure logging to write to a file
+logging.basicConfig(filename='logfile.log', level=logging.INFO)
 
 class DataAssimilation:
     def __init__(self, covered_area, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,
@@ -269,13 +272,13 @@ class DataAssimilation:
                 # ds_drop = ds.drop_vars("thkinit")
                 ds.to_netcdf(f'Ensemble/{i}/input_.nc')
         except:
-            print("Could not open 1")
+            logging.error("could not read input")
 
         ### IGM RUN ###
         try:
             subprocess.run(["igm_run"], cwd=f'Ensemble/{i}', shell=True)
         except:
-            print("Could not run IGM")
+            logging.error("could not run igm_run")
 
         # update state x and return
         try:
@@ -283,7 +286,7 @@ class DataAssimilation:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:
-            print("Could not open 2")
+            logging.error("could not read output")
 
         self.ensemble_usurfs[i] = new_usurf
         self.ensemble_velo[i] = new_velo

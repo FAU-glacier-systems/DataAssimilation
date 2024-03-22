@@ -267,26 +267,35 @@ class DataAssimilation:
 
         # create new input.nc
         input_file = f"Experiments/{i}/init_input.nc"
-        with xr.open_dataset(input_file) as ds:
-            # load usurf from ensemble
-            usurf = self.ensemble_usurfs[i]
-            ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
+        try:
+            with xr.open_dataset(input_file) as ds:
+                # load usurf from ensemble
+                usurf = self.ensemble_usurfs[i]
+                ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
 
-            thickness = usurf - self.bedrock
-            thk_da = xr.DataArray(thickness, dims=('y', 'x'))
-            thk_da = xr.DataArray(thickness, dims=('y', 'x'))
-            ds['thk'] = thk_da
+                thickness = usurf - self.bedrock
+                thk_da = xr.DataArray(thickness, dims=('y', 'x'))
+                thk_da = xr.DataArray(thickness, dims=('y', 'x'))
+                ds['thk'] = thk_da
 
-            # ds_drop = ds.drop_vars("thkinit")
-            ds.to_netcdf(f'Experiments/{i}/input_.nc')
+                # ds_drop = ds.drop_vars("thkinit")
+                ds.to_netcdf(f'Experiments/{i}/input_.nc')
+        except:
+            print("Could not open 1")
 
         ### IGM RUN ###
-        subprocess.run(["igm_run"], cwd=f'Experiments/{i}', shell=True)
+        try:
+            subprocess.run(["igm_run"], cwd=f'Experiments/{i}', shell=True)
+        except:
+            print("Could not run IGM")
 
         # update state x and return
-        with xr.open_dataset(f'Experiments/{i}/output_{year}.nc') as new_ds:
-            new_usurf = np.array(new_ds['usurf'][-1])
-            new_velo = np.array(new_ds['velsurf_mag'][-1])
+        try:
+            with xr.open_dataset(f'Experiments/{i}/output_{year}.nc') as new_ds:
+                new_usurf = np.array(new_ds['usurf'][-1])
+                new_velo = np.array(new_ds['velsurf_mag'][-1])
+        except:
+            print("Could not open 2")
 
         self.ensemble_usurfs[i] = new_usurf
         self.ensemble_velo[i] = new_velo

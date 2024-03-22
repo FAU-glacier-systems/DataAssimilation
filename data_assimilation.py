@@ -63,6 +63,7 @@ class DataAssimilation:
         num_sample_points = int(covered_area / 100 * np.sum(self.icemask))
         observation_index = np.random.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
+        self.error_count = 0
 
         def get_pixel_value(point):
             x, y = point
@@ -74,6 +75,7 @@ class DataAssimilation:
         # placeholder for ensemble surface elevation list
         self.ensemble_usurfs = []
         self.ensemble_velo = []
+        self.error_count = 0
 
     def start_ensemble(self, hyperparameter):
         import monitor_small
@@ -153,7 +155,8 @@ class DataAssimilation:
                                         self.noisey_usruf, self.specal_noise, self.bias, hyperparameter)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
-
+        if not os.path.exists(f"Results_{hyperparameter}/"):
+            os.makedirs(f"Results_{hyperparameter}/")
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
 
@@ -185,8 +188,9 @@ class DataAssimilation:
 
             except:
                 print("ERROR")
+                self.error_count+=1
                 print(self.bias, self.specal_noise, self.dt, self.covered_area, ensemble.sigmas)
-                with open("debug_info.txt", "w") as file:
+                with open(f"Results_{hyperparameter}/debug_info{self.error_count}.txt", "w") as file:
                     # Write each piece of information to the file
                     file.write(f"bias: {self.bias}\n")
                     file.write(f"specal_noise: {self.specal_noise}\n")
@@ -199,7 +203,7 @@ class DataAssimilation:
                 z_mean = np.mean(sigmas_h, axis=0)
                 P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
 
-                np.save("P_zz.npy", P_zz)
+                np.save(f"Results_{hyperparameter}/P_zz{self.error_count}.npy", P_zz)
                 return
             print(ensemble.P)
             ### UPDATE ###
@@ -230,8 +234,7 @@ class DataAssimilation:
                        process_noise=self.process_noise
                        )
 
-        if not os.path.exists(f"Results_{hyperparameter}/"):
-            os.makedirs(f"Results_{hyperparameter}/")
+
         with open(
                 f"Results_{hyperparameter}/result_{self.initial_offset}_{self.initial_uncertainity}_{self.bias}_{self.specal_noise}.json",
                 'w') as f:

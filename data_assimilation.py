@@ -174,11 +174,11 @@ class DataAssimilation:
 
             ### UPDATE ###
 
-            observation_noise = np.random.normal(0, specal_noise, size=(ensemble_size,) + noisey_usurf.shape)
+            observation_noise = np.random.normal(0, 1, size=(ensemble_size,) + noisey_usurf.shape)
 
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
             R_diag = ensemble.R.diagonal()
-            e_r = e_r * R_diag
+            e_r = e_r * np.sqrt(R_diag)
 
             try:
                 ensemble.update(sampled_observations, e_r)

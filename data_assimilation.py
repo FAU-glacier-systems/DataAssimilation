@@ -77,8 +77,9 @@ class DataAssimilation:
         prior_x[1, 1] = self.initial_estimate_var[1]
         prior_x[2, 2] = self.initial_estimate_var[2]
 
+        dim_z = len(self.observation_points)
         ### Create Ensemble Kalman Filter
-        ensemble = EnKF(x=state_x, P=prior_x, dim_z=len(self.observation_points), dt=self.dt, N=self.ensemble_size,
+        ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.dt, N=self.ensemble_size,
                         hx=self.generate_observation, fx=self.forward_model,
                         start_year=self.start_year)
 

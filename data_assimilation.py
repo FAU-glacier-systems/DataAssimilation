@@ -1,3 +1,4 @@
+import random
 import shutil
 import subprocess
 import time
@@ -14,14 +15,11 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 np.random.seed(1233)
-import logging
 
-# Configure logging to write to a file
-logging.basicConfig(filename='logfile.log', level=logging.INFO)
 
 class DataAssimilation:
     def __init__(self, covered_area, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,
-                 initial_uncertainity, specal_noise, bias, process_noise, synthetic):
+                 initial_uncertainty, specal_noise, bias, process_noise, synthetic):
 
         # Save arguments
         self.covered_area = covered_area
@@ -30,7 +28,7 @@ class DataAssimilation:
         self.initial_estimate = initial_estimate
         self.initial_estimate_var = initial_estimate_var
         self.initial_offset = initial_offset
-        self.initial_uncertainity = initial_uncertainity
+        self.initial_uncertainity = initial_uncertainty
         self.specal_noise = specal_noise
         self.bias = bias
         self.process_noise = process_noise
@@ -68,7 +66,7 @@ class DataAssimilation:
         sorted_observation_points = sorted(observation_points, key=get_pixel_value)
         self.observation_points = np.array(sorted_observation_points)
 
-    def start_ensemble(self, hyperparameter):
+    def start_ensemble(self, hyperparameter, value):
         import monitor_small
         ### INITIALIZE ###
         # Initial estimate
@@ -142,7 +140,7 @@ class DataAssimilation:
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
                                         self.synthetic, self.initial_offset, self.initial_uncertainity,
-                                        self.noisey_usurf, self.specal_noise, self.bias, hyperparameter)
+                                        self.noisey_usurf, self.specal_noise, self.bias, hyperparameter, value)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
@@ -183,7 +181,7 @@ class DataAssimilation:
                 print("ERROR")
                 self.error_count += 1
                 print(self.bias, self.specal_noise, self.dt, self.covered_area, ensemble.sigmas)
-                with open(f"Results_{hyperparameter}/debug_info{self.error_count}.txt", "w") as file:
+                with open(f"Results_{hyperparameter}/{value}/debug_info{self.error_count}.txt", "w") as file:
                     # Write each piece of information to the file
                     file.write(f"bias: {self.bias}\n")
                     file.write(f"specal_noise: {self.specal_noise}\n")
@@ -196,7 +194,7 @@ class DataAssimilation:
                 z_mean = np.mean(sigmas_h, axis=0)
                 P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
 
-                np.save(f"Results_{hyperparameter}/P_zz{self.error_count}.npy", P_zz)
+                np.save(f"Results_{hyperparameter}/{value}/P_zz{self.error_count}.npy", P_zz)
                 return
             print(ensemble.P)
             ### UPDATE ###
@@ -226,10 +224,7 @@ class DataAssimilation:
                        process_noise=self.process_noise
                        )
 
-        with open(
-                f"Results_{hyperparameter}/result_{self.initial_offset}_{self.initial_uncertainity}_{self.bias}_{self.specal_noise}.json",
-                'w') as f:
-            json.dump(results, f, indent=4, separators=(',', ': '))
+        return results
 
     def forward_model(self, state_x, dt, i, year):
         # create new params.json
@@ -272,21 +267,20 @@ class DataAssimilation:
                 # ds_drop = ds.drop_vars("thkinit")
                 ds.to_netcdf(f'Ensemble/{i}/input_.nc')
         except:
-            logging.error("could not read input")
+            print("could not read input")
 
         ### IGM RUN ###
         try:
             subprocess.run(["igm_run"], cwd=f'Ensemble/{i}', shell=True)
         except:
-            logging.error("could not run igm_run")
-
+            print("could not run igm_run")
         # update state x and return
         try:
             with xr.open_dataset(f'Ensemble/{i}/output_{year}.nc') as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:
-            logging.error("could not read output")
+            print("could not read output")
 
         self.ensemble_usurfs[i] = new_usurf
         self.ensemble_velo[i] = new_velo
@@ -324,39 +318,42 @@ if __name__ == '__main__':
         "Process_Noise": [0, 0.5, 1, 2, 4],
         "Ensemble_Size": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     }
-    for hyperparamter in hyperparameter_range.keys():
-        print("Start Hyperparameter: ", hyperparamter)
 
-        for value in hyperparameter_range[hyperparamter]:
-            if hyperparamter == 'Area':
+    for hyperparameter in hyperparameter_range.keys():
+        print("Start Hyperparameter: ", hyperparameter)
+
+
+        for value in hyperparameter_range[hyperparameter]:
+            if hyperparameter == 'Area':
                 covered_area = value
                 dt = 4
                 ensemble_size = 25
                 process_noise = 1
 
-            elif hyperparamter == 'Observation_Interval':
+            elif hyperparameter == 'Observation_Interval':
                 covered_area = 16
                 dt = value
                 ensemble_size = 25
                 process_noise = 1
 
-            elif hyperparamter == 'Process_Noise':
+            elif hyperparameter == 'Process_Noise':
                 covered_area = 16
                 dt = 4
                 ensemble_size = 25
                 process_noise = value
 
-            elif hyperparamter == 'Ensemble_Size':
+            elif hyperparameter == 'Ensemble_Size':
                 covered_area = 16
                 dt = 4
                 ensemble_size = value
                 process_noise = 1
 
-            number_of_experiments = 10
-            l_bounds = [0, 0, 0, 1]
-            u_bounds = [100, 100, 10, 3]
-            sampler = qmc.LatinHypercube(d=4)
-            sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
+
+            #l_bounds = [0, 0, 0, 1]
+            #u_bounds = [100, 100, 10, 3]
+            #sampler = qmc.LatinHypercube(d=4)
+            #sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
+
             """
             points = 10
             sizes = 20
@@ -371,7 +368,17 @@ if __name__ == '__main__':
 
             # for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt,
             # offsets, uncertainities):
-            for initial_offset, initial_uncertainty, bias, specal_noise in sample:
+
+            if not os.path.exists(f"Results_{hyperparameter}/{value}"):
+                os.makedirs(f"Results_{hyperparameter}/{value}")
+
+            number_of_experiments = 10
+            while len(os.listdir(f"Results_{hyperparameter}/{value}")) < number_of_experiments+1:
+                initial_offset = random.randint(0, 100)
+                initial_uncertainty = random.randint(0, 100)
+                bias = random.randint(0, 10)
+                specal_noise = random.randint(1, 3)
+
                 print("initial_offset:", initial_offset)
                 print("initial_uncertainty:", initial_uncertainty)
                 print("bias:", bias)
@@ -394,4 +401,9 @@ if __name__ == '__main__':
                 DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
                                       initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
                                       process_noise, synthetic)
-                DA.start_ensemble(hyperparamter)
+                results = DA.start_ensemble(hyperparameter, value)
+
+                with open(
+                        f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
+                        'w') as f:
+                    json.dump(results, f, indent=4, separators=(',', ': '))

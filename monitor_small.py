@@ -13,7 +13,7 @@ import matplotlib.font_manager as fm
 
 class Monitor:
     def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty,
-                 noise_observation, specal_noise, bias, hyperparameter):
+                 noise_observation, specal_noise, bias, hyperparameter, value):
 
         self.ensemble_size = N
         self.true_glacier = true_glacier
@@ -68,7 +68,7 @@ class Monitor:
         else:
             self.smb = None
 
-        self.output_dir = f"Results_{hyperparameter}/Plots/"
+        self.output_dir = f"Results_{hyperparameter}/{value}/Plots/"
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -336,9 +336,9 @@ class Monitor:
         else:
             pass #plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
             if year == self.year_range[-1]:
-                plt.savefig(self.output_dir+f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.pdf", format='pdf')
+                plt.savefig(self.output_dir+f"result_o_{self.initial_offset}_u_{self.initial_uncertainty}_b_{self.bias}_s_{self.specal_noise}.pdf", format='pdf')
                 plt.savefig(self.output_dir +
-                    f"result_{self.initial_offset}_{self.initial_uncertainty}_{self.bias}_{self.specal_noise}.png",
+                    f"result_o_{self.initial_offset}_u_{self.initial_uncertainty}_b_{self.bias}_s_{self.specal_noise}.png",
                     format='png')
 
     plt.clf()

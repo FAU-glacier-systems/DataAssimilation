@@ -12,7 +12,7 @@ from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from filterpy.common import outer_product_sum
 
 os.environ['PYTHONWARNINGS'] = "ignore"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 np.random.seed(1233)
 
@@ -37,7 +37,6 @@ class DataAssimilation:
         # placeholders
         self.ensemble_usurfs = []
         self.ensemble_velo = []
-        self.error_count = 0
 
         # Change between synthetic and real observations ###
         if self.synthetic:
@@ -112,7 +111,7 @@ class DataAssimilation:
 
         # compute R with s**2 +b**2 where b is dependent on height * 10 the maximum high elevation bias
         ensemble.R = np.eye(
-            dim_z) * (specal_noise ** 2 * (
+            dim_z) * (specal_noise ** 2 + (
                 elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
 
         ### PARALLIZE ###
@@ -176,12 +175,11 @@ class DataAssimilation:
 
             try:
                 ensemble.update(sampled_observations, e_r)
-
             except:
                 print("ERROR")
-                self.error_count += 1
-                print(self.bias, self.specal_noise, self.dt, self.covered_area, ensemble.sigmas)
-                with open(f"Results_{hyperparameter}/{value}/debug_info{self.error_count}.txt", "w") as file:
+
+                print(self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise)
+                with open(f"Results_{hyperparameter}/{value}/debug_info{self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise}.txt", "w") as file:
                     # Write each piece of information to the file
                     file.write(f"bias: {self.bias}\n")
                     file.write(f"specal_noise: {self.specal_noise}\n")
@@ -193,8 +191,10 @@ class DataAssimilation:
                 sigmas_h = [ensemble.hx(ensemble.sigmas[i], i) for i in range(self.ensemble_size)]
                 z_mean = np.mean(sigmas_h, axis=0)
                 P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
+                # Check if any row is a multiple of another row
 
-                np.save(f"Results_{hyperparameter}/{value}/P_zz{self.error_count}.npy", P_zz)
+
+                np.save(f"Results_{hyperparameter}/{value}/P_zz{self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise}.npy", P_zz)
                 return
             print(ensemble.P)
             ### UPDATE ###
@@ -312,16 +312,20 @@ if __name__ == '__main__':
         base_acc_grad = params['smb_simple_array'][1][2]
 
     # [samplepoints^1/2, ensemble members, inital state, inital varianc]
+
     hyperparameter_range = {
         "Area": [1, 2, 4, 8, 16, 32, 64],
         "Observation_Interval": [1, 2, 4, 5, 10, 20],
         "Process_Noise": [0, 0.5, 1, 2, 4],
         "Ensemble_Size": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
     }
+    initial_offsets = np.random.randint(0, 100, size=10)
+    initial_uncertainties = np.random.randint(0, 100, size=10)
+    biases = np.random.randint(0, 10, size=10)
+    specal_noises = np.random.randint(1, 3, size=10)
 
     for hyperparameter in hyperparameter_range.keys():
         print("Start Hyperparameter: ", hyperparameter)
-
 
         for value in hyperparameter_range[hyperparameter]:
             if hyperparameter == 'Area':
@@ -348,24 +352,10 @@ if __name__ == '__main__':
                 ensemble_size = value
                 process_noise = 1
 
-
             #l_bounds = [0, 0, 0, 1]
             #u_bounds = [100, 100, 10, 3]
             #sampler = qmc.LatinHypercube(d=4)
             #sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
-
-            """
-            points = 10
-            sizes = 20
-            random_dt = [10]
-            offsets = 50
-            uncertainities = 84
-            specal_noise = 0.1
-            bias = 0
-            process_noise = 0.5
-            sample = [[points, sizes, offsets, uncertainities]]
-            """
-
             # for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt,
             # offsets, uncertainities):
 
@@ -373,11 +363,11 @@ if __name__ == '__main__':
                 os.makedirs(f"Results_{hyperparameter}/{value}")
 
             number_of_experiments = 10
-            while len(os.listdir(f"Results_{hyperparameter}/{value}")) < number_of_experiments+1:
-                initial_offset = random.randint(0, 100)
-                initial_uncertainty = random.randint(0, 100)
-                bias = random.randint(0, 10)
-                specal_noise = random.randint(1, 3)
+            for i in range(number_of_experiments):
+                initial_offset = initial_offsets[i]
+                initial_uncertainty =initial_uncertainties[i]
+                bias = biases[i]
+                specal_noise = specal_noises[i]
 
                 print("initial_offset:", initial_offset)
                 print("initial_uncertainty:", initial_uncertainty)

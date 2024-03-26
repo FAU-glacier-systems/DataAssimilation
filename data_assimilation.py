@@ -314,7 +314,7 @@ if __name__ == '__main__':
     # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
     hyperparameter_range = {
-        "Area": [1, 2, 4, 8, 16, 32, 64],
+        #"Area": [1, 2, 4, 8, 16, 32, 64],
         "Observation_Interval": [1, 2, 4, 5, 10, 20],
         "Process_Noise": [0, 0.5, 1, 2, 4],
         "Ensemble_Size": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]

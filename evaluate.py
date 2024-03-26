@@ -7,7 +7,7 @@ import plotly.express as px
 import xarray as xr
 
 # Specify the path to your JSON file
-fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(10, 3), layout="tight")
+fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(12, 3), layout="tight")
 
 for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'dt', 'process_noise']):
 #for fig_num, hyperparameter in enumerate([ 'covered_area', 'dt', 'process_noise']):
@@ -22,11 +22,15 @@ for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'dt',
     elif hyperparameter == 'process_noise':
         experiment_folder = 'Results_Process_Noise/'
 
-    for file in os.listdir(experiment_folder):
-        if file.endswith('.json'):
-            #print(file)
-            with open(experiment_folder + file, 'r') as f:
-                results.append(json.load(f))
+    for folder in os.listdir(experiment_folder):
+        for file in os.listdir(experiment_folder + folder):
+            if file.endswith('.json'):
+                #print(file)
+                with open(experiment_folder + folder +'/' + file, 'r') as f:
+                    content = json.load(f)
+                    if content != None:
+                        results.append(content)
+
 
     hyper_results = [exp[hyperparameter] for exp in results]
 

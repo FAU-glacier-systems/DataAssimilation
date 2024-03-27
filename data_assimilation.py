@@ -1,10 +1,11 @@
 import random
 import shutil
 import subprocess
+import traceback
 import time
 import os
 import json
-import netCDF4
+import netCDF4 as nc
 import copy
 import numpy as np
 import xarray as xr
@@ -39,9 +40,9 @@ class DataAssimilation:
 
         # Change between synthetic and real observations ###
         if self.synthetic:
-            self.true_glacier = netCDF4.Dataset('ReferenceSimulation/output.nc')
+            self.true_glacier = nc.Dataset('ReferenceSimulation/output.nc')
         else:
-            self.true_glacier = netCDF4.Dataset('Hugonnet/merged_dataset.nc')
+            self.true_glacier = nc.Dataset('Hugonnet/merged_dataset.nc')
 
         # Extract metadata from ground truth glacier
         self.year_range = np.array(self.true_glacier['time'])[::dt]
@@ -248,8 +249,11 @@ class DataAssimilation:
 
                 # ds_drop = ds.drop_vars("thkinit")
                 ds.to_netcdf(f'Ensemble/{i}/input_.nc')
+
         except:
-            print("could not read input")
+            traceback.print_exc()
+            print("could not read input" + input_file)
+
 
         ### IGM RUN ###
         try:
@@ -298,8 +302,8 @@ if __name__ == '__main__':
     hyperparameter_range = {
         #"Area": [1, 2, 4, 8, 16, 32, 64],
         #"Observation_Interval": [1, 2, 4, 5, 10, 20],
-        "Process_Noise": [1, 2, 4],
-        "Ensemble_Size": [5, 10, 20, 30, 40, 50]
+        "Process_Noise": [8],
+        #"Ensemble_Size": [5, 10, 20, 30, 40, 50]
     }
     initial_offsets = np.random.randint(0, 100, size=10)
     initial_uncertainties = np.random.randint(0, 100, size=10)
@@ -325,7 +329,7 @@ if __name__ == '__main__':
             elif hyperparameter == 'Process_Noise':
                 covered_area = 16
                 dt = 4
-                ensemble_size = 25
+                ensemble_size = 4
                 process_noise = value
 
             elif hyperparameter == 'Ensemble_Size':

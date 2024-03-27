@@ -74,13 +74,13 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 5, 10, 20]
 
         elif hyperparameter == 'covered_area':
-            bin_centers = [1, 2, 4, 8, 16, 32]
+            bin_centers = [1, 2, 4, 8, 16, 32, 64]
 
         elif hyperparameter=='ensemble_size':
             bin_centers = [5, 10, 20, 30, 40, 50]
 
         elif hyperparameter == 'process_noise':
-            bin_centers = [0, 0.5, 1, 2, 4]
+            bin_centers = [0, 0.5, 1, 2, 4, 6]
 
         # group the MAE by bin_centers\\
         marker = ["o", "^", "v"]

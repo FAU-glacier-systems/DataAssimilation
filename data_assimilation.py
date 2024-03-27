@@ -302,7 +302,7 @@ if __name__ == '__main__':
     hyperparameter_range = {
         #"Area": [1, 2, 4, 8, 16, 32, 64],
         #"Observation_Interval": [1, 2, 4, 5, 10, 20],
-        "Process_Noise": [8],
+        "Process_Noise": [6],
         #"Ensemble_Size": [5, 10, 20, 30, 40, 50]
     }
     initial_offsets = np.random.randint(0, 100, size=10)

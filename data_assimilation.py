@@ -16,7 +16,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 np.random.seed(1233)
 
-
 class DataAssimilation:
     def __init__(self, covered_area, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,
                  initial_uncertainty, specal_noise, bias, process_noise, synthetic):
@@ -157,54 +156,37 @@ class DataAssimilation:
             ensemble.year = year + dt
 
             # get observations
-            usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
+            #usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
             velo = self.true_glacier['velsurf_mag'][int((ensemble.year - self.start_year))]
-
-            noisey_usurf = self.noisey_usurf[int((ensemble.year - self.start_year))]
-            sampled_observations = noisey_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
+
+
             ### UPDATE ###
 
-            observation_noise = np.random.normal(0, 1, size=(ensemble_size,) + noisey_usurf.shape)
+            # get the noisey observation
+            noisey_usurf = self.noisey_usurf[int((ensemble.year - self.start_year))]
+            sampled_observations = noisey_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
 
+            # sample random noise for each ensemlbe memember to add to the difference
+            # interpreation: every ensemble member gets a slightly different observation
+            observation_noise = np.random.normal(0, 1, size=(ensemble_size,) + noisey_usurf.shape)
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
             R_diag = ensemble.R.diagonal()
             e_r = e_r * np.sqrt(R_diag)
 
-            try:
-                ensemble.update(sampled_observations, e_r)
-            except:
-                print("ERROR")
+            # update the hidden parameters
+            ensemble.update(sampled_observations, e_r)
 
-                print(self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise)
-                with open(f"Results_{hyperparameter}/{value}/debug_info{self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise}.txt", "w") as file:
-                    # Write each piece of information to the file
-                    file.write(f"bias: {self.bias}\n")
-                    file.write(f"specal_noise: {self.specal_noise}\n")
-                    file.write(f"dt: {self.dt}\n")
-                    file.write(f"covered_area: {self.covered_area}\n")
-                    file.write(f"ensemble.sigmas: {ensemble.sigmas}\n")
-                    file.write(f"process_noise: {self.process_noise}\n")
-                # transform sigma points into measurement space
-                sigmas_h = [ensemble.hx(ensemble.sigmas[i], i) for i in range(self.ensemble_size)]
-                z_mean = np.mean(sigmas_h, axis=0)
-                P_zz = (outer_product_sum(sigmas_h - z_mean) / (ensemble.N - 1)) + ensemble.R
-                # Check if any row is a multiple of another row
-
-
-                np.save(f"Results_{hyperparameter}/{value}/P_zz{self.bias, self.specal_noise, self.dt, self.covered_area,self.bias, self.specal_noise}.npy", P_zz)
-                return
-            print(ensemble.P)
-            ### UPDATE ###
-
+            # update the surface elevation
             self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in
-                                             observation_noise])  # + np.random.normal(0, np.sqrt(ensemble.R[0, 0]))
+                                             observation_noise])
 
+            # plot the update
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
-        ### EVALUATION ###k
+        ### EVALUATION ###
         with open('ReferenceSimulation/params.json') as f:
             params = json.load(f)
         smb = params['smb_simple_array']
@@ -315,9 +297,9 @@ if __name__ == '__main__':
 
     hyperparameter_range = {
         #"Area": [1, 2, 4, 8, 16, 32, 64],
-        "Observation_Interval": [1, 2, 4, 5, 10, 20],
-        "Process_Noise": [0, 0.5, 1, 2, 4],
-        "Ensemble_Size": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+        #"Observation_Interval": [1, 2, 4, 5, 10, 20],
+        "Process_Noise": [1, 2, 4],
+        "Ensemble_Size": [5, 10, 20, 30, 40, 50]
     }
     initial_offsets = np.random.randint(0, 100, size=10)
     initial_uncertainties = np.random.randint(0, 100, size=10)

@@ -13,7 +13,7 @@ conda activate igm_p3.11
 #igm_run --param_file Inversion/params.json
 
 # 2. Reference Run
-igm_run --param_file ReferenceSimulation/params.json
+#igm_run --param_file ReferenceSimulation/params.json
 
 # 3. Data Assimilation
 python -u data_assimilation.py

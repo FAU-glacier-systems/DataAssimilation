@@ -74,7 +74,7 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 5, 10, 20]
 
         elif hyperparameter == 'covered_area':
-            bin_centers = [1, 2, 4, 8, 16, 32, 64]
+            bin_centers = [1, 2, 4, 8, 16, 32]
 
         elif hyperparameter=='ensemble_size':
             bin_centers = [5, 10, 20, 30, 40, 50]
@@ -84,9 +84,12 @@ def plot_MAE():
 
         # group the MAE by bin_centers\\
         marker = ["o", "^", "v"]
+        mean_max = 0
         for x, label in enumerate(["ELA","grad_acc", "grad_abl"]):
             bin_list = [df['MAE'+str(x)][(df[hyperparameter] == center)] for center in bin_centers]
             bin_means = np.array([bins.mean() for bins in bin_list])
+            if mean_max < max(bin_means):
+                mean_max = max(bin_means)
             bin_medians = np.array([bins.median() for bins in bin_list])
 
             print(hyperparameter)
@@ -128,7 +131,7 @@ def plot_MAE():
         grad_axis.set_ylabel('Gradient Error [m/yr/m]')
         grad_axis.set_yticks([0, 0.5, 1], ['%.3f' % e for e in [0, max_gradient / 2, max_gradient]])
         ax[i,j].set_ylabel('ELA Error [m]')
-        ax[i,j].set_ylim(0, 1)
+        ax[i,j].set_ylim([0, mean_max*2])
         ax[i,j].set_yticks([0, 0.5, 1],[0, int(MAX[0]/2), int(MAX[0])])
         #ax[i].set_yscale('log')
         mean_legend = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=mean_color, markersize=10, label='Mean')

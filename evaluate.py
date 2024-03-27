@@ -70,7 +70,7 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 8, 16, 32, 64]
 
         elif hyperparameter=='ensemble_size':
-            bin_centers = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+            bin_centers = [5, 10, 20, 30, 40, 50]
 
         elif hyperparameter == 'process_noise':
             bin_centers = [0, 0.5, 1, 2, 4]

@@ -142,7 +142,6 @@ class DataAssimilation:
                                         self.noisey_usurf, self.specal_noise, self.bias, hyperparameter, value)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
-
         ### LOOP OVER YEAR RANGE ###
         if not os.path.exists(f"Results_{hyperparameter}/"):
             os.makedirs(f"Results_{hyperparameter}/")
@@ -300,8 +299,8 @@ if __name__ == '__main__':
     # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
     hyperparameter_range = {
-        "Area": [1, 2, 4, 8, 16, 32, 64],
-        "Observation_Interval": [1, 2, 4, 5, 10, 20],
+        #"Area": [1, 2, 4, 8, 16, 32, 64],
+        #"Observation_Interval": [1, 2, 4, 5, 10, 20],
         "Process_Noise": [0, 0.5, 1, 2, 4],
         "Ensemble_Size": [5, 10, 20, 30, 40, 50]
     }
@@ -329,7 +328,7 @@ if __name__ == '__main__':
             elif hyperparameter == 'Process_Noise':
                 covered_area = 16
                 dt = 4
-                ensemble_size = 4
+                ensemble_size = 25
                 process_noise = value
 
             elif hyperparameter == 'Ensemble_Size':

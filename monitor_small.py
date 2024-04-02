@@ -231,7 +231,7 @@ class Monitor:
                       color=colorscale(2), marker='o', markersize=10, markevery=[-1], linewidth=2, zorder=4)
         if not self.smb == None:
             ax[1, 0].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='Hidden Parameter',
-                          color=colorscale(8),
+                          color=colorscale(9),
                           linewidth=3, linestyle='-.', zorder=3)
 
 
@@ -257,7 +257,7 @@ class Monitor:
                       marker='v', markersize=10, markevery=[-1], zorder=4)
         if not self.smb == None:
             ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='Hidden Parameter',
-                          color=colorscale(8), linewidth=3, linestyle='-.', zorder=3)
+                          color=colorscale(9), linewidth=3, linestyle='-.', zorder=3)
 
 
         #ax[1, 2].set_ylim(0, 0.03)
@@ -282,7 +282,7 @@ class Monitor:
 
         if not self.smb == None:
             ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='Hidden Parameter',
-                          color=colorscale(8),
+                          color=colorscale(9),
                           linewidth=3, linestyle='-.', zorder=3)
 
         #ax[1, 3].set_ylim(0, 0.03)
@@ -308,19 +308,21 @@ class Monitor:
         usurf_im = ax[0, 3].imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
         observation_glacier = copy.copy(observations)
         observation_glacier[self.icemask==0] = None
-        usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=1450, vmax=3600, origin='lower', zorder=2)
+        usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=2200, vmax=3600, origin='lower', zorder=2)
         # observatio_sample = np.full(observations.shape, np.nan)
         # observatio_sample[self.num_sample_points[:, 0], self.num_sample_points[:, 1]] = observations[self.num_sample_points[:, 0], self.num_sample_points[:, 1],]
         # usurf_im_samp = ax[0, 3].imshow(observatio_sample, cmap='Blues', vmin=1500, vmax=3500, origin='lower')
         ax[0, 3].scatter(self.high_point[1], self.high_point[0],
-                         edgecolors=colorscale(0), marker='^', c=None,
+                         edgecolors='gray', marker='^', c=None,
                          facecolors='white', lw=2, s=120, label='Highest Point', zorder=10)
-        usurf_ob = ax[0, 3].scatter(self.num_sample_points[:, 1], self.num_sample_points[:, 0],
-                                    edgecolors=colorscale(0), linewidths=0.5,
+        usurf_ob = ax[0, 3].scatter(self.num_sample_points[:, 1]-0.5, self.num_sample_points[:, 0],
+                                    edgecolors='gray', linewidths=0.8,
                                     marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
 
+        blues = plt.cm.get_cmap('Blues_r')
+
         ax[0, 3].scatter(self.low_point[1], self.low_point[0],
-                         edgecolors=colorscale(0), marker='v', c=None, facecolors='black',
+                         edgecolors='gray', marker='v', c=None, facecolors=blues(0),
                          lw=2, s=120, label='Lowest Point', zorder=10)
 
         cbar = fig.colorbar(usurf_im, ax=ax[0, 3], location='right')
@@ -338,7 +340,8 @@ class Monitor:
 
         legend = ax[0, 3].legend(loc='upper left', framealpha=.5)
         legend.legendHandles[1]._sizes = [100]
-        legend.legendHandles[1]._linewidths = [2]  # Adjust size of symbol in legend
+        legend.legendHandles[1]._linewidths = [2]
+        legend.legendHandles[1]._facecolors = [colorscale(1)]
 
         ### SMB plot ##
         # ela, gradabl, gradacc = state_x[[0, 1, 2]]
@@ -359,7 +362,7 @@ class Monitor:
         background = ax[1, 3].imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
 
         # true_smb[self.icemask==0] = None
-        smb_im = ax[1, 3].imshow(true_smb, cmap='RdBu', vmin=-11, vmax=11, origin='lower', zorder =5)
+        smb_im = ax[1, 3].imshow(true_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder =5)
         fig.colorbar(smb_im, ax=ax[1, 3], location='right', ticks=range(-10, 11, 5))
         ax[1, 3].set_title('[$m/yr$]', loc='right', x=1.25)
 

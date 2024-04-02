@@ -301,12 +301,13 @@ if __name__ == '__main__':
     hyperparameter_range = {
         #"Area": [1, 2, 4, 8, 16, 32, 64],
         #"Observation_Interval": [1, 2, 4, 5, 10, 20],
-        "Process_Noise": [0, 0.5, 1, 2, 4],
-        "Ensemble_Size": [5, 10, 20, 30, 40, 50]
+        #"Process_Noise": [0, 0.5, 1, 2, 4],
+        "Process_Noise": [1]
+        #"Ensemble_Size": [5, 10, 20, 30, 40, 50]
     }
     initial_offsets = np.random.randint(0, 100, size=10)
     initial_uncertainties = np.random.randint(0, 100, size=10)
-    biases = np.random.randint(0, 10, size=10)
+    biases = np.random.randint(-10, 0, size=10)
     specal_noises = np.random.randint(1, 3, size=10)
 
     for hyperparameter in hyperparameter_range.keys():

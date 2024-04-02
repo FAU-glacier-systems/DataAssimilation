@@ -305,10 +305,10 @@ class Monitor:
         observations = self.noise_observation[int((year - self.start_year))]
 
 
-        usurf_im = ax[0, 3].imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
-        observation_glacier = copy.copy(observations)
-        observation_glacier[self.icemask==0] = None
-        usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=2200, vmax=3600, origin='lower', zorder=2)
+        usurf_im = ax[0, 3].imshow(observations, cmap='Blues_r', vmin=1450, vmax=3600, origin='lower')
+        #observation_glacier = copy.copy(observations)
+        #observation_glacier[self.icemask==0] = None
+        #usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=2200, vmax=3600, origin='lower', zorder=2)
         # observatio_sample = np.full(observations.shape, np.nan)
         # observatio_sample[self.num_sample_points[:, 0], self.num_sample_points[:, 1]] = observations[self.num_sample_points[:, 0], self.num_sample_points[:, 1],]
         # usurf_im_samp = ax[0, 3].imshow(observatio_sample, cmap='Blues', vmin=1500, vmax=3500, origin='lower')

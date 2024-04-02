@@ -56,6 +56,8 @@ def plot_MAE():
 
         # Normalise
         #MAX = [100, 0.05, 0.05]
+        print(int(MAX_para_total[0]))
+
         max_gradient = np.max(MAX_para_total[1:])
         MAE[0] = MAE[0] / MAX_para_total[0]
         MAE[1] = MAE[1] / max_gradient
@@ -76,7 +78,7 @@ def plot_MAE():
                            hyperparameter: hyper_results #+ hyper_results + hyper_results,
                            })
         # define colors
-        print(len(df))
+        #print(len(df))
         colorscale = plt.get_cmap('tab20c')
         colormap = [colorscale(0), colorscale(2), colorscale(3),
                     'black',colorscale(18), colorscale(19),
@@ -157,6 +159,18 @@ def plot_MAE():
         grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
         ax_spread[i, j].set_ylabel('ELA Spread [m]')
+        ax_para[i, j].set_yticks([0, 1 / 3, 2 / 3, 1],
+                            [0, int(MAX_para_total[0] / 3), int(MAX_para_total[0] * 2 / 3),
+                             int(MAX_para_total[0])])
+        grad_axis_para.set_yticks([0, 1 / 3, 2 / 3, 1], [0] + ['%.4f' % e for e in
+                                                          [max_gradient / 3, max_gradient * 2 / 3,
+                                                           max_gradient]])
+        ax_spread[i, j].set_yticks([0, 1 / 3, 2 / 3, 1],
+                                 [0, int(MAX_spread_total[0] / 3), int(MAX_spread_total[0] * 2 / 3),
+                                  int(MAX_spread_total[0])])
+        grad_axis_spread.set_yticks([0, 1 / 3, 2 / 3, 1], [0] + ['%.4f' % e for e in
+                                                               [max_gradient_spread / 3, max_gradient_spread * 2 / 3,
+                                                                max_gradient_spread]])
 
         for ax, grad_axis in [(ax_para, grad_axis_para), (ax_spread, grad_axis_spread)]:
             ax[i,j].set_xticks(np.arange(1,len(bin_list_para)*3,3), bin_centers)
@@ -183,12 +197,7 @@ def plot_MAE():
             ax[i,j].yaxis.set_tick_params(left=False)
             #ax[i,j].xaxis.set_tick_params(bottom=True, which='minor',color="lightgray")
             ax[i, j].xaxis.set_tick_params(bottom=False, which='both',)
-            ax[i, j].set_yticks([0, 1 / 3, 2 / 3, 1],
-                                       [0, int(MAX_spread_total[0] / 3), int(MAX_spread_total[0] * 2 / 3),
-                                        int(MAX_spread_total[0])])
-            grad_axis.set_yticks([0, 1 / 3, 2 / 3, 1], [0]+['%.4f' % e for e in
-                                                               [ max_gradient_spread / 3, max_gradient_spread * 2 / 3,
-                                                                max_gradient_spread]])
+
 
 
             grad_axis.yaxis.set_tick_params(right=False)

@@ -15,7 +15,8 @@ from filterpy.common import outer_product_sum
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-np.random.seed(1233)
+#np.random.seed(1233)
+np.random.seed(37)
 
 class DataAssimilation:
     def __init__(self, covered_area, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,

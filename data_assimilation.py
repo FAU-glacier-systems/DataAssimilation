@@ -139,6 +139,7 @@ class DataAssimilation:
         ### VISUALIZE ###
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
+                                        self.process_noise,
                                         self.synthetic, self.initial_offset, self.initial_uncertainity,
                                         self.noisey_usurf, self.specal_noise, self.bias, hyperparameter, value)
         # draw plot of inital state

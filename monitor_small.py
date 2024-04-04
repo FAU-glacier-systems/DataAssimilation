@@ -12,12 +12,13 @@ import matplotlib.font_manager as fm
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, num_sample_points, dt, synthetic, initial_offset, initial_uncertainty,
+    def __init__(self, N, true_glacier, num_sample_points, dt, process_noise, synthetic, initial_offset, initial_uncertainty,
                  noise_observation, specal_noise, bias, hyperparameter, value):
 
         self.ensemble_size = N
         self.true_glacier = true_glacier
         self.num_sample_points = num_sample_points
+        self.process_noise = process_noise
         self.synthetic = synthetic
         self.initial_offset = initial_offset
         self.initial_uncertainty = initial_uncertainty
@@ -394,11 +395,12 @@ class Monitor:
 
         # draw randomly selected members of the ensemble
         #plt.rcParams["font.family"] = "Open Sans"
-        """
+
         fig.suptitle(
-            f"observation points: {len(self.num_sample_points)}, ensemble size: {self.ensemble_size}, dt: {self.dt},\n initial_offset: {self.initial_offset}, initial_uncertainty: {self.initial_uncertainty}",
-            fontsize=32)
-        """
+            f"observation points: {len(self.num_sample_points)}, ensemble size: {self.ensemble_size}, dt: {self.dt}, process noise: {self.process_noise},\n "
+            f"initial_offset: {self.initial_offset}, initial_uncertainty: {self.initial_uncertainty}, bias: {self.bias}, specal noise: {self.specal_noise}",
+            fontsize=16)
+
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
             #plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')

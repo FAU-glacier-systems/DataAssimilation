@@ -13,10 +13,7 @@
                         [ 2020,      0.009,     0.005,  3100,      100]
                       ],
   "iflo_emulator": "Inversion/iceflow-model",
-  //"oggm_RGI_ID": "RGI60-11.01238",
-  //"oggm_preprocess": false,
-  //"oggm_border": 30,
-  //"oggm_dx": 50,
+
   "lncd_input_file": "Inversion/geology-optimized.nc",
   "wncd_output_file" : "ReferenceSimulation/output.nc",
 

@@ -16,7 +16,7 @@ conda activate igm_p3.11
 #igm_run --param_file ReferenceSimulation/params.json
 
 # 3. Data Assimilation
-python -u data_assimilation.py
+#python -u data_assimilation.py
 
 # 4. Evaluation
 python evaluate.py

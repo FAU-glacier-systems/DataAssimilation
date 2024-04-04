@@ -301,17 +301,29 @@ if __name__ == '__main__':
 
     hyperparameter_range = {
         #"Area": [1, 2, 4, 8, 16, 32, 64],
-        "Observation_Interval": [1, 2],
+        #"Observation_Interval": [1, 2],
         #"Process_Noise": [0, 0.5, 2, 4],
-        #"Ensemble_Size": [5, 10, 20, 30, 40, 50]
+        #"Ensemble_Size": [5, 10, 20, 30, 40, 50],
+        "initial_offset" : [0,20,40,60,80,100],
+        "initial_uncertainty": [0,20,40,60,80,100],
+        "bias": [0, 2, 4, 6, 8, 10],
+        "specal_noise": [1, 2, 3]
+
     }
     initial_offsets = np.random.randint(0, 100, size=10)
     initial_uncertainties = np.random.randint(0, 100, size=10)
-    biases = np.random.randint(-10, 0, size=10)
+    biases = np.random.randint(-10, 10, size=10)
     specal_noises = np.random.randint(1, 3, size=10)
 
     for hyperparameter in hyperparameter_range.keys():
         print("Start Hyperparameter: ", hyperparameter)
+
+        # if hyperparameter == 'external_parameter':
+        #     l_bounds = [0, 0, 0, 1]
+        #     u_bounds = [100, 100, 10, 3]
+        #     sampler = qmc.LatinHypercube(d=4)
+        #     number_of_experiments = hyperparameter_range['external_parameter']
+        #     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
 
         for value in hyperparameter_range[hyperparameter]:
             if hyperparameter == 'Area':
@@ -337,23 +349,42 @@ if __name__ == '__main__':
                 dt = 4
                 ensemble_size = value
                 process_noise = 1
+            elif hyperparameter == 'external_parameter':
+                covered_area = 16
+                dt = 4
+                ensemble_size = 25
+                process_noise = 1
+            else:
+                covered_area = 16
+                dt = 4
+                ensemble_size = 25
+                process_noise = 1
 
-            #l_bounds = [0, 0, 0, 1]
-            #u_bounds = [100, 100, 10, 3]
-            #sampler = qmc.LatinHypercube(d=4)
-            #sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
-            # for num_sample_points, ensemble_size, dt, initial_offset, initial_uncertainity in zip(points, sizes, random_dt,
-            # offsets, uncertainities):
 
             if not os.path.exists(f"Results_{hyperparameter}/{value}"):
                 os.makedirs(f"Results_{hyperparameter}/{value}")
 
-            number_of_experiments = 10
+            if hyperparameter == 'external_parameter':
+                number_of_experiments = hyperparameter_range['external_parameter']
+            else:
+                number_of_experiments = 10
+
             for i in range(number_of_experiments):
                 initial_offset = initial_offsets[i]
-                initial_uncertainty =initial_uncertainties[i]
+                initial_uncertainty = initial_uncertainties[i]
                 bias = biases[i]
                 specal_noise = specal_noises[i]
+
+                if hyperparameter == 'initial_offset':
+                    initial_offset = value
+                elif hyperparameter == 'initial_uncertainty':
+                    initial_uncertainty = value
+                elif hyperparameter == 'bias':
+                    bias = value
+                elif hyperparameter == 'specal_noise':
+                    specal_noise = value
+                else:
+                    pass
 
                 print("initial_offset:", initial_offset)
                 print("initial_uncertainty:", initial_uncertainty)

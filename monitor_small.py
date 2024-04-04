@@ -401,10 +401,11 @@ class Monitor:
         """
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
-            plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
-
+            #plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
+            pass
         else:
-            plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
+            #plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
+            pass
             if year == self.year_range[-1]:
                 plt.savefig(self.output_dir+f"result_o_{self.initial_offset}_u_{self.initial_uncertainty}_b_{self.bias}_s_{self.specal_noise}.pdf", format='pdf')
                 plt.savefig(self.output_dir +

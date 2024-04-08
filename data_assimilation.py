@@ -305,8 +305,8 @@ if __name__ == '__main__':
         #"Observation_Interval": [1, 2],
         #"Process_Noise": [0, 0.5, 2, 4],
         #"Ensemble_Size": [5, 10, 20, 30, 40, 50],
-        "initial_offset" : [0,20,40,60,80,100],
-        "initial_uncertainty": [0,20,40,60,80,100],
+        #"initial_offset" : [0,20,40,60,80,100],
+        "initial_uncertainty": [100],
         "bias": [0, 2, 4, 6, 8, 10],
         "specal_noise": [1, 2, 3]
 

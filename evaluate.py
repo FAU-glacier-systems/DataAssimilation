@@ -13,9 +13,11 @@ def plot_MAE():
     fig_spread, ax_spread = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
 
     # run for every hyperparameters
-    for fignum, hyperparameter in enumerate(['ensemble_size', 'process_noise', 'dt', 'covered_area']):
+    #for fignum, hyperparameter in enumerate(['ensemble_size', 'process_noise', 'dt', 'covered_area']):
 
-        # translate name to folder name
+    for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
+
+    # translate name to folder name
         if hyperparameter == 'ensemble_size':
             experiment_folder = 'Results_Ensemble_Size/'
         elif hyperparameter == 'covered_area':
@@ -24,6 +26,8 @@ def plot_MAE():
             experiment_folder = 'Results_Observation_Interval/'
         elif hyperparameter == 'process_noise':
             experiment_folder = 'Results_Process_Noise/'
+        else:
+            experiment_folder = 'Results_' + hyperparameter + '/'
 
         # load result json files
         results = []
@@ -36,7 +40,10 @@ def plot_MAE():
                             results.append(content)
 
         # get the hyperparameter values
-        hyper_results = [exp[hyperparameter] for exp in results]
+        if hyperparameter == 'initial_uncertainty':
+            hyper_results = [exp['initial_uncertainity'] for exp in results]
+        else:
+            hyper_results = [exp[hyperparameter] for exp in results]
 
         # Compute the MAE and track the maximum MAE for normalisation
         MAE = np.empty((0, len(hyper_results)))
@@ -98,6 +105,18 @@ def plot_MAE():
 
         elif hyperparameter == 'process_noise':
             bin_centers = [0, 0.5, 1, 2, 4]
+
+        elif hyperparameter == 'initial_offset':
+            bin_centers = [0, 20, 40, 60, 80, 100]
+
+        elif hyperparameter == 'initial_uncertainty':
+            bin_centers = [0, 20, 40, 60, 80, 100]
+
+        elif hyperparameter == 'specal_noise':
+            bin_centers = [1, 2, 3]
+
+        elif hyperparameter == 'bias':
+            bin_centers = [0, 2, 4, 6, 8, 10]
 
         # group the MAE by bin_centers\\
         marker = ["^", "o", "v", ]
@@ -204,6 +223,8 @@ def plot_MAE():
                 ax[i, j].set_xlabel('Ensemble Size ($N$)')
             elif hyperparameter == 'process_noise':
                 ax[i, j].set_xlabel('Process Noise ($Q$)')
+            else:
+                ax[i, j].set_xlabel(hyperparameter)
 
     fig_para.legend(handles, labels, loc='upper center', ncol=3)
     fig_para.tight_layout()

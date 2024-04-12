@@ -234,6 +234,9 @@ class Monitor:
             ax[1, 0].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='Hidden Parameter',
                           color=colorscale(9),
                           linewidth=3, linestyle='-.', zorder=3)
+        else:
+            ax[1, 0].plot([2020], [3000], color= None)
+
 
 
         #ax[1, 1].set_ylim(2000, 4500)
@@ -259,6 +262,8 @@ class Monitor:
         if not self.smb == None:
             ax[1, 1].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][1], self.smb[-1][1]], label='Hidden Parameter',
                           color=colorscale(9), linewidth=3, linestyle='-.', zorder=3)
+        else:
+            ax[1, 1].plot([2020], [0], color=None)
 
 
         #ax[1, 2].set_ylim(0, 0.03)
@@ -285,6 +290,8 @@ class Monitor:
             ax[1, 2].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][2], self.smb[-1][2]], label='Hidden Parameter',
                           color=colorscale(9),
                           linewidth=3, linestyle='-.', zorder=3)
+        else:
+            ax[1, 2].plot([2020], [0], color=None)
 
         #ax[1, 3].set_ylim(0, 0.03)
         ax[1, 2].set_xticks(range(2000, 2020 + 1, 4))
@@ -345,15 +352,17 @@ class Monitor:
         #legend.legendHandles[1]._facecolors = [colorscale(1)]
 
         ### SMB plot ##
-        # ela, gradabl, gradacc = state_x[[0, 1, 2]]
-        # maxacc = 2.0
-        #
-        # smb = true_usurf - ela
-        # smb *= np.where(np.less(smb, 0), gradabl, gradacc)
-        # smb = np.clip(smb, -100, maxacc)
-        #
-        # smb = np.where((smb < 0) | (self.icemask > 0.5), smb, -10)
-        # esti_smb = np.array(smb)
+        ela, gradabl, gradacc = state_x[[0, 1, 2]]
+        maxacc = 2.0
+
+        smb = true_usurf - ela
+        smb *= np.where(np.less(smb, 0), gradabl, gradacc)
+        smb = np.clip(smb, -100, maxacc)
+
+        smb = np.where((smb < 0) | (self.icemask > 0.5), smb, -10)
+        esti_smb = np.array(smb)
+
+        esti_smb[self.icemask==0] = None
 
         true_smb = self.true_glacier['smb'][int((year - self.start_year))]
         true_smb[self.icemask == 0] = None
@@ -362,12 +371,11 @@ class Monitor:
         ax[1, 3].set_title(f'Surface Mass Balance in {int(year)}')
         background = ax[1, 3].imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
 
-        # true_smb[self.icemask==0] = None
-        smb_im = ax[1, 3].imshow(true_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder =5)
+        smb_im = ax[1, 3].imshow(esti_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder =5)
         fig.colorbar(smb_im, ax=ax[1, 3], location='right', ticks=range(-10, 11, 5))
         ax[1, 3].set_title('[$m/yr$]', loc='right', x=1.25)
 
-        plt.setp(ax[1, 3].spines.values(), color=colorscale(8))
+        plt.setp(ax[1, 3].spines.values(), color=colorscale(2))
         for axis in ['top', 'bottom', 'left', 'right']:
             ax[1, 3].spines[axis].set_linewidth(5)
         ax[1, 3].xaxis.set_major_formatter(formatter)
@@ -396,17 +404,17 @@ class Monitor:
         # draw randomly selected members of the ensemble
         #plt.rcParams["font.family"] = "Open Sans"
 
-        fig.suptitle(
-            f"observation points: {len(self.num_sample_points)}, ensemble size: {self.ensemble_size}, dt: {self.dt}, process noise: {self.process_noise},\n "
-            f"initial_offset: {self.initial_offset}, initial_uncertainty: {self.initial_uncertainty}, bias: {self.bias}, specal noise: {self.specal_noise}",
-            fontsize=16)
+        #fig.suptitle(
+        #    f"observation points: {len(self.num_sample_points)}, ensemble size: {self.ensemble_size}, dt: {self.dt}, process noise: {self.process_noise},\n "
+        #    f"initial_offset: {self.initial_offset}, initial_uncertainty: {self.initial_uncertainty}, bias: {self.bias}, specal noise: {self.specal_noise}",
+        #    fontsize=16)
 
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
-            #plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png')
+            plt.savefig(self.output_dir + 'report%i_update.png' % year, format='png', dpi=300)
             pass
         else:
-            #plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png')
+            plt.savefig(self.output_dir + 'report%i_predict.png' % year, format='png', dpi=300)
             pass
             if year == self.year_range[-1]:
                 plt.savefig(self.output_dir+f"result_o_{self.initial_offset}_u_{self.initial_uncertainty}_b_{self.bias}_s_{self.specal_noise}.pdf", format='pdf')

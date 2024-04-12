@@ -27,7 +27,7 @@ with rasterio.open(output_tif_path) as dataset:
     elevation_change_crop = dataset.read(1)
 """
 
-time_range = np.arange(2000, 2021)
+time_range = np.arange(2000, 2021).astype(float)
 usurf_2000 = input_ds['usurf']
 thk_2000 = input_ds['thk']
 usurf_change = []
@@ -37,10 +37,16 @@ elevation_change_crop = input_ds['dhdt']
 #elevation_change_crop[elevation_change_crop==-9999] = 0
 #elevation_change_crop = np.flip(elevation_change_crop, axis=0)
 
+plt.figure(figsize=(10, 8))
+plt.imshow(np.array(input_ds['thkobs']), cmap='Blues')
+plt.savefig('../Plots/thkobs.png')
+
 for i,time in enumerate(time_range):
     print((i/20))
-    usurf_change.append(usurf_2000 + elevation_change_crop*(i/20))
-    thk_change.append(thk_2000 + elevation_change_crop*(i/20))
+    usurf_i = usurf_2000 + elevation_change_crop * i
+    usurf_i = np.maximum(bedrock, usurf_i)
+    usurf_change.append(usurf_i)#*(i/20))
+    thk_change.append(usurf_i-bedrock)#*(i/20))
 
 usurf_variable = xr.DataArray(usurf_change, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])
 thk_variable = xr.DataArray(thk_change, coords={'time': time_range, 'x': input_ds['x'], 'y': input_ds['y']}, dims=['time', 'y', 'x'])

@@ -91,29 +91,35 @@ class DataAssimilation:
         ensemble.Q[2, 2] = 0.00000001 * self.process_noise * self.dt
 
         # make observations noisy adn compute Observation noise (R) of EnKF
-        usurfs = np.array(self.true_glacier['usurf'])
-        elevation_bias_2000 = None
-        self.noisey_usurf = []
-        for i, usurf in enumerate(usurfs):
-            # get min max elevation of glacier area
-            min, max = np.min(usurf[self.icemask == 1]), np.max(usurf[self.icemask == 1])
-            # elevation only on glacier
-            elevation_bias = (usurf - min) / (max - min)
-            # save 2000 elevation
-            if i == 0: elevation_bias_2000 = elevation_bias
-            # compute  white noice with specal
-            white_noise = np.random.normal(0, self.specal_noise, size=usurf.shape)
-            # add noises to usurf
-            noisy_usurf = usurf + elevation_bias * self.bias + white_noise
-            # append to noisey usurfs
-            self.noisey_usurf.append(noisy_usurf)
+        if synthetic:
+            usurfs = np.array(self.true_glacier['usurf'])
+            elevation_bias_2000 = None
+            self.noisey_usurf = []
+            for i, usurf in enumerate(usurfs):
+                # get min max elevation of glacier area
+                min, max = np.min(usurf[self.icemask == 1]), np.max(usurf[self.icemask == 1])
+                # elevation only on glacier
+                elevation_bias = (usurf - min) / (max - min)
+                # save 2000 elevation
+                if i == 0: elevation_bias_2000 = elevation_bias
+                # compute  white noice with specal
+                white_noise = np.random.normal(0, self.specal_noise, size=usurf.shape)
+                # add noises to usurf
+                noisy_usurf = usurf + elevation_bias * self.bias + white_noise
+                # append to noisey usurfs
+                self.noisey_usurf.append(noisy_usurf)
 
-        self.noisey_usurf = np.array(self.noisey_usurf)
+            self.noisey_usurf = np.array(self.noisey_usurf)
 
-        # compute R with s**2 +b**2 where b is dependent on height * 10 the maximum high elevation bias
-        ensemble.R = np.eye(
-            dim_z) * (specal_noise ** 2 + (
-                elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
+            # compute R with s**2 +b**2 where b is dependent on height * 10 the maximum high elevation bias
+            ensemble.R = np.eye(
+                dim_z) * (specal_noise ** 2 + (
+                    elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
+
+        else:
+            self.noisey_usurf = np.array(self.true_glacier['usurf'])
+            ensemble.R = np.eye(dim_z) * (specal_noise ** 2)
+
 
         ### PARALLIZE ###
         for i in range(self.ensemble_size):
@@ -290,128 +296,147 @@ class DataAssimilation:
 if __name__ == '__main__':
     from scipy.stats import qmc
 
-    synthetic = True
+    synthetic = False
 
-    with open('ReferenceSimulation/params.json') as f:
-        params = json.load(f)
-        base_ela = params['smb_simple_array'][1][3]
-        base_abl_grad = params['smb_simple_array'][1][1]
-        base_acc_grad = params['smb_simple_array'][1][2]
+    if synthetic:
+        with open('ReferenceSimulation/params.json') as f:
+            params = json.load(f)
+            base_ela = params['smb_simple_array'][1][3]
+            base_abl_grad = params['smb_simple_array'][1][1]
+            base_acc_grad = params['smb_simple_array'][1][2]
 
-    # [samplepoints^1/2, ensemble members, inital state, inital varianc]
+        # [samplepoints^1/2, ensemble members, inital state, inital varianc]
 
-    hyperparameter_range = {
-        #"Area": [1, 2, 4, 8, 16, 32, 64],
-        #"Observation_Interval": [1, 2],
-        #"Process_Noise": [0, 0.5, 2, 4],
-        #"Ensemble_Size": [5, 10, 20, 30, 40, 50],
-        #"initial_offset" : [0,20,40,60,80,100],
-        #"initial_uncertainty": [100],
-        #"bias": [0, 2, 4, 6, 8, 10],
-        "specal_noise": [2, 3]
+        hyperparameter_range = {
+            #"Area": [1, 2, 4, 8, 16, 32, 64],
+            #"Observation_Interval": [1, 2],
+            #"Process_Noise": [0, 0.5, 2, 4],
+            #"Ensemble_Size": [5, 10, 20, 30, 40, 50],
+            #"initial_offset" : [0,20,40,60,80,100],
+            #"initial_uncertainty": [100],
+            #"bias": [0, 2, 4, 6, 8, 10],
+            "specal_noise": [1]
 
-    }
-    initial_offsets = np.random.randint(0, 100, size=10)
-    initial_uncertainties = np.random.randint(0, 100, size=10)
-    biases = np.random.randint(-10, 10, size=10)
-    specal_noises = np.random.randint(1, 3, size=10)
+        }
+        initial_offsets = np.random.randint(0, 100, size=10)
+        initial_uncertainties = np.random.randint(0, 100, size=10)
+        biases = np.random.randint(-10, 10, size=10)
+        specal_noises = np.random.randint(1, 3, size=10)
 
-    for hyperparameter in hyperparameter_range.keys():
-        print("Start Hyperparameter: ", hyperparameter)
+        for hyperparameter in hyperparameter_range.keys():
+            print("Start Hyperparameter: ", hyperparameter)
 
-        # if hyperparameter == 'external_parameter':
-        #     l_bounds = [0, 0, 0, 1]
-        #     u_bounds = [100, 100, 10, 3]
-        #     sampler = qmc.LatinHypercube(d=4)
-        #     number_of_experiments = hyperparameter_range['external_parameter']
-        #     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
+            # if hyperparameter == 'external_parameter':
+            #     l_bounds = [0, 0, 0, 1]
+            #     u_bounds = [100, 100, 10, 3]
+            #     sampler = qmc.LatinHypercube(d=4)
+            #     number_of_experiments = hyperparameter_range['external_parameter']
+            #     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
 
-        for value in hyperparameter_range[hyperparameter]:
-            if hyperparameter == 'Area':
-                covered_area = value
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
+            for value in hyperparameter_range[hyperparameter]:
+                if hyperparameter == 'Area':
+                    covered_area = value
+                    dt = 4
+                    ensemble_size = 25
+                    process_noise = 1
 
-            elif hyperparameter == 'Observation_Interval':
-                covered_area = 16
-                dt = value
-                ensemble_size = 25
-                process_noise = 1
+                elif hyperparameter == 'Observation_Interval':
+                    covered_area = 16
+                    dt = value
+                    ensemble_size = 25
+                    process_noise = 1
 
-            elif hyperparameter == 'Process_Noise':
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = value
+                elif hyperparameter == 'Process_Noise':
+                    covered_area = 16
+                    dt = 4
+                    ensemble_size = 25
+                    process_noise = value
 
-            elif hyperparameter == 'Ensemble_Size':
-                covered_area = 16
-                dt = 4
-                ensemble_size = value
-                process_noise = 1
-            elif hyperparameter == 'external_parameter':
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
-            else:
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
-
-
-            if not os.path.exists(f"Results_{hyperparameter}/{value}"):
-                os.makedirs(f"Results_{hyperparameter}/{value}")
-
-            if hyperparameter == 'external_parameter':
-                number_of_experiments = hyperparameter_range['external_parameter']
-            else:
-                number_of_experiments = 10
-
-            for i in range(number_of_experiments):
-                initial_offset = initial_offsets[i]
-                initial_uncertainty = initial_uncertainties[i]
-                bias = biases[i]
-                specal_noise = specal_noises[i]
-
-                if hyperparameter == 'initial_offset':
-                    initial_offset = value
-                elif hyperparameter == 'initial_uncertainty':
-                    initial_uncertainty = value
-                elif hyperparameter == 'bias':
-                    bias = value
-                elif hyperparameter == 'specal_noise':
-                    specal_noise = value
+                elif hyperparameter == 'Ensemble_Size':
+                    covered_area = 16
+                    dt = 4
+                    ensemble_size = value
+                    process_noise = 1
+                elif hyperparameter == 'external_parameter':
+                    covered_area = 16
+                    dt = 4
+                    ensemble_size = 25
+                    process_noise = 1
                 else:
-                    pass
+                    covered_area = 16
+                    dt = 4
+                    ensemble_size = 25
+                    process_noise = 1
 
-                print("initial_offset:", initial_offset)
-                print("initial_uncertainty:", initial_uncertainty)
-                print("bias:", bias)
-                print("special_noise:", specal_noise)
-                print("covered_area:", covered_area)
-                print("process_noise:", process_noise)
-                print("ensemble_size:", ensemble_size)
-                print("dt:", dt)
 
-                sign = np.random.choice([-1, 1], 3)
+                if not os.path.exists(f"Results_{hyperparameter}/{value}"):
+                    os.makedirs(f"Results_{hyperparameter}/{value}")
 
-                initial_est = [(base_ela + 1000 * (initial_offset / 100)) * sign[0],
-                               (base_abl_grad + 0.01 * (initial_offset / 100)) * sign[1],
-                               (base_acc_grad + 0.01 * (initial_offset / 100)) * sign[2]]
 
-                initial_est_var = [initial_uncertainty ** 2 * 100,
-                                   initial_uncertainty ** 2 * 0.00000001,
-                                   initial_uncertainty ** 2 * 0.00000001]
+                number_of_experiments = 1
 
-                DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
-                                      initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
-                                      process_noise, synthetic)
-                results = DA.start_ensemble(hyperparameter, value)
+                for i in range(number_of_experiments):
+                    initial_offset = initial_offsets[i]
+                    initial_uncertainty = initial_uncertainties[i]
+                    bias = biases[i]
+                    specal_noise = specal_noises[i]
 
-                with open(
-                        f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
-                        'w') as f:
-                    json.dump(results, f, indent=4, separators=(',', ': '))
+                    if hyperparameter == 'initial_offset':
+                        initial_offset = value
+                    elif hyperparameter == 'initial_uncertainty':
+                        initial_uncertainty = value
+                    elif hyperparameter == 'bias':
+                        bias = value
+                    elif hyperparameter == 'specal_noise':
+                        specal_noise = value
+                    else:
+                        pass
+
+                    print("initial_offset:", initial_offset)
+                    print("initial_uncertainty:", initial_uncertainty)
+                    print("bias:", bias)
+                    print("special_noise:", specal_noise)
+                    print("covered_area:", covered_area)
+                    print("process_noise:", process_noise)
+                    print("ensemble_size:", ensemble_size)
+                    print("dt:", dt)
+
+                    sign = np.random.choice([-1, 1], 3)
+
+                    initial_est = [(base_ela + 1000 * (initial_offset / 100)) * sign[0],
+                                   (base_abl_grad + 0.01 * (initial_offset / 100)) * sign[1],
+                                   (base_acc_grad + 0.01 * (initial_offset / 100)) * sign[2]]
+
+                    initial_est_var = [initial_uncertainty ** 2 * 100,
+                                       initial_uncertainty ** 2 * 0.00000001,
+                                       initial_uncertainty ** 2 * 0.00000001]
+
+                    DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
+                                          initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
+                                          process_noise, synthetic)
+                    results = DA.start_ensemble(hyperparameter, value)
+
+                    with open(
+                            f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
+                            'w') as f:
+                        json.dump(results, f, indent=4, separators=(',', ': '))
+    else:
+        covered_area = 16
+        ensemble_size = 25
+        dt = 4
+        initial_est = [2000, 0, 0]
+        initial_uncertainty = 50
+        initial_est_var = [initial_uncertainty ** 2 * 100,
+                           initial_uncertainty ** 2 * 0.00000001,
+                           initial_uncertainty ** 2 * 0.00000001]
+        initial_offset = 0
+        specal_noise = 3
+        bias = 0
+        process_noise = 1
+        hyperparameter = "real"
+        value = True
+
+        DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
+                              initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
+                              process_noise, synthetic)
+        results = DA.start_ensemble(hyperparameter, value)

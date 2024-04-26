@@ -85,7 +85,7 @@ def plot_MAE():
                            hyperparameter: hyper_results  # + hyper_results + hyper_results,
                            })
         # define colors
-        # print(len(df))
+        # print(len(df_glamos))
         colorscale = plt.get_cmap('tab20c')
         colormap = [colorscale(0), colorscale(2), colorscale(3),
                     'black', colorscale(18), colorscale(19),
@@ -223,20 +223,28 @@ def plot_MAE():
                 ax[i, j].set_xlabel('Ensemble Size ($N$)')
             elif hyperparameter == 'process_noise':
                 ax[i, j].set_xlabel('Process Noise ($Q$)')
+            elif hyperparameter == 'initial_offset':
+                ax[i, j].set_xlabel('Initial Offset')
+            elif hyperparameter == 'initial_uncertainty':
+                ax[i, j].set_xlabel('Initial Uncertainty')
+            elif hyperparameter == 'specal_noise':
+                ax[i, j].set_xlabel('Specal Noise')
+            elif hyperparameter == 'bias':
+                ax[i, j].set_xlabel('Elevation Bias')
             else:
                 ax[i, j].set_xlabel(hyperparameter)
 
     fig_para.legend(handles, labels, loc='upper center', ncol=3)
     fig_para.tight_layout()
     fig_para.subplots_adjust(top=0.9, bottom=0.1)
-    fig_para.savefig(f'Plots/MAE.pdf', format="pdf")
-    fig_para.savefig(f'Plots/MAE.png', format="png", dpi=300)
+    fig_para.savefig(f'Plots/MAE_ext.pdf', format="pdf")
+    fig_para.savefig(f'Plots/MAE_ext.png', format="png", dpi=300)
 
     fig_spread.legend(handles, labels, loc='upper center', ncol=3)
     fig_spread.tight_layout()
     fig_spread.subplots_adjust(top=0.9, bottom=0.1)
-    fig_spread.savefig(f'Plots/spread.pdf', format="pdf")
-    fig_spread.savefig(f'Plots/spread.png', format="png", dpi=300)
+    fig_spread.savefig(f'Plots/spread_ext.pdf', format="pdf")
+    fig_spread.savefig(f'Plots/spread_ext.png', format="png", dpi=300)
 
 
 if __name__ == '__main__':

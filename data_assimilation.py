@@ -118,13 +118,18 @@ class DataAssimilation:
 
         else:
             self.noisey_usurf = np.array(self.true_glacier['usurf'])
-            ensemble.R = np.eye(dim_z) * (specal_noise ** 2)
+            observation_error = np.array(self.true_glacier['obs_error'][0])
+            ensemble.R = np.eye(dim_z) * observation_error[self.observation_points[:, 0], self.observation_points[:, 1]]
 
 
         ### PARALLIZE ###
         for i in range(self.ensemble_size):
             # make a copy of first usurf for every ensemble member
-            self.ensemble_usurfs.append(copy.copy(self.noisey_usurf[0]))
+            if self.synthetic:
+                observation_noise = normal_noisenp.random.normal(0, 1, self.noisey_usurf[0].shape) * self.specal_noise
+            else:
+                observation_noise = 0
+            self.ensemble_usurfs.append(copy.copy(self.noisey_usurf[0]) + observation_noise)
             # make a velocity field for every ensemble member
             self.ensemble_velo.append(np.zeros_like(self.noisey_usurf[0]))
             # create folder for every ensemble member
@@ -153,7 +158,7 @@ class DataAssimilation:
         ### LOOP OVER YEAR RANGE ###
         if not os.path.exists(f"Results_{hyperparameter}/"):
             os.makedirs(f"Results_{hyperparameter}/")
-        ### STARY LOOP ###
+        ### START LOOP ###
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
 
@@ -169,17 +174,21 @@ class DataAssimilation:
 
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
-
-
             ### UPDATE ###
 
             # get the noisey observation
+            print(int((ensemble.year - self.start_year)))
             noisey_usurf = self.noisey_usurf[int((ensemble.year - self.start_year))]
             sampled_observations = noisey_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
 
             # sample random noise for each ensemlbe memember to add to the difference
             # interpreation: every ensemble member gets a slightly different observation
-            observation_noise = np.random.normal(0, 1, size=(ensemble_size,) + noisey_usurf.shape)
+
+            if self.synthetic:
+                observation_noise = normal_noisenp.random.normal(0, 1, self.noisey_usurf[0].shape) * self.specal_noise
+            else:
+                observation_noise = np.array([r_norm*observation_error for r_norm in  np.random.normal(0, 1, ensemble_size)])
+
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
             R_diag = ensemble.R.diagonal()
             e_r = e_r * np.sqrt(R_diag)
@@ -188,8 +197,9 @@ class DataAssimilation:
             ensemble.update(sampled_observations, e_r)
 
             # update the surface elevation
-            self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in
-                                             observation_noise])
+            #self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in
+            #                                 observation_noise])
+            self.ensemble_usurfs = np.array([copy.copy(noisey_usurf) for i in  range(ensemble_size)])
 
             # plot the update
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
@@ -235,7 +245,7 @@ class DataAssimilation:
                 "time_start": year,
                 "time_end": year_next,
                 "iflo_retrain_emulator_freq": 0,
-                "time_step_max": 0.2,
+                #"time_step_max": 0.2,
                 }
 
         with open(f'Ensemble/{i}/params.json', 'w') as f:
@@ -421,18 +431,18 @@ if __name__ == '__main__':
                             'w') as f:
                         json.dump(results, f, indent=4, separators=(',', ': '))
     else:
-        covered_area = 16
-        ensemble_size = 25
+        covered_area = 50
+        ensemble_size = 40
         dt = 4
-        initial_est = [2000, 0, 0]
-        initial_uncertainty = 50
+        initial_est = [3000, 0.009, 0.003]
+        initial_uncertainty = 30
         initial_est_var = [initial_uncertainty ** 2 * 100,
                            initial_uncertainty ** 2 * 0.00000001,
                            initial_uncertainty ** 2 * 0.00000001]
-        initial_offset = 0
-        specal_noise = 3
+        initial_offset = initial_est[0]
+        specal_noise = 10
         bias = 0
-        process_noise = 1
+        process_noise = 0
         hyperparameter = "real"
         value = True
 
@@ -440,3 +450,6 @@ if __name__ == '__main__':
                               initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
                               process_noise, synthetic)
         results = DA.start_ensemble(hyperparameter, value)
+
+        with open(f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",'w') as f:
+            json.dump(results, f, indent=4, separators=(',', ': '))

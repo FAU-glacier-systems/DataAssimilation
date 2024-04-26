@@ -104,7 +104,7 @@ class Monitor:
             return str(int(x * self.res / 1000))
 
         # create canvas
-        fig, ax = plt.subplots(2, 4, figsize=(17, 8.5), layout="tight")
+        fig, ax = plt.subplots(2, 5, figsize=(23, 8.5), layout="tight")
         #fig.subplots_adjust(left=0.01, right=0.99, top=0.9, bottom=0.1)
 
         # define colorscale
@@ -112,9 +112,11 @@ class Monitor:
 
 
 
+        # get true usurf
+        true_vel = self.true_glacier['velsurf_mag'][int((year - self.start_year))]
 
         # draw true velocity
-        """
+
         ax[0, 4].set_title(f'Velocity in {int(year)}')
         smb_im = ax[0, 4].imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
         fig.colorbar(smb_im, ax=ax[0, 4], location='right')
@@ -133,7 +135,7 @@ class Monitor:
         ax[1, 4].yaxis.set_major_formatter(formatter)
         ax[1, 4].set_xlabel('$km$')
         ax[1, 4].set_yticks([])
-        """
+
         # plot volume
         ax[0, 0].set_title('Volume')
         ax[0, 0].plot(self.year_range, self.hist_true_y_noisy[:, 0], label="Noisy Observation",
@@ -304,8 +306,6 @@ class Monitor:
         true_usurf = self.true_glacier['usurf'][int((year - self.start_year))]
         # get true smb
 
-        # get true usurf
-        true_vel = self.true_glacier['velsurf_mag'][int((year - self.start_year))]
 
         # draw true surface elevation (usurf)/observation in ax[0,0]
         ax[0, 3].set_title(f'Surface Elevation in {int(year)}')
@@ -346,10 +346,10 @@ class Monitor:
         ax[0, 3].set_xlim(20, 100)
         ax[0, 3].set_ylim(30, 130)
 
-        #legend = ax[0, 3].legend(loc='upper left', framealpha=.5)
-        #legend.legendHandles[1]._sizes = [100]
-        #legend.legendHandles[1]._linewidths = [2]
-        #legend.legendHandles[1]._facecolors = [colorscale(1)]
+        legend = ax[0, 3].legend(loc='upper left', framealpha=.5)
+        legend.legendHandles[1]._sizes = [100]
+        legend.legendHandles[1]._linewidths = [2]
+        legend.legendHandles[1]._facecolors = [colorscale(1)]
 
         ### SMB plot ##
         ela, gradabl, gradacc = state_x[[0, 1, 2]]

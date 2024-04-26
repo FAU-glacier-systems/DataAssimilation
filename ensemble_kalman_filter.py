@@ -331,7 +331,7 @@ class EnsembleKalmanFilter(object):
 
                 # Wait for all tasks to complete
                 for future in futures:
-                    future.result(timeout=60)
+                    future.result(timeout=120)
 
             # threads = []
             # for i, s in enumerate(self.sigmas):

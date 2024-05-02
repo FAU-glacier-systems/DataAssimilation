@@ -12,7 +12,7 @@ import matplotlib.font_manager as fm
 
 
 class Monitor:
-    def __init__(self, N, true_glacier, num_sample_points, dt, process_noise, synthetic, initial_offset, initial_uncertainty,
+    def __init__(self, N, true_glacier, num_sample_points, dt, process_noise, obs_uncertainty, synthetic, initial_offset, initial_uncertainty,
                  noise_observation, specal_noise, bias, hyperparameter, value):
 
         self.ensemble_size = N
@@ -22,6 +22,7 @@ class Monitor:
         self.synthetic = synthetic
         self.initial_offset = initial_offset
         self.initial_uncertainty = initial_uncertainty
+        self.obs_uncertainty = obs_uncertainty
 
         self.year_range = np.array(true_glacier['time'])[::dt]
         self.dt = dt
@@ -69,7 +70,7 @@ class Monitor:
         else:
             self.smb = None
 
-        self.output_dir = f"Results_{hyperparameter}/{value}/Plots/"
+        self.output_dir = f"Results/Results_{hyperparameter}/{value}/Plots/"
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
@@ -143,6 +144,7 @@ class Monitor:
                       zorder=5)
 
 
+
         for e in range(self.ensemble_size):
             ax[0, 0].plot(self.year_range_repeat[:len(self.hist_ensemble_y)], np.array(self.hist_ensemble_y)[:, e, 0],
                           color=colorscale(5), marker='o', markersize=10, markevery=[-1], zorder=2)
@@ -155,20 +157,13 @@ class Monitor:
         ax[0, 0].plot(self.year_range, self.hist_true_y[:, 0], label='Hidden Truth',
                       color=colorscale(1), linewidth=3, linestyle='-.', zorder=3)
 
-
-
-
-
-
-        # ax[0, 1].set_ylim(1.43, 1.51)
         ax[0, 0].set_xticks(range(2000, 2020 + 1, 4))
         ax[0, 0].set_title('[$km^3$]', loc='left')
         ax[0, 0].yaxis.set_label_position("right")
-        #ax[0, 1].yaxis.tick_right()
         ax[0, 0].set_xlabel('$year$')
 
 
-        # plot area
+        # plot lowest point
         ax[0, 1].set_title('Elevation of Lowest Point')
         ax[0, 1].plot(self.year_range, self.hist_true_y_noisy[:,1], label="Noisy Observation",
                       color=colorscale(0), linewidth=0, marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
@@ -185,6 +180,12 @@ class Monitor:
 
         ax[0, 1].plot(self.year_range, self.hist_true_y[:, 1], label='Hidden Truth',
                       color=colorscale(1), linewidth=3, linestyle='-.', zorder=3)
+
+
+        uncertainty_low = self.obs_uncertainty[0]
+        ax[0, 1].fill_between(self.year_range, self.hist_true_y_noisy[:, 1]-uncertainty_low,
+                              self.hist_true_y_noisy[:, 1]+uncertainty_low,
+                              color=colorscale(1), alpha=0.2,label='Noisy Observation',)
 
 
 
@@ -212,6 +213,10 @@ class Monitor:
 
         ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label='Hidden Truth',
                       color=colorscale(1), linewidth=3, linestyle='-.', zorder=3)
+        uncertainty_low = self.obs_uncertainty[-1]
+        ax[0, 2].fill_between(self.year_range, self.hist_true_y_noisy[:, 2] - uncertainty_low,
+                              self.hist_true_y_noisy[:, 2] + uncertainty_low,
+                              color=colorscale(1), alpha=0.2, label='Noisy Observation', )
 
 
 
@@ -323,6 +328,7 @@ class Monitor:
         ax[0, 3].scatter(self.high_point[1], self.high_point[0],
                         edgecolors='gray', marker='^', c=None,
                         facecolors='white', lw=2, s=120, label='Highest Point', zorder=10)
+
         usurf_ob = ax[0, 3].scatter(self.num_sample_points[:, 1]-0.5, self.num_sample_points[:, 0],
                                    edgecolors='gray', linewidths=0.8,
                                    marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
@@ -353,7 +359,7 @@ class Monitor:
 
         ### SMB plot ##
         ela, gradabl, gradacc = state_x[[0, 1, 2]]
-        maxacc = 2.0
+        maxacc = 100
 
         smb = true_usurf - ela
         smb *= np.where(np.less(smb, 0), gradabl, gradacc)

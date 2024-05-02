@@ -19,13 +19,13 @@ def plot_MAE():
 
     # translate name to folder name
         if hyperparameter == 'ensemble_size':
-            experiment_folder = 'Results_Ensemble_Size/'
+            experiment_folder = 'Results/Results_Ensemble_Size/'
         elif hyperparameter == 'covered_area':
-            experiment_folder = 'Results_Area/'
+            experiment_folder = 'Results/Results_Area/'
         elif hyperparameter == 'dt':
-            experiment_folder = 'Results_Observation_Interval/'
+            experiment_folder = 'Results/Results_Observation_Interval/'
         elif hyperparameter == 'process_noise':
-            experiment_folder = 'Results_Process_Noise/'
+            experiment_folder = 'Results/Results_Process_Noise/'
         else:
             experiment_folder = 'Results_' + hyperparameter + '/'
 
@@ -85,7 +85,7 @@ def plot_MAE():
                            hyperparameter: hyper_results  # + hyper_results + hyper_results,
                            })
         # define colors
-        # print(len(df_glamos))
+        # print(len(df_glamos_bin))
         colorscale = plt.get_cmap('tab20c')
         colormap = [colorscale(0), colorscale(2), colorscale(3),
                     'black', colorscale(18), colorscale(19),

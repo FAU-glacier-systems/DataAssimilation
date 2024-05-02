@@ -117,9 +117,14 @@ class DataAssimilation:
                     elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
 
         else:
+
             self.noisey_usurf = np.array(self.true_glacier['usurf'])
             observation_error = np.array(self.true_glacier['obs_error'][0])
+
             ensemble.R = np.eye(dim_z) * observation_error[self.observation_points[:, 0], self.observation_points[:, 1]]
+
+            #observation_error = 0.154
+            #ensemble.R = np.eye(dim_z) * observation_error
 
 
         ### PARALLIZE ###
@@ -150,14 +155,16 @@ class DataAssimilation:
         ### VISUALIZE ###
         # create a Monitor for visualisation
         monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
-                                        self.process_noise,
+                                        self.process_noise, ensemble.R.diagonal(),
                                         self.synthetic, self.initial_offset, self.initial_uncertainity,
                                         self.noisey_usurf, self.specal_noise, self.bias, hyperparameter, value)
         # draw plot of inital state
         monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
         ### LOOP OVER YEAR RANGE ###
-        if not os.path.exists(f"Results_{hyperparameter}/"):
-            os.makedirs(f"Results_{hyperparameter}/")
+        if not os.path.exists("Results"):
+            os.makedirs("Results")
+        if not os.path.exists(f"Results/Results_{hyperparameter}/"):
+            os.makedirs(f"Results/Results_{hyperparameter}/")
         ### START LOOP ###
         for year in self.year_range[:-1]:
             print("==== %i ====" % year)
@@ -189,7 +196,10 @@ class DataAssimilation:
             else:
                 observation_noise = np.array([r_norm*observation_error for r_norm in  np.random.normal(0, 1, ensemble_size)])
 
+
+
             e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
+            #e_r = np.ones_like(sampled_observations) * observation_noise
             R_diag = ensemble.R.diagonal()
             e_r = e_r * np.sqrt(R_diag)
 
@@ -379,8 +389,8 @@ if __name__ == '__main__':
                     process_noise = 1
 
 
-                if not os.path.exists(f"Results_{hyperparameter}/{value}"):
-                    os.makedirs(f"Results_{hyperparameter}/{value}")
+                if not os.path.exists(f"Results/Results_{hyperparameter}/{value}"):
+                    os.makedirs(f"Results/Results_{hyperparameter}/{value}")
 
 
                 number_of_experiments = 1
@@ -427,12 +437,12 @@ if __name__ == '__main__':
                     results = DA.start_ensemble(hyperparameter, value)
 
                     with open(
-                            f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
+                            f"Results/Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
                             'w') as f:
                         json.dump(results, f, indent=4, separators=(',', ': '))
     else:
         covered_area = 50
-        ensemble_size = 40
+        ensemble_size = 30
         dt = 4
         initial_est = [3000, 0.009, 0.003]
         initial_uncertainty = 30
@@ -451,5 +461,5 @@ if __name__ == '__main__':
                               process_noise, synthetic)
         results = DA.start_ensemble(hyperparameter, value)
 
-        with open(f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",'w') as f:
+        with open(f"Results/Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",'w') as f:
             json.dump(results, f, indent=4, separators=(',', ': '))

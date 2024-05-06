@@ -82,8 +82,8 @@ geodetic_mb_dmdtda_err = geodetic_mb_2020['err_dmdtda'].values[0]
 
 dhdt = np.array(hugonnet_nc['dhdt'])[0]
 dhdt_error = np.array(hugonnet_nc['obs_error'])[0]
-icemask = np.array(hugonnet_nc['icemask'])[0][::-1]
-dhdt_oggm = np.array(oggm_nc['dhdt'])[::-1]
+icemask = np.array(hugonnet_nc['icemask'])[0]
+dhdt_oggm = np.array(oggm_nc['dhdt'])
 
 
 # compute specific mass balance
@@ -93,10 +93,6 @@ dhdt_error[icemask == 0] = 0
 hugonnet_mass_balance = np.sum(dhdt)/np.sum(icemask)
 hugonnet_error = np.sum(dhdt_error)/np.sum(icemask)
 oggm_mass_balance = np.sum(dhdt_oggm)/np.sum(icemask)
-
-plt.imshow(dhdt-dhdt_oggm, vmin=-3, vmax=3, cmap='seismic_r')
-plt.colorbar()
-plt.show()
 
 # volume to mass conversion
 oggm_mass_balance *= 0.85
@@ -164,50 +160,51 @@ avg_grad_acc = sum(grad_acc) / len(grad_acc)
 
 ### plot left figure ###
 # plot background elevation change bin
-fig, (a1, a0) = plt.subplots(1, 2, figsize=(10, 5))
+fig, (a1, a0) = plt.subplots(1, 2, figsize=(11, 5))
 
-# # plot elevation bins
-# scatter_bins = a0.scatter(date, elevation-50, c=mass_balance, cmap='seismic_r',
-#             vmin=-6, vmax=6,
-#             marker='s', s=250, )
-# fig.colorbar(scatter_bins, ax=a0, label='m w.e.')
-#
-# # plot ELA and mean ELA
-# a0.scatter(np.array(time)-0.03, ELA, alpha=0.3, c='black', label="Equilibrium Line Altitude", marker='_', s=250)
-# a0.plot([2006.5]+time+[2020.5], [avg_ela]*(len(time)+2), c='black', label="Mean Equilibrium Line Altitude")
-#
-# # write mean values of ela and gradients
-# a0.text(time[-1]+1.5, avg_ela-50, f'{int(avg_ela)}', rotation=90, color='black')
-# a0.text(time[-1]+1.5, avg_ela-600, f'{avg_grad_abl:.4f} m/yr/m', rotation=90,
-#          label='Mean Ablation Gradient', color='red')
-# a0.text(time[-1]+1.5, avg_ela+200, f'{avg_grad_acc:.4f} m/yr/m', rotation=90,
-#          label='Mean Accumulation Gradient', color='blue')
-#
-# #write description
-# a0.set_xlabel('Year of Measurement')
-# a0.set_xticks(np.array(time)[1::2])
-# a0.set_ylabel('Elevation [m]')
-# a0.set_title('Elevation dependent Annual Mass Balance')
-# a0.legend(loc='upper left')
+# plot elevation bins
+scatter_bins = a0.scatter(date, elevation-50, c=mass_balance, cmap='seismic_r',
+            vmin=-6, vmax=6,
+            marker='s', s=270, )
+fig.colorbar(scatter_bins, ax=a0, label='m w.e.')
+
+# plot ELA and mean ELA
+a0.scatter(np.array(time)-0.03, ELA, alpha=0.3, c='black', label="Equilibrium Line Altitude", marker='_', s=260)
+a0.plot([2006.5]+time+[2020.5], [avg_ela]*(len(time)+2), c='black', label="Mean Equilibrium Line Altitude")
+
+# write mean values of ela and gradients
+a0.text(time[-1]+1.5, avg_ela-50, f'{int(avg_ela)}', rotation=90, color='black')
+a0.text(time[-1]+1.5, avg_ela-600, f'{avg_grad_abl:.4f} m/yr/m', rotation=90,
+         label='Mean Ablation Gradient', color='red')
+a0.text(time[-1]+1.5, avg_ela+200, f'{avg_grad_acc:.4f} m/yr/m', rotation=90,
+         label='Mean Accumulation Gradient', color='blue')
+
+#write description
+a0.set_xlabel('Year of Measurement')
+a0.set_xticks(np.array(time)[1::2])
+a0.set_ylabel('Elevation [m]')
+a0.set_title('Elevation dependent Annual Mass Balance')
+a0.legend(loc='upper left')
 
 ### plot right figure ###
 # plot geodetic
+time20 = list(np.arange(2000,2007)) + time
 a1.set_title('Specific Mass Balance')
-hugonnet_loss =[hugonnet_mass_balance]*len(time)
-a1.plot(time, hugonnet_loss, label='Geodetic Mean (2000-2020) [Hugonnet website]', color='C0', zorder=10)
-a1.fill_between(time,hugonnet_loss -hugonnet_error, hugonnet_loss + hugonnet_error, color='C0', alpha=0.1, zorder=0,
+hugonnet_loss =[hugonnet_mass_balance]*len(time20)
+a1.plot(time20, hugonnet_loss, label='Geodetic Mean (2000-2020) [Hugonnet website]', color='C0', zorder=10)
+a1.fill_between(time20,hugonnet_loss -hugonnet_error, hugonnet_loss + hugonnet_error, color='C0', alpha=0.1, zorder=0,
                 label='error')
-a1.text(time[0], hugonnet_loss[-1] - 0.4, f'{hugonnet_mass_balance:.4f} $m \, w.e./yr$', color='C0', zorder=10)
+a1.text(time20[0], hugonnet_loss[-1] - 0.4, f'{hugonnet_mass_balance:.4f} $m \, w.e./yr$', color='C0', zorder=10)
 
-oggm_loss = [oggm_mass_balance]*len(time)
-a1.plot(time, oggm_loss, label='Geodetic rasta data[Hugonnet OGGM]', color='C1', zorder=7)
-a1.text(time[5], oggm_loss[-1] - 0.4, f'{oggm_mass_balance:.4f} $m \, w.e./yr$', color='C1', zorder=10)
+oggm_loss = [oggm_mass_balance]*len(time20)
+a1.plot(time20, oggm_loss, label='Geodetic rasta data[Hugonnet OGGM]', color='C1', zorder=7)
+a1.text(time20[7], oggm_loss[-1] - 0.4, f'{oggm_mass_balance:.4f} $m \, w.e./yr$', color='C1', zorder=10)
 
-oggm_dmdtda = [geodetic_mb_dmdtda] * len(time)
-a1.plot(time, oggm_dmdtda, label='Geodetic Mean single value[Hugonnet OGGM]', color='C2', zorder=10)
-a1.fill_between(time, oggm_dmdtda - geodetic_mb_dmdtda_err, oggm_dmdtda + geodetic_mb_dmdtda_err, color='C2', alpha=0.1, zorder=0,
+oggm_dmdtda = [geodetic_mb_dmdtda] * len(time20)
+a1.plot(time20, oggm_dmdtda, label='Geodetic Mean single value[Hugonnet OGGM]', color='C2', zorder=10)
+a1.fill_between(time20, oggm_dmdtda - geodetic_mb_dmdtda_err, oggm_dmdtda + geodetic_mb_dmdtda_err, color='C2', alpha=0.1, zorder=0,
                 label='error')
-a1.text(time[9], oggm_dmdtda[-1] - 0.4, f'{geodetic_mb_dmdtda:.4f} $m \, w.e./yr$', color='C2', zorder=10)
+a1.text(time20[13], oggm_dmdtda[-1] - 0.4, f'{geodetic_mb_dmdtda:.4f} $m \, w.e./yr$', color='C2', zorder=10)
 
 
 # plot glaciological
@@ -222,12 +219,13 @@ a1.text(time[0], glamos_loss[-1] + 0.1, f'{avg_mass_loss[0]:.4f} $m \, w.e./yr$'
 a1.set_ylabel('Annual Mass loss [$m \, w.e./yr$] water equivalent')
 a1.set_ylim(-4, 4)
 a1.set_xlabel('year')
+a1.set_xticks(time20[::2])
 a1.legend(loc='upper left')
 
-dhdt_error[icemask==0] = np.nan
-a0.set_title('Error map provided by Hugonnet')
-im_error = a0.imshow(dhdt_error, vmin=0, vmax=10, cmap='Blues')
-fig.colorbar(im_error, ax=a0, label='error m w.e./yr')
+# dhdt_error[icemask==0] = np.nan
+# a0.set_title('Error map provided by Hugonnet')
+# im_error = a0.imshow(dhdt_error, vmin=0, vmax=10, cmap='Blues')
+# fig.colorbar(im_error, ax=a0, label='error m w.e./yr')
 
 plt.tight_layout()
 plt.savefig('mass_loss.png', dpi=300)

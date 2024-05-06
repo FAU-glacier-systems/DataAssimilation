@@ -9,17 +9,16 @@
                        "write_ncdf", "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.009,     0.005,  2900,      2],
-                        [ 2020,      0.009,     0.005,  3100,      2],
-                        [ 2100,      0.009,     0.005,  3200,      2]
+                        [ 2000,      0.009,     0.005,  2900,      100],
+                        [ 2020,      0.009,     0.005,  2900,      100]
                       ],
-  "iflo_emulator": "iceflow-model",
+  "iflo_emulator": "Inversion/iceflow-model",
 
   "lncd_input_file": "Inversion/geology-optimized.nc",
   "wncd_output_file" : "ReferenceSimulation/output.nc",
 
   "time_start": 2000.0,
-  "time_end": 2100.0,
+  "time_end": 2020.0,
   "time_save": 1,
   "iflo_retrain_emulator_freq" : 10,
 

@@ -6,6 +6,7 @@ import rioxarray
 import xarray as xr
 import numpy as np
 
+# https://www.sedoo.fr/theia-publication-products/?uuid=c428c5b9-df8f-4f86-9b75-e04c778e29b9
 inversion_file = '../Inversion/geology-optimized.nc'
 oggm_file = '../OGGM_shop/input_saved.nc'
 inversion_ds = xr.open_dataset(inversion_file)

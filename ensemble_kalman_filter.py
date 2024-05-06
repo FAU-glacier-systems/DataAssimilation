@@ -233,7 +233,7 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update(self, z, e_r, R=None, ):
+    def update(self, z, e_r, R=None):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.

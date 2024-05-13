@@ -117,7 +117,7 @@ class Monitor:
 
         # draw true velocity
         ax_vel_true = ax[2, 3]
-        ax_vel_true.set_title(f'Velocity in {int(year)}')
+        ax_vel_true.set_title(f'Velocity in 2000')
         vel_im = ax_vel_true.imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
         fig.colorbar(vel_im, ax=ax_vel_true, location='right')
         ax_vel_true.set_title('[$m/yr$]', loc='right', x=1.15)
@@ -132,7 +132,7 @@ class Monitor:
         ax_vel_model = ax[2, 2]
         ax_vel_model.set_title(f'Mean Difference Surface Velocity')
         modeled_mean_vel = np.mean(ensemble_velo, axis=0)
-        vel_im = ax_vel_model.imshow(true_vel-modeled_mean_vel, cmap='seismic_r', vmin=-30, vmax=30, origin='lower')
+        vel_im = ax_vel_model.imshow(true_vel-modeled_mean_vel, cmap='bwr_r', vmin=-30, vmax=30, origin='lower')
         fig.colorbar(vel_im, ax=ax_vel_model, location='right')
         ax_vel_model.set_title('[$m/yr$]', loc='right', x=1.15)
         ax_vel_model.xaxis.set_major_formatter(formatter)
@@ -372,7 +372,7 @@ class Monitor:
         ax_obs_diff = ax[2,0]
         ax_obs_diff.set_title(f'Mean Difference Surface Elevation')
         surface_dif = np.mean(ensemble_usurfs, axis=0) - observations
-        usurf_diff_im = ax_obs_diff.imshow(surface_dif, vmin=-50, vmax=50, cmap='seismic_r',  origin='lower')
+        usurf_diff_im = ax_obs_diff.imshow(surface_dif, vmin=-50, vmax=50, cmap='bwr_r',  origin='lower')
         cbar = fig.colorbar(usurf_diff_im, ax=ax_obs_diff, location='right')
         ax_obs_diff.set_xlim(20, 100)
         ax_obs_diff.set_ylim(30, 130)
@@ -400,9 +400,9 @@ class Monitor:
             true_smb = self.true_glacier['smb'][int((year - self.start_year))]
             true_smb[self.icemask == 0] = None
         else:
-
             [time,  gradabl, gradacc, ela, maxacc] = self.smb[1]
-
+            print("############## SMB ############")
+            print(gradabl, gradacc, ela, maxacc)
             smb = true_usurf - ela
             smb *= np.where(np.less(smb, 0), gradabl, gradacc)
             smb = np.clip(smb, -100, maxacc)
@@ -412,30 +412,36 @@ class Monitor:
             true_smb = smb
 
         # draw true surface mass balance
-        ax[1, 3].set_title(f'Surface Mass Balance in {int(year)}')
-        background = ax[1, 3].imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
+        ax_smb = ax[1, 3]
+        ax_smb.set_title(f'Surface Mass Balance in {int(year)}')
+        background = ax_smb.imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
 
-        smb_im = ax[1, 3].imshow(true_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder =5)
-        fig.colorbar(smb_im, ax=ax[1, 3], location='right', ticks=range(-10, 11, 5))
-        ax[1, 3].set_title('[$m/yr$]', loc='right', x=1.15)
+        smb_im = ax_smb.imshow(esti_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder =5)
+        fig.colorbar(smb_im, ax=ax_smb, location='right', ticks=range(-10, 11, 5))
+        text_y, text_x = esti_smb.shape
+        mb = np.sum(esti_smb[self.icemask==1])/np.sum(self.icemask)
+        ax_smb.text(text_x/2-7, text_y/2, f'{mb:.4f} \n m/yr', zorder=10, size=20)
+        ax_smb.set_title('[$m/yr$]', loc='right', x=1.15)
 
-        plt.setp(ax[1, 3].spines.values(), color=colorscale(8))
+        plt.setp(ax_smb.spines.values(), color=colorscale(2))
         for axis in ['top', 'bottom', 'left', 'right']:
-            ax[1, 3].spines[axis].set_linewidth(5)
-        ax[1, 3].xaxis.set_major_formatter(formatter)
-        ax[1, 3].yaxis.set_major_formatter(formatter)
-        ax[1, 3].set_xlabel('$km$')
+            ax_smb.spines[axis].set_linewidth(5)
+        ax_smb.xaxis.set_major_formatter(formatter)
+        ax_smb.yaxis.set_major_formatter(formatter)
+        ax_smb.set_xlabel('$km$')
         #ax[1, 3].set_yticks([])
 
-        ax[1, 3].set_xlim(20, 100)
-        ax[1, 3].set_ylim(30, 130)
+        ax_smb.set_xlim(20, 100)
+        ax_smb.set_ylim(30, 130)
 
         # true_smb
         ax_true_smb = ax[2, 1]
         ax_true_smb.set_title(f'Mean Difference Surface Mass Balance')
 
-        smb_im = ax_true_smb.imshow(esti_smb - true_smb, cmap='seismic_r',vmin=-3, vmax=3, origin='lower', zorder=5)
+        smb_im = ax_true_smb.imshow(esti_smb - true_smb, cmap='bwr_r',vmin=-3, vmax=3, origin='lower', zorder=5)
         fig.colorbar(smb_im, ax=ax_true_smb, location='right')
+        mb_glamos = np.sum(true_smb[self.icemask==1])/np.sum(self.icemask)
+        ax_true_smb.text(20, 30, f'{mb_glamos:.4f} \n m/yr', zorder=10, size=20)
         ax_true_smb.set_title('[$m/yr$]', loc='right', x=1.15)
 
         ax_true_smb.xaxis.set_major_formatter(formatter)

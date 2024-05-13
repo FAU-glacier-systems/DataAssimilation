@@ -106,7 +106,7 @@ class DataAssimilation:
             observation_error = np.array(self.true_glacier['obs_error'][0])
 
         observation_error[self.icemask == 0] = 0
-        ensemble.R = np.eye(dim_z) * observation_error[self.observation_points[:, 0], self.observation_points[:, 1]]**2
+        ensemble.R = np.eye(dim_z) * observation_error[self.observation_points[:, 0], self.observation_points[:, 1]]
 
 
         ### PARALLIZE ###
@@ -115,7 +115,7 @@ class DataAssimilation:
 
             observation_noise_samples = np.random.normal(0, 1) * observation_error
 
-            self.ensemble_usurfs.append(copy.copy(self.noisy_usurf[0]) + observation_noise_samples)
+            self.ensemble_usurfs.append(copy.copy(self.noisy_usurf[0]) )#+ observation_noise_samples)
             # make a velocity field for every ensemble member
             self.ensemble_velo.append(np.zeros_like(self.noisy_usurf[0]))
             # create folder for every ensemble member
@@ -182,8 +182,8 @@ class DataAssimilation:
             ensemble.update(sampled_observations, e_r)
 
             # update the surface elevation
-            self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in observation_noise_samples])
-            #self.ensemble_usurfs = np.array([copy.copy(noisey_usurf) for i in  range(ensemble_size)])
+            #self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in observation_noise_samples])
+            self.ensemble_usurfs = np.array([copy.copy(noisey_usurf) for i in  range(ensemble_size)])
 
             # plot the update
             monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
@@ -422,8 +422,8 @@ if __name__ == '__main__':
         covered_area = 50
         ensemble_size = 35
         dt = 4
-        initial_est = [2500, 0.009, 0.005]
-        initial_uncertainty = 30
+        initial_est = [2966, 0.0082, 0.0016]
+        initial_uncertainty = 5
         initial_est_var = [initial_uncertainty ** 2 * 100,
                            initial_uncertainty ** 2 * 0.00000001,
                            initial_uncertainty ** 2 * 0.00000001]

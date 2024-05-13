@@ -35,8 +35,8 @@ def extract_ela_gradients(group_df):
     gradient_accumulation = np.polyfit(elevation[mb>0], accumulation, 1)[0]
 
     # conversion to volume
-    gradient_ablation = gradient_ablation/1000
-    gradient_accumulation = gradient_accumulation/1000
+    gradient_ablation = gradient_ablation/850
+    gradient_accumulation = gradient_accumulation/850
     return ela, gradient_ablation, gradient_accumulation
 
 def compute_specific_mass_balance(group_df):
@@ -72,7 +72,7 @@ oggm_nc = xr.open_dataset(file_path_oggm)
 hugonnet_nc = xr.open_dataset(file_path_hugonnet)
 
 geodetic_mb = utils.get_geodetic_mb_dataframe()
-geodetic_mb = geodetic_mb[geodetic_mb.index == 'RGI60-11.01238']
+geodetic_mb = geodetic_mb[geodetic_mb.index == 'RGI60-17.02858']
 
 geodetic_mb_2020 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2020-01-01']
 geodetic_mb_dmdtda = geodetic_mb_2020['dmdtda'].values[0]

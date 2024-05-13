@@ -333,15 +333,9 @@ class EnsembleKalmanFilter(object):
                 for future in futures:
                     future.result(timeout=120)
 
-            # threads = []
-            # for i, s in enumerate(self.sigmas):
-            #     thread = threading.Thread(target=self.fx, args=(s, dt, i, year))
-            #     thread.start()
-            #     threads.append(thread)
-            #
-            #     # Wait for all threads to complete
-            # for thread in threads:
-            #     thread.join(timeout=60)
+            #for i, s in enumerate(self.sigmas):
+            #    task(s, dt, i, year)
+
 
 
         e = multivariate_normal(self._mean, self.Q, N)

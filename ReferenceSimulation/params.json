@@ -10,7 +10,7 @@
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
                         [ 2000,      0.009,     0.005,  2900,      100],
-                        [ 2020,      0.009,     0.005,  2900,      100]
+                        [ 2020,      0.009,     0.005,  3000,      100]
                       ],
   "iflo_emulator": "Inversion/iceflow-model",
 

@@ -72,7 +72,7 @@ oggm_nc = xr.open_dataset(file_path_oggm)
 hugonnet_nc = xr.open_dataset(file_path_hugonnet)
 
 geodetic_mb = utils.get_geodetic_mb_dataframe()
-geodetic_mb = geodetic_mb[geodetic_mb.index == 'RGI60-17.02858']
+geodetic_mb = geodetic_mb[geodetic_mb.index == 'RGI60-11.01238']
 
 geodetic_mb_2020 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2020-01-01']
 geodetic_mb_dmdtda = geodetic_mb_2020['dmdtda'].values[0]
@@ -95,9 +95,9 @@ hugonnet_error = np.sum(dhdt_error)/np.sum(icemask)
 oggm_mass_balance = np.sum(dhdt_oggm)/np.sum(icemask)
 
 # volume to mass conversion
-oggm_mass_balance *= 0.85
-hugonnet_mass_balance *= 0.85
-hugonnet_error *= 0.85
+#oggm_mass_balance *= 0.85
+#hugonnet_mass_balance *= 0.85
+#hugonnet_error *= 0.85
 
 
 ### GLACIOLOGICAL ###

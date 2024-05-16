@@ -29,7 +29,7 @@ def main():
         for value in hyperparameter_range[hyperparameter]:
             # default
             covered_area = 50
-            ensemble_size = 10
+            ensemble_size = 25
             observation_uncertainty = 0.2
 
             if hyperparameter == 'Area':
@@ -68,7 +68,7 @@ def main():
                           "RGI_ID": "RGI60-11.01238",
                           "smb_simple_array": smb,
                           "covered_area": covered_area,
-                          "num_iterations": 5,
+                          "num_iterations": 10,
                           "ensemble_size": ensemble_size,
                           "time_interval": 20,
                           "initial_offset": initial_offset,
@@ -90,7 +90,7 @@ def main():
                 ensemble = DA.initialize_ensemble()
 
                 # Run loop of predictions and updates
-                estimates = DA.run_iterations(ensemble, visualise=True)
+                estimates = DA.run_iterations(ensemble, visualise=False)
                 DA.save_results(estimates)
 
 

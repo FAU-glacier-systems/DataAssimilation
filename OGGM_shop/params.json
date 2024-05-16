@@ -4,5 +4,6 @@
   "modules_postproc": [],
 
   "oggm_RGI_ID": "RGI60-11.01238",
-  "oggm_incl_glathida": true
-}
+  "oggm_incl_glathida": false}
+
+

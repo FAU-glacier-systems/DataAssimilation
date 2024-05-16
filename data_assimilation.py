@@ -1,4 +1,4 @@
-import random
+import argparse
 import shutil
 import subprocess
 import traceback
@@ -10,52 +10,55 @@ import copy
 import numpy as np
 import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
-from filterpy.common import outer_product_sum
+import matplotlib.pyplot as plt
+import monitor
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-#np.random.seed(1233)
+# np.random.seed(1233)
 np.random.seed(37)
 
-class DataAssimilation:
-    def __init__(self, covered_area, ensemble_size, dt, initial_estimate, initial_estimate_var, initial_offset,
-                 initial_uncertainty, specal_noise, bias, process_noise, synthetic):
 
+class DataAssimilation:
+    def __init__(self, params):
         # Save arguments
-        self.covered_area = covered_area
-        self.ensemble_size = ensemble_size
-        self.dt = dt
-        self.initial_estimate = initial_estimate
-        self.initial_estimate_var = initial_estimate_var
-        self.initial_offset = initial_offset
-        self.initial_uncertainity = initial_uncertainty
-        self.specal_noise = specal_noise
-        self.bias = bias
-        self.process_noise = process_noise
-        self.synthetic = synthetic
+        self.params = params
+        self.synthetic = params['synthetic']
+        self.output_dir = params['output_dir']
+
+        self.covered_area = params['covered_area']
+        self.ensemble_size = params['ensemble_size']
+        self.process_noise = params['process_noise']
+        self.time_interval = params['time_interval']
+        self.num_iterations = params['num_iterations']
+        self.initial_spread = params['initial_spread']
+
+        if self.synthetic:
+            self.initial_offset = params['initial_offset']
+            self.observation_uncertainty = params['observation_uncertainty']
+
+        self.initial_estimate = params['initial_estimate']
 
         # placeholders
         self.ensemble_usurfs = []
         self.ensemble_velo = []
 
         # Change between synthetic and real observations ###
-        if self.synthetic:
-            self.true_glacier = nc.Dataset('ReferenceSimulation/output.nc')
-        else:
-            self.true_glacier = nc.Dataset('Hugonnet/merged_dataset.nc')
+        self.observed_glacier = nc.Dataset(params['observations_file'])
+        self.hidden_smb = params['smb_simple_array']
 
-        # Extract metadata from ground truth glacier
-        self.year_range = np.array(self.true_glacier['time'])[::dt]
+        # Extract metadata from ground observations
+        self.year_range = np.array(self.observed_glacier['time'])[::self.time_interval]
         self.start_year = self.year_range[0]
-        self.icemask = np.array(self.true_glacier['icemask'])[0]
-        self.surface = np.array(self.true_glacier['usurf'])[0]
-        self.bedrock = self.true_glacier['topg'][0]
+        self.icemask = np.array(self.observed_glacier['icemask'])[0]
+        self.surface = np.array(self.observed_glacier['usurf'])[0]
+        self.bedrock = self.observed_glacier['topg'][0]
 
         # sample observation points
         gx, gy = np.where(self.icemask)
         glacier_points = np.array(list(zip(gx, gy)))
-        num_sample_points = int(covered_area / 100 * np.sum(self.icemask))
+        num_sample_points = int(self.covered_area / 100 * np.sum(self.icemask))
         observation_index = np.random.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
 
@@ -66,149 +69,144 @@ class DataAssimilation:
         sorted_observation_points = sorted(observation_points, key=get_pixel_value)
         self.observation_points = np.array(sorted_observation_points)
 
-    def start_ensemble(self, hyperparameter, value):
-        import monitor_small
-        ### INITIALIZE ###
+        ### PARALLIZE ###
+        for i in range(self.ensemble_size):
+            # create folder for every ensemble member
+            dir_name = f"Ensemble/{i:03}/"
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
+            # copy results of inversion as initial state for every ensemble member
+            shutil.copy2("Inversion/geology-optimized.nc", dir_name + "init_input.nc")
+            # create folder for igm trained model
+            if os.path.exists(dir_name + "iceflow-model"):
+                shutil.rmtree(dir_name + "iceflow-model")
+            # copy trained igm parameters
+            shutil.copytree("Inversion/iceflow-model/", dir_name + "iceflow-model/")
+
+        ### LOOP OVER YEAR RANGE ###
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+    def initialize_ensemble(self):
+        # Import necessary modules
+        import monitor
+
         # Initial estimate
         state_x = np.array(self.initial_estimate).astype(float)
 
-        # Initialise prior (uncertainty) P
+        # Initialize prior (uncertainty) P
         prior_x = np.zeros((len(state_x), len(state_x)))
-        prior_x[0, 0] = self.initial_estimate_var[0]
-        prior_x[1, 1] = self.initial_estimate_var[1]
-        prior_x[2, 2] = self.initial_estimate_var[2]
+        prior_x[0, 0] = self.initial_spread ** 2 * 100
+        prior_x[1, 1] = self.initial_spread ** 2 * 0.00000001
+        prior_x[2, 2] = self.initial_spread ** 2 * 0.00000001
 
         dim_z = len(self.observation_points)
-        ### Create Ensemble Kalman Filter
-        ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.dt, N=self.ensemble_size,
+        print(state_x)
+        print([prior_x[0,0], prior_x[1,1], prior_x[2,2]])
+        # Create Ensemble Kalman Filter
+        ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.time_interval, N=self.ensemble_size,
                         hx=self.generate_observation, fx=self.forward_model,
                         start_year=self.start_year)
 
-        # update Process noise (Q)
+        # Update Process noise (Q)
         ensemble.Q = np.zeros_like(prior_x)
-        ensemble.Q[0, 0] = 1000 * self.process_noise * self.dt
-        ensemble.Q[1, 1] = 0.00000001 * self.process_noise * self.dt
-        ensemble.Q[2, 2] = 0.00000001 * self.process_noise * self.dt
+        ensemble.Q[0, 0] = 100 * self.process_noise
+        ensemble.Q[1, 1] = 0.00000001 * self.process_noise
+        ensemble.Q[2, 2] = 0.00000001 * self.process_noise
 
-        # make observations noisy adn compute Observation noise (R) of EnKF
-        usurfs = np.array(self.true_glacier['usurf'])
-        elevation_bias_2000 = None
-        self.noisey_usurf = []
-        for i, usurf in enumerate(usurfs):
-            # get min max elevation of glacier area
-            min, max = np.min(usurf[self.icemask == 1]), np.max(usurf[self.icemask == 1])
-            # elevation only on glacier
-            elevation_bias = (usurf - min) / (max - min)
-            # save 2000 elevation
-            if i == 0: elevation_bias_2000 = elevation_bias
-            # compute  white noice with specal
-            white_noise = np.random.normal(0, self.specal_noise, size=usurf.shape)
-            # add noises to usurf
-            noisy_usurf = usurf + elevation_bias * self.bias + white_noise
-            # append to noisey usurfs
-            self.noisey_usurf.append(noisy_usurf)
+        # Compute Observation noise (R) of EnKF
+        self.usurf = np.array(self.observed_glacier['usurf'])
+        if self.synthetic:
+            uncertainty_factor = np.arange(len(self.usurf)) * self.observation_uncertainty
+            observation_uncertainty_field = np.array([self.icemask * f for f in uncertainty_factor])
+        else:
+            observation_uncertainty_field = np.array(self.observed_glacier['obs_error'])
 
-        self.noisey_usurf = np.array(self.noisey_usurf)
+        self.observation_uncertainty_field = observation_uncertainty_field
+        ensemble.R = np.eye(dim_z) * observation_uncertainty_field[
+            0, self.observation_points[:, 0], self.observation_points[:, 1]]
 
-        # compute R with s**2 +b**2 where b is dependent on height * 10 the maximum high elevation bias
-        ensemble.R = np.eye(
-            dim_z) * (specal_noise ** 2 + (
-                elevation_bias_2000[self.observation_points[:, 0], self.observation_points[:, 1]] * 10) ** 2)
+        return ensemble
 
-        ### PARALLIZE ###
-        for i in range(self.ensemble_size):
-            # make a copy of first usurf for every ensemble member
-            self.ensemble_usurfs.append(copy.copy(self.noisey_usurf[0]))
-            # make a velocity field for every ensemble member
-            self.ensemble_velo.append(np.zeros_like(self.noisey_usurf[0]))
-            # create folder for every ensemble member
-            if not os.path.exists(f"Ensemble/{i}"):
-                os.makedirs(f"Ensemble/{i}")
-            # copy results of inversion as initial state for every ensemble member
-            shutil.copy2("Inversion/geology-optimized.nc", f"Ensemble/{i}/init_input.nc")
-            # create folder for igm trained model
-            if os.path.exists(f"Ensemble/{i}/iceflow-model"):
-                shutil.rmtree(f"Ensemble/{i}/iceflow-model")
-            # copy trained igm parameters
-            shutil.copytree("Inversion/iceflow-model/", f"Ensemble/{i}/iceflow-model/")
-
-        # convert to numpy
-        self.ensemble_usurfs = np.array(self.ensemble_usurfs)
-        self.ensemble_velo = np.array(self.ensemble_velo)
-
-        ### VISUALIZE ###
-        # create a Monitor for visualisation
-        monitor = monitor_small.Monitor(self.ensemble_size, self.true_glacier, self.observation_points, self.dt,
-                                        self.process_noise,
-                                        self.synthetic, self.initial_offset, self.initial_uncertainity,
-                                        self.noisey_usurf, self.specal_noise, self.bias, hyperparameter, value)
-        # draw plot of inital state
-        monitor.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
-        ### LOOP OVER YEAR RANGE ###
-        if not os.path.exists(f"Results_{hyperparameter}/"):
-            os.makedirs(f"Results_{hyperparameter}/")
-        ### STARY LOOP ###
-        for year in self.year_range[:-1]:
-            print("==== %i ====" % year)
-
-            ### PREDICT ###
-            start_time = time.time()
-            ensemble.predict()
-            print("Prediction time: ", time.time() - start_time)
-            ensemble.year = year + dt
-
-            # get observations
-            #usurf = self.true_glacier['usurf'][int((ensemble.year - self.start_year))]
-            velo = self.true_glacier['velsurf_mag'][int((ensemble.year - self.start_year))]
-
-            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+    def run_iterations(self, ensemble, visualise=True):
+        estimates = [copy.copy(ensemble.sigmas)]
 
 
+        for iteration in range(self.num_iterations):
+            ensemble.year = self.start_year
 
-            ### UPDATE ###
+            # Initialize ensemble surface elevation and velocity
+            self.initialize_ensemble_fields()
+            monitor_instance = monitor.Monitor(self.params, self.usurf, self.observation_uncertainty_field,
+                                               self.observation_points)
+            if visualise:
+                monitor_instance.plot(self.year_range[0], ensemble.sigmas, self.ensemble_usurfs,
+                                      self.ensemble_velo)
 
-            # get the noisey observation
-            noisey_usurf = self.noisey_usurf[int((ensemble.year - self.start_year))]
-            sampled_observations = noisey_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
+            for year in self.year_range[:-1]:
+                print("==== %i ====" % year)
+                year_index = int((ensemble.year - self.start_year))
 
-            # sample random noise for each ensemlbe memember to add to the difference
-            # interpreation: every ensemble member gets a slightly different observation
-            observation_noise = np.random.normal(0, 1, size=(ensemble_size,) + noisey_usurf.shape)
-            e_r = observation_noise[:, self.observation_points[:, 0], self.observation_points[:, 1]]
-            R_diag = ensemble.R.diagonal()
-            e_r = e_r * np.sqrt(R_diag)
+                self.predict_and_update(ensemble, year_index, monitor_instance, visualise=visualise)
 
-            # update the hidden parameters
-            ensemble.update(sampled_observations, e_r)
+            estimates.append(copy.copy(ensemble.sigmas))
 
-            # update the surface elevation
-            self.ensemble_usurfs = np.array([noisey_usurf + noise for noise in
-                                             observation_noise])
+            #if visualise:
+            monitor_instance.plot_iterations(estimates)
 
-            # plot the update
-            monitor.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+        return estimates
 
-        ### EVALUATION ###
-        with open('ReferenceSimulation/params.json') as f:
-            params = json.load(f)
-        smb = params['smb_simple_array']
-        true_x = [smb[-1][3], smb[-1][1], smb[-1][2]]
-        results = dict(true_parameter=true_x,
-                       esti_parameter=ensemble.x.tolist(),
-                       esit_var=ensemble.P.tolist(),
-                       ensemble_size=self.ensemble_size,
-                       dt=int(dt),
-                       initial_offset=int(self.initial_offset),
-                       initial_uncertainity=int(self.initial_uncertainity),
-                       bias=int(self.bias),
-                       specal_noise=int(self.specal_noise),
-                       covered_area=self.covered_area,
-                       initial_estimate=[int(i) for i in self.initial_estimate],
-                       initial_estimate_var=[int(j) for j in self.initial_estimate_var],
-                       process_noise=self.process_noise
-                       )
+    def save_results(self, estimates):
+        self.params['result'] = [list(sigma) for sigma in estimates[-1]]
+        with open(self.output_dir + f"result_o_{self.initial_offset}_s_{self.initial_spread}.json", 'w') as f:
+            json.dump((self.params), f, indent=4, separators=(',', ': '))
 
-        return results
+    def initialize_ensemble_fields(self):
+        # Initialize ensemble surface elevation
+        self.ensemble_usurfs = np.array([copy.copy(self.usurf[0]) for _ in range(self.ensemble_size)])
+        self.ensemble_velo = np.array([np.zeros_like(self.usurf[0]) for _ in range(self.ensemble_size)])
+
+    def predict_and_update(self, ensemble, year_index, monitor_instance, visualise=True):
+        # Predict
+        start_time = time.time()
+        ensemble.predict()
+        print("Prediction time: ", time.time() - start_time)
+        ensemble.year += self.time_interval
+
+        # Plot predictions
+        if visualise:
+            monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+
+        # Update
+        year_index = int((ensemble.year - self.start_year))
+        self.update_ensemble(ensemble, year_index)
+
+        if visualise:
+            monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+
+    def update_ensemble(self, ensemble, year_index):
+        # Get noisy observation
+        noisy_usurf = self.usurf[year_index]
+
+
+        # Sample random noise for each ensemble member to add to the difference
+        random_factors = np.random.normal(0, 1, self.ensemble_size)
+        uncertainty_field_year = self.observation_uncertainty_field[year_index]
+        observation_noise_samples = np.array([uncertainty_field_year * rf for rf in random_factors])
+
+        sampled_observations = noisy_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
+        e_r = observation_noise_samples[:, self.observation_points[:, 0], self.observation_points[:, 1]]
+
+        # Update hidden parameters
+        R = np.eye(len(self.observation_points)) * self.observation_uncertainty_field[
+            year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
+
+        # update ensemble
+        ensemble.update(sampled_observations, e_r, R)
+
+        # Update the surface elevation
+        self.ensemble_usurfs = np.array([copy.copy(noisy_usurf) for _ in range(self.ensemble_size)])
+
 
     def forward_model(self, state_x, dt, i, year):
         # create new params.json
@@ -229,14 +227,15 @@ class DataAssimilation:
                 "time_start": year,
                 "time_end": year_next,
                 "iflo_retrain_emulator_freq": 0,
-                "time_step_max": 0.2,
+                # "time_step_max": 0.2,
                 }
 
-        with open(f'Ensemble/{i}/params.json', 'w') as f:
+        with open(f'Ensemble/{i:03}/params.json', 'w') as f:
             json.dump(data, f, indent=4, separators=(',', ': '))
 
         # create new input.nc
-        input_file = f"Ensemble/{i}/init_input.nc"
+        # TODO
+        input_file = f"Ensemble/{i:03}/init_input.nc"
         try:
             with xr.open_dataset(input_file) as ds:
                 # load usurf from ensemble
@@ -249,21 +248,20 @@ class DataAssimilation:
                 ds['thk'] = thk_da
 
                 # ds_drop = ds.drop_vars("thkinit")
-                ds.to_netcdf(f'Ensemble/{i}/input_.nc')
+                ds.to_netcdf(f'Ensemble/{i:03}/input_.nc')
 
         except:
             traceback.print_exc()
             print("could not read input" + input_file)
 
-
         ### IGM RUN ###
         try:
-            subprocess.run(["igm_run"], cwd=f'Ensemble/{i}', shell=True)
+            subprocess.run(["igm_run"], cwd=f'Ensemble/{i:03}', shell=True)
         except:
             print("could not run igm_run")
         # update state x and return
         try:
-            with xr.open_dataset(f'Ensemble/{i}/output_{year}.nc') as new_ds:
+            with xr.open_dataset(f'Ensemble/{i:03}/output_{year}.nc') as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:
@@ -287,131 +285,33 @@ class DataAssimilation:
         return modelled_observations
 
 
-if __name__ == '__main__':
-    from scipy.stats import qmc
+def main():
+    # load parameter file
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--experiment",
+                        type=str,
+                        default='Experiments/Hugonnet.json',
+                        help="Path pointing to the parameter file",
+                        required=True)
+    arguments, _ = parser.parse_known_args()
 
-    synthetic = True
-
-    with open('ReferenceSimulation/params.json') as f:
+    # Load the JSON file with parameters
+    with open(arguments.experiment, 'r') as f:
         params = json.load(f)
-        base_ela = params['smb_simple_array'][1][3]
-        base_abl_grad = params['smb_simple_array'][1][1]
-        base_acc_grad = params['smb_simple_array'][1][2]
 
-    # [samplepoints^1/2, ensemble members, inital state, inital varianc]
+    ### START DATAASSIMILATION ###
+    DA = DataAssimilation(params)
 
-    hyperparameter_range = {
-        #"Area": [1, 2, 4, 8, 16, 32, 64],
-        #"Observation_Interval": [1, 2],
-        #"Process_Noise": [0, 0.5, 2, 4],
-        #"Ensemble_Size": [5, 10, 20, 30, 40, 50],
-        #"initial_offset" : [0,20,40,60,80,100],
-        #"initial_uncertainty": [100],
-        #"bias": [0, 2, 4, 6, 8, 10],
-        "specal_noise": [2, 3]
+    ensemble = DA.initialize_ensemble()
 
-    }
-    initial_offsets = np.random.randint(0, 100, size=10)
-    initial_uncertainties = np.random.randint(0, 100, size=10)
-    biases = np.random.randint(-10, 10, size=10)
-    specal_noises = np.random.randint(1, 3, size=10)
+    # Run loop of predictions and updates
+    estimates = DA.run_iterations(ensemble)
 
-    for hyperparameter in hyperparameter_range.keys():
-        print("Start Hyperparameter: ", hyperparameter)
+    # Evaluate results
+    results = DA.save_results(estimates)
 
-        # if hyperparameter == 'external_parameter':
-        #     l_bounds = [0, 0, 0, 1]
-        #     u_bounds = [100, 100, 10, 3]
-        #     sampler = qmc.LatinHypercube(d=4)
-        #     number_of_experiments = hyperparameter_range['external_parameter']
-        #     sample = sampler.integers(l_bounds=l_bounds, u_bounds=u_bounds, n=number_of_experiments)
-
-        for value in hyperparameter_range[hyperparameter]:
-            if hyperparameter == 'Area':
-                covered_area = value
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
-
-            elif hyperparameter == 'Observation_Interval':
-                covered_area = 16
-                dt = value
-                ensemble_size = 25
-                process_noise = 1
-
-            elif hyperparameter == 'Process_Noise':
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = value
-
-            elif hyperparameter == 'Ensemble_Size':
-                covered_area = 16
-                dt = 4
-                ensemble_size = value
-                process_noise = 1
-            elif hyperparameter == 'external_parameter':
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
-            else:
-                covered_area = 16
-                dt = 4
-                ensemble_size = 25
-                process_noise = 1
+    return results
 
 
-            if not os.path.exists(f"Results_{hyperparameter}/{value}"):
-                os.makedirs(f"Results_{hyperparameter}/{value}")
-
-            if hyperparameter == 'external_parameter':
-                number_of_experiments = hyperparameter_range['external_parameter']
-            else:
-                number_of_experiments = 10
-
-            for i in range(number_of_experiments):
-                initial_offset = initial_offsets[i]
-                initial_uncertainty = initial_uncertainties[i]
-                bias = biases[i]
-                specal_noise = specal_noises[i]
-
-                if hyperparameter == 'initial_offset':
-                    initial_offset = value
-                elif hyperparameter == 'initial_uncertainty':
-                    initial_uncertainty = value
-                elif hyperparameter == 'bias':
-                    bias = value
-                elif hyperparameter == 'specal_noise':
-                    specal_noise = value
-                else:
-                    pass
-
-                print("initial_offset:", initial_offset)
-                print("initial_uncertainty:", initial_uncertainty)
-                print("bias:", bias)
-                print("special_noise:", specal_noise)
-                print("covered_area:", covered_area)
-                print("process_noise:", process_noise)
-                print("ensemble_size:", ensemble_size)
-                print("dt:", dt)
-
-                sign = np.random.choice([-1, 1], 3)
-
-                initial_est = [(base_ela + 1000 * (initial_offset / 100)) * sign[0],
-                               (base_abl_grad + 0.01 * (initial_offset / 100)) * sign[1],
-                               (base_acc_grad + 0.01 * (initial_offset / 100)) * sign[2]]
-
-                initial_est_var = [initial_uncertainty ** 2 * 100,
-                                   initial_uncertainty ** 2 * 0.00000001,
-                                   initial_uncertainty ** 2 * 0.00000001]
-
-                DA = DataAssimilation(int(covered_area), int(ensemble_size), int(dt), initial_est,
-                                      initial_est_var, initial_offset, initial_uncertainty, specal_noise, bias,
-                                      process_noise, synthetic)
-                results = DA.start_ensemble(hyperparameter, value)
-
-                with open(
-                        f"Results_{hyperparameter}/{value}/result_o_{initial_offset}_u_{initial_uncertainty}_b_{bias}_s_{specal_noise}.json",
-                        'w') as f:
-                    json.dump(results, f, indent=4, separators=(',', ': '))
+if __name__ == '__main__':
+    main()

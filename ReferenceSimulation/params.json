@@ -9,8 +9,8 @@
                        "write_ncdf", "anim_plotly"],
   "smb_simple_array": [
                         ["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [ 2000,      0.009,     0.005,  2900,      100],
-                        [ 2020,      0.009,     0.005,  3100,      100]
+                           [2000, 0.009, 0.005, 2966, 100],
+                            [2020, 0.009, 0.005, 2966, 100]
                       ],
   "iflo_emulator": "Inversion/iceflow-model",
 
@@ -20,8 +20,7 @@
   "time_start": 2000.0,
   "time_end": 2020.0,
   "time_save": 1,
-  "time_step_max": 0.2,
-  "iflo_retrain_emulator_freq" : 0,
+  "iflo_retrain_emulator_freq" : 10,
 
 
   "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask", "usurf"]

@@ -233,7 +233,7 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update(self, z, e_r, R=None, ):
+    def update(self, z, e_r, R=None):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -331,17 +331,11 @@ class EnsembleKalmanFilter(object):
 
                 # Wait for all tasks to complete
                 for future in futures:
-                    future.result(timeout=60)
+                    future.result(timeout=120)
 
-            # threads = []
-            # for i, s in enumerate(self.sigmas):
-            #     thread = threading.Thread(target=self.fx, args=(s, dt, i, year))
-            #     thread.start()
-            #     threads.append(thread)
-            #
-            #     # Wait for all threads to complete
-            # for thread in threads:
-            #     thread.join(timeout=60)
+            #for i, s in enumerate(self.sigmas):
+            #    task(s, dt, i, year)
+
 
 
         e = multivariate_normal(self._mean, self.Q, N)

@@ -36,7 +36,7 @@
     "divfluxfcz"
   ],
   "opti_nbitmin": 50,
-  "opti_nbitmax": 1000,
+  "opti_nbitmax": 500,
   "opti_step_size": 1,
   "opti_step_size_decay": 0.9,
   "opti_output_freq": 50,

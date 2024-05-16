@@ -35,8 +35,8 @@ def extract_ela_gradients(group_df):
     gradient_accumulation = np.polyfit(elevation[mb>0], accumulation, 1)[0]
 
     # conversion to volume
-    gradient_ablation = gradient_ablation/850
-    gradient_accumulation = gradient_accumulation/850
+    gradient_ablation = gradient_ablation/910
+    gradient_accumulation = gradient_accumulation/500
     return ela, gradient_ablation, gradient_accumulation
 
 def compute_specific_mass_balance(group_df):
@@ -75,8 +75,10 @@ geodetic_mb = utils.get_geodetic_mb_dataframe()
 geodetic_mb = geodetic_mb[geodetic_mb.index == 'RGI60-11.01238']
 
 geodetic_mb_2020 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2020-01-01']
+geodetic_mb_2010 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2010-01-01']
 geodetic_mb_dmdtda = geodetic_mb_2020['dmdtda'].values[0]
 geodetic_mb_dmdtda_err = geodetic_mb_2020['err_dmdtda'].values[0]
+
 
 # get raster data
 
@@ -86,17 +88,24 @@ icemask = np.array(hugonnet_nc['icemask'])[0]
 dhdt_oggm = np.array(oggm_nc['dhdt'])
 
 
+
 # compute specific mass balance
 
 dhdt[icemask == 0] = 0
 dhdt_error[icemask == 0] = 0
+
+dhdt_flat = dhdt.flatten()
+dhdt_error_flat = dhdt_error.flatten()
+
+sample = np.random.normal(0, dhdt_error_flat)
+
 hugonnet_mass_balance = np.sum(dhdt)/np.sum(icemask)
-hugonnet_error = np.sum(dhdt_error)/np.sum(icemask)
+#hugonnet_error = np.sum(dhdt_error)/np.sum(icemask)
 oggm_mass_balance = np.sum(dhdt_oggm)/np.sum(icemask)
 
 # volume to mass conversion
 #oggm_mass_balance *= 0.85
-#hugonnet_mass_balance *= 0.85
+hugonnet_mass_balance *= 0.9
 #hugonnet_error *= 0.85
 
 
@@ -192,13 +201,13 @@ time20 = list(np.arange(2000,2007)) + time
 a1.set_title('Specific Mass Balance')
 hugonnet_loss =[hugonnet_mass_balance]*len(time20)
 a1.plot(time20, hugonnet_loss, label='Geodetic Mean (2000-2020) [Hugonnet website]', color='C0', zorder=10)
-a1.fill_between(time20,hugonnet_loss -hugonnet_error, hugonnet_loss + hugonnet_error, color='C0', alpha=0.1, zorder=0,
-                label='error')
+#a1.fill_between(time20,hugonnet_loss -hugonnet_error, hugonnet_loss + hugonnet_error, color='C0', alpha=0.1, zorder=0,
+#                label='error')
 a1.text(time20[0], hugonnet_loss[-1] - 0.4, f'{hugonnet_mass_balance:.4f} $m \, w.e./yr$', color='C0', zorder=10)
 
-oggm_loss = [oggm_mass_balance]*len(time20)
-a1.plot(time20, oggm_loss, label='Geodetic rasta data[Hugonnet OGGM]', color='C1', zorder=7)
-a1.text(time20[7], oggm_loss[-1] - 0.4, f'{oggm_mass_balance:.4f} $m \, w.e./yr$', color='C1', zorder=10)
+# oggm_loss = [oggm_mass_balance]*len(time20)
+# a1.plot(time20, oggm_loss, label='Geodetic rasta data[Hugonnet OGGM]', color='C1', zorder=7)
+# a1.text(time20[7], oggm_loss[-1] - 0.4, f'{oggm_mass_balance:.4f} $m \, w.e./yr$', color='C1', zorder=10)
 
 oggm_dmdtda = [geodetic_mb_dmdtda] * len(time20)
 a1.plot(time20, oggm_dmdtda, label='Geodetic Mean single value[Hugonnet OGGM]', color='C2', zorder=10)

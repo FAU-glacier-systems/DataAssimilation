@@ -1,0 +1,6 @@
+{
+"hyperparameter_range" : {
+        "Ensemble_Size": [5, 10, 20, 30, 40, 50]
+    }
+}
+

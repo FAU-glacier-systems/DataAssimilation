@@ -1,0 +1,6 @@
+{
+"hyperparameter_range" : {
+        "initial_spread": [0, 20, 40, 60, 80, 100]
+    }
+}
+

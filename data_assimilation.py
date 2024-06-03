@@ -12,6 +12,7 @@ import xarray as xr
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 import matplotlib.pyplot as plt
 import monitor
+from pathlib import Path
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -26,6 +27,7 @@ class DataAssimilation:
         self.params = params
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
+        self.ensemble_dir = Path(self.output_dir) / "Ensemble/"
 
         self.covered_area = params['covered_area']
         self.ensemble_size = params['ensemble_size']
@@ -72,16 +74,17 @@ class DataAssimilation:
         ### PARALLIZE ###
         for i in range(self.ensemble_size):
             # create folder for every ensemble member
-            dir_name = f"Ensemble/{i:03}/"
+
+            dir_name =  self.ensemble_dir / f"{i:03}/"
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
             # copy results of inversion as initial state for every ensemble member
-            shutil.copy2("Inversion/geology-optimized.nc", dir_name + "init_input.nc")
+            shutil.copy2("Inversion/geology-optimized.nc", dir_name / "init_input.nc")
             # create folder for igm trained model
-            if os.path.exists(dir_name + "iceflow-model"):
-                shutil.rmtree(dir_name + "iceflow-model")
+            if os.path.exists(dir_name / "iceflow-model"):
+                shutil.rmtree(dir_name / "iceflow-model")
             # copy trained igm parameters
-            shutil.copytree("Inversion/iceflow-model/", dir_name + "iceflow-model/")
+            shutil.copytree("Inversion/iceflow-model/", dir_name /"iceflow-model/")
 
         ### LOOP OVER YEAR RANGE ###
         if not os.path.exists(self.output_dir):
@@ -222,7 +225,7 @@ class DataAssimilation:
                     [year, grad_abl, grad_acc, ela, 100],
                     [year_next, grad_abl, grad_acc, ela, 100]],
                 "iflo_emulator": "iceflow-model",
-                "lncd_input_file": 'input_.nc',
+                "lncd_input_file": 'input.nc',
                 "wncd_output_file": f'output_{year}.nc',
                 "time_start": year,
                 "time_end": year_next,
@@ -230,12 +233,12 @@ class DataAssimilation:
                 # "time_step_max": 0.2,
                 }
 
-        with open(f'Ensemble/{i:03}/params.json', 'w') as f:
+        with open(self.ensemble_dir  /f"{i:03}/params.json", 'w') as f:
             json.dump(data, f, indent=4, separators=(',', ': '))
 
         # create new input.nc
         # TODO
-        input_file = f"Ensemble/{i:03}/init_input.nc"
+        input_file = self.ensemble_dir / f"{i:03}/init_input.nc"
         try:
             with xr.open_dataset(input_file) as ds:
                 # load usurf from ensemble
@@ -248,20 +251,20 @@ class DataAssimilation:
                 ds['thk'] = thk_da
 
                 # ds_drop = ds.drop_vars("thkinit")
-                ds.to_netcdf(f'Ensemble/{i:03}/input_.nc')
+                ds.to_netcdf(self.ensemble_dir / f'{i:03}/input.nc')
 
         except:
             traceback.print_exc()
-            print("could not read input" + input_file)
+            print("could not read input" + str(input_file))
 
         ### IGM RUN ###
         try:
-            subprocess.run(["igm_run"], cwd=f'Ensemble/{i:03}', shell=True)
+            subprocess.run(["igm_run"], cwd=self.ensemble_dir / f'{i:03}', shell=True)
         except:
             print("could not run igm_run")
         # update state x and return
         try:
-            with xr.open_dataset(f'Ensemble/{i:03}/output_{year}.nc') as new_ds:
+            with xr.open_dataset(self.ensemble_dir / f'{i:03}/output_{year}.nc') as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:

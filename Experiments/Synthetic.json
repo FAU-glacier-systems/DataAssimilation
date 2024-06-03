@@ -7,7 +7,7 @@
   "covered_area": 50,
   "num_iterations": 6,
   "ensemble_size": 16,
-  "time_interval": 20,
+  "time_interval": 4,
   "initial_offset": 2966,
   "initial_estimate": [3200, 0.00, 0.00],
   "initial_spread": 50,

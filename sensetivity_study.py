@@ -2,9 +2,11 @@ import os
 import json
 import numpy as np
 from data_assimilation import DataAssimilation
+import argparse
+import shutil
 np.random.seed(42)
 
-def main():
+def main(hyperparameter_range):
     with open('ReferenceSimulation/params.json') as f:
         params = json.load(f)
         smb = params['smb_simple_array']
@@ -12,14 +14,7 @@ def main():
         base_abl_grad = smb[1][1]
         base_acc_grad = smb[1][2]
 
-    hyperparameter_range = {
-        "Area": [1, 2, 4, 8, 16, 32, 64],
-        "Ensemble_Size": [5, 10, 20, 30, 40, 50],
-        "observation_uncertainty": [0, 0.2, 0.4, 0.6, 0.8, 1.0],
 
-        "initial_offset": [0, 20, 40, 60, 80, 100],
-        "initial_spread": [0, 20, 40, 60, 80, 100],
-    }
     initial_offsets = np.random.randint(0, 100, size=10)
     initial_spreads = np.random.randint(0, 100, size=10)
 
@@ -68,7 +63,7 @@ def main():
                           "RGI_ID": "RGI60-11.01238",
                           "smb_simple_array": smb,
                           "covered_area": covered_area,
-                          "num_iterations": 10,
+                          "num_iterations": 5,
                           "ensemble_size": ensemble_size,
                           "time_interval": 20,
                           "initial_offset": initial_offset,
@@ -92,7 +87,20 @@ def main():
                 # Run loop of predictions and updates
                 estimates = DA.run_iterations(ensemble, visualise=False)
                 DA.save_results(estimates)
+        shutil.rmtree(output_dir + "Ensemble/")
+
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", "--hyperparameter_range",
+                        type=str,
+                        help="Path pointing to the parameter file",
+                        required=True)
+    arguments, _ = parser.parse_known_args()
+
+    # Load the JSON file with parameters
+    with open(arguments.hyperparameter_range, 'r') as f:
+        params = json.load(f)
+
+    main(params['hyperparameter_range'])

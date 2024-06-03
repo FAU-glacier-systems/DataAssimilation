@@ -16,7 +16,7 @@ conda activate igm_p3.11
 #igm_run --param_file ReferenceSimulation/params.json
 
 # 3. Data Assimilation
-python -u sensetivity_study.py
+python -u sensetivity_study.py --hyperparameter_range Experiments/hyperparameter_area.json
 
 # 4. Evaluation
 #python evaluate.py

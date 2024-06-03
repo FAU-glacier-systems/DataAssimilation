@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 from data_assimilation import DataAssimilation
-
+np.random.seed(42)
 
 def main():
     with open('ReferenceSimulation/params.json') as f:

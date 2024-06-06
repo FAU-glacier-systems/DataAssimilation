@@ -52,7 +52,7 @@ class Monitor:
         # self.bedrock = self.bedrock[::-1]
         self.icemask = np.array(self.observed_glacier['icemask'][0])
         # self.icemask = self.icemask[::-1]
-        self.random_id = random.sample(range(self.ensemble_size), 4)
+        #self.random_id = random.sample(range(self.ensemble_size), 4)
 
         self.hist_state_x = []
         self.hist_ensemble_x = []

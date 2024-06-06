@@ -1,6 +1,6 @@
 {
 "hyperparameter_range" : {
-        "observation_uncertainty": [0.2, 0.4, 0.6, 0.8, 1.0, 2.0]
+        "observation_uncertainty": [0.2, 0.4, 0.8, 1.6, 3.2]
     }
 }
 

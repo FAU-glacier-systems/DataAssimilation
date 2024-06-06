@@ -4,7 +4,7 @@ import numpy as np
 from data_assimilation import DataAssimilation
 import argparse
 import shutil
-np.random.seed(42)
+np.random.seed(52)
 
 def main(hyperparameter_range):
     with open('ReferenceSimulation/params.json') as f:
@@ -35,7 +35,7 @@ def main(hyperparameter_range):
             elif hyperparameter == 'observation_uncertainty':
                 observation_uncertainty = value
 
-            number_of_experiments = 20
+            number_of_experiments = 10
 
             for i in range(number_of_experiments):
                 initial_offset = int(initial_offsets[i])

@@ -56,11 +56,13 @@ class DataAssimilation:
         self.icemask = np.array(self.observed_glacier['icemask'])[0]
         self.surface = np.array(self.observed_glacier['usurf'])[0]
         self.bedrock = self.observed_glacier['topg'][0]
+        self.visualise = params['visualise']
 
         # sample observation points
         gx, gy = np.where(self.icemask)
         glacier_points = np.array(list(zip(gx, gy)))
         num_sample_points = int(self.covered_area / 100 * np.sum(self.icemask))
+        print('Number of points: {}'.format(num_sample_points))
         observation_index = np.random.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
 

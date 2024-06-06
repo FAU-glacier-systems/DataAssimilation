@@ -5,9 +5,9 @@
                         [2000, 0.009, 0.005, 2966, 100],
                         [2020, 0.009, 0.005, 2966, 100]],
   "covered_area": 50,
-  "num_iterations": 6,
+  "num_iterations": 1,
   "ensemble_size": 16,
-  "time_interval": 4,
+  "time_interval": 20,
   "initial_offset": 2966,
   "initial_estimate": [3200, 0.00, 0.00],
   "initial_spread": 50,
@@ -15,5 +15,6 @@
   "observation_uncertainty": 0.15,
 
   "observations_file": "ReferenceSimulation/output.nc",
-  "output_dir": "Results/Results_synthetic/"
+  "output_dir": "Results/Results_synthetic/",
+  "visualise": true
 }

@@ -43,8 +43,10 @@ def main(hyperparameter_range):
 
                 if hyperparameter == 'initial_offset':
                     initial_offset = value
+                    initial_spread = value
                 elif hyperparameter == 'initial_spread':
                     initial_spread = value
+                    initial_offset = value
 
                 print("covered_area:", covered_area)
                 print("ensemble_size:", ensemble_size)

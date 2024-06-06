@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --nodes=1
 #SBATCH --time=24:00:00
-#SBATCH --job-name=igm_ensemble_size
+#SBATCH --job-name=igm
 module load python
 conda activate igm_p3.11
 
@@ -16,7 +16,7 @@ conda activate igm_p3.11
 #igm_run --param_file ReferenceSimulation/params.json
 
 # 3. Data Assimilation
-python -u sensetivity_study.py --hyperparameter_range Experiments/hyperparameter_ensemble_size.json
+python -u sensetivity_study.py --hyperparameter_range Experiments/hyperparameter_area.json
 
 # 4. Evaluation
 #python evaluate.py

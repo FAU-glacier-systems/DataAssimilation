@@ -15,7 +15,7 @@ def main(hyperparameter_range):
         base_acc_grad = smb[1][2]
 
 
-    initial_offsets = np.random.randint(0, 100, size=10)
+    initial_offsets = np.random.randint(0, 100, size=30)
 
     for hyperparameter in hyperparameter_range.keys():
         print("Start Hyperparameter: ", hyperparameter)
@@ -35,7 +35,7 @@ def main(hyperparameter_range):
             elif hyperparameter == 'observation_uncertainty':
                 observation_uncertainty = value
 
-            number_of_experiments = 10
+            number_of_experiments = 20
 
             for i in range(number_of_experiments):
                 initial_offset = int(initial_offsets[i])

@@ -16,14 +16,13 @@ def main(hyperparameter_range):
 
 
     initial_offsets = np.random.randint(0, 100, size=10)
-    initial_spreads = np.random.randint(0, 100, size=10)
 
     for hyperparameter in hyperparameter_range.keys():
         print("Start Hyperparameter: ", hyperparameter)
 
         for value in hyperparameter_range[hyperparameter]:
             # default
-            covered_area = 50
+            covered_area = 2
             ensemble_size = 25
             observation_uncertainty = 0.2
 
@@ -36,11 +35,11 @@ def main(hyperparameter_range):
             elif hyperparameter == 'observation_uncertainty':
                 observation_uncertainty = value
 
-            number_of_experiments = 10
+            number_of_experiments = 20
 
             for i in range(number_of_experiments):
                 initial_offset = int(initial_offsets[i])
-                initial_spread = int(initial_spreads[i])
+                initial_spread = int(initial_offsets[i])
 
                 if hyperparameter == 'initial_offset':
                     initial_offset = value
@@ -73,6 +72,7 @@ def main(hyperparameter_range):
                           "observation_uncertainty": observation_uncertainty,
                           "observations_file": "ReferenceSimulation/output.nc",
                           "output_dir": output_dir,
+                          "visualise": False
                           }
 
                 if not os.path.exists(output_dir):

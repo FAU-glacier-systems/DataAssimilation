@@ -13,9 +13,10 @@ def plot_MAE():
     fig_spread, ax_spread = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
 
     # run for every hyperparameters
-    #for fignum, hyperparameter in enumerate(['ensemble_size', 'process_noise', 'dt', 'covered_area']):
+    #for fignum, hyperparameter in enumerate(['covered_area','ensemble_size', 'process_noise', 'dt', ]):
+    for fignum, hyperparameter in enumerate([ 'covered_area','ensemble_size', 'observation_uncertainty', ]):
 
-    for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
+    #for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
 
     # translate name to folder name
         if hyperparameter == 'ensemble_size':
@@ -27,36 +28,55 @@ def plot_MAE():
         elif hyperparameter == 'process_noise':
             experiment_folder = 'Results/Results_Process_Noise/'
         else:
-            experiment_folder = 'Results_' + hyperparameter + '/'
+            experiment_folder = 'Results/Results_' + hyperparameter + '/'
 
         # load result json files
         results = []
         for folder in os.listdir(experiment_folder):
             for file in os.listdir(experiment_folder + folder):
-                if file.endswith('.json'):
-                    with open(experiment_folder + folder + '/' + file, 'r') as f:
-                        content = json.load(f)
-                        if content != None:
-                            results.append(content)
+                if file.startswith('result') and not ():
+                    file_split = file.split('_')
+
+                    if int(file_split[2])>int(file_split[4][:-len('.json')]):
+                        continue
+                    else:
+                        with open(experiment_folder + folder + '/' + file, 'r') as f:
+                            content = json.load(f)
+                            if content != None:
+                                results.append(content)
 
         # get the hyperparameter values
-        if hyperparameter == 'initial_uncertainty':
-            hyper_results = [exp['initial_uncertainity'] for exp in results]
-        else:
-            hyper_results = [exp[hyperparameter] for exp in results]
+        #if hyperparameter == 'initial_uncertainty':
+        #    hyper_results = [exp['initial_uncertainity'] for exp in results]
+        #else:
+
 
         # Compute the MAE and track the maximum MAE for normalisation
+        mean_estimate = []
+        var_estimate = []
+        hyper_results = []
+        for i, run in enumerate(results):
+            print(i)
+            mean_estimate.append(np.array(run['result']).mean(axis=0))
+
+            var_estimate.append(np.array(run['result']).var(axis=0))
+            hyper_results.append(run[hyperparameter])
+
         MAE = np.empty((0, len(hyper_results)))
         MAX_para_total = np.array([])
         spread = np.empty((0, len(hyper_results)))
         MAX_spread_total = np.array([])
+        # TODO
+        true_x = np.array(results[0]['smb_simple_array'])[-1, 1:4].astype(float)
+        true_x = [true_x[2], true_x[0], true_x[1]]
         for x in range(3):
-            MAE_para = np.array([abs(exp['true_parameter'][x] - exp['esti_parameter'][x]) for exp in results])
+            MAE_para = np.array([abs(true_x[x] - exp[x]) for exp in mean_estimate])
+
             MAX_para = np.max(MAE_para)
             MAE = np.append(MAE, [MAE_para], axis=0)
             MAX_para_total = np.append(MAX_para_total, MAX_para)
 
-            spread_para = np.sqrt(np.array([exp['esit_var'][x][x] for exp in results]))
+            spread_para = np.sqrt(np.array([exp[x] for exp in var_estimate]))
             MAX_spread = np.max(spread_para)
             spread = np.append(spread, [spread_para], axis=0)
             MAX_spread_total = np.append(MAX_spread_total, MAX_spread)
@@ -86,6 +106,12 @@ def plot_MAE():
                            })
         # define colors
         # print(len(df_glamos_bin))
+        # df = df[df['MAE1'] < 0.2]
+        # df = df[df['MAE0'] < 0.2]
+        # df = df[df['MAE2'] < 0.2]
+        # df = df[df['spread0'] < 0.2]
+        # df = df[df['spread1'] < 0.2]
+        # df = df[df['spread2'] < 0.2]
         colorscale = plt.get_cmap('tab20c')
         colormap = [colorscale(0), colorscale(2), colorscale(3),
                     'black', colorscale(18), colorscale(19),
@@ -98,7 +124,7 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 5, 10, 20]
 
         elif hyperparameter == 'covered_area':
-            bin_centers = [1, 2, 4, 8, 16, 32]
+            bin_centers = [2, 4, 8, 16, 32, 64]
 
         elif hyperparameter == 'ensemble_size':
             bin_centers = [5, 10, 20, 30, 40, 50]
@@ -111,6 +137,11 @@ def plot_MAE():
 
         elif hyperparameter == 'initial_uncertainty':
             bin_centers = [0, 20, 40, 60, 80, 100]
+        elif hyperparameter == 'initial_spread':
+            bin_centers = [0, 20, 40, 60, 80, 100]
+
+        elif hyperparameter == 'observation_uncertainty':
+            bin_centers = [0.2, 0.4, 0.6, 0.8, 1.0, 2.0]
 
         elif hyperparameter == 'specal_noise':
             bin_centers = [1, 2, 3]
@@ -181,18 +212,11 @@ def plot_MAE():
         grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
         ax_spread[i, j].set_ylabel('ELA Spread [m]')
-        ax_para[i, j].set_yticks([0, 1 / 3, 2 / 3, 1],
-                                 [0, int(MAX_para_total[0] / 3), int(MAX_para_total[0] * 2 / 3),
-                                  int(MAX_para_total[0])])
-        grad_axis_para.set_yticks([0, 1 / 3, 2 / 3, 1], [0] + ['%.4f' % e for e in
-                                                               [max_gradient / 3, max_gradient * 2 / 3,
-                                                                max_gradient]])
-        ax_spread[i, j].set_yticks([0, 1 / 3, 2 / 3, 1],
-                                   [0, int(MAX_spread_total[0] / 3), int(MAX_spread_total[0] * 2 / 3),
-                                    int(MAX_spread_total[0])])
-        grad_axis_spread.set_yticks([0, 1 / 3, 2 / 3, 1], [0] + ['%.4f' % e for e in
-                                                                 [max_gradient_spread / 3, max_gradient_spread * 2 / 3,
-                                                                  max_gradient_spread]])
+        yticks_positions = np.linspace(0,1, 4)
+        ax_para[i, j].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
+        grad_axis_para.set_yticks(yticks_positions,  ['%.4f' % (e * max_gradient) for e in yticks_positions])
+        ax_spread[i, j].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
+        grad_axis_spread.set_yticks(yticks_positions, ['%.4f' % (e * max_gradient_spread) for e in yticks_positions])
 
         for ax, grad_axis in [(ax_para, grad_axis_para), (ax_spread, grad_axis_spread)]:
 
@@ -204,13 +228,14 @@ def plot_MAE():
 
             ax[i, j].grid(axis="y", color="lightgray", linestyle="-")
             ax[i, j].grid(axis="x", color="lightgray", linestyle="-", which='minor')
-            ax[i, j].set_ylim(-0.025, 1.025)
+            #ax[i, j].set_ylim(-0.25, 1.25)
             ax[i, j].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
             ax[i, j].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
             ax[i, j].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)
             ax[i, j].yaxis.set_tick_params(left=False)
             # ax[i,j].xaxis.set_tick_params(bottom=True, which='minor',color="lightgray")
             ax[i, j].xaxis.set_tick_params(bottom=False, which='both', )
+            ax[i, j].set_yscale('log')
 
             grad_axis.yaxis.set_tick_params(right=False)
             handles, labels = ax[i, j].get_legend_handles_labels()

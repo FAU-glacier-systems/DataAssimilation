@@ -14,7 +14,7 @@ def plot_MAE():
 
     # run for every hyperparameters
     #for fignum, hyperparameter in enumerate(['covered_area','ensemble_size', 'process_noise', 'dt', ]):
-    for fignum, hyperparameter in enumerate([ 'covered_area','ensemble_size', 'observation_uncertainty', ]):
+    for fignum, hyperparameter in enumerate([ 'covered_area', 'observation_uncertainty',  'ensemble_size', 'initial_offset']):
 
     #for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
 
@@ -37,13 +37,13 @@ def plot_MAE():
                 if file.startswith('result') and not ():
                     file_split = file.split('_')
 
-                    if int(file_split[2])>int(file_split[4][:-len('.json')]):
-                        continue
-                    else:
-                        with open(experiment_folder + folder + '/' + file, 'r') as f:
-                            content = json.load(f)
-                            if content != None:
-                                results.append(content)
+                    # if int(file_split[2])>int(file_split[4][:-len('.json')]):
+                    #     continue
+
+                    with open(experiment_folder + folder + '/' + file, 'r') as f:
+                        content = json.load(f)
+                        if content != None:
+                            results.append(content)
 
         # get the hyperparameter values
         #if hyperparameter == 'initial_uncertainty':
@@ -58,6 +58,7 @@ def plot_MAE():
         for i, run in enumerate(results):
             print(i)
             mean_estimate.append(np.array(run['result']).mean(axis=0))
+
 
             var_estimate.append(np.array(run['result']).var(axis=0))
             hyper_results.append(run[hyperparameter])
@@ -124,16 +125,16 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 5, 10, 20]
 
         elif hyperparameter == 'covered_area':
-            bin_centers = [2, 4, 8, 16, 32, 64]
+            bin_centers = [0.2, 0.5, 1, 2, 10]
 
         elif hyperparameter == 'ensemble_size':
-            bin_centers = [5, 10, 20, 30, 40, 50]
+            bin_centers = [3, 5, 10, 25, 50]
 
         elif hyperparameter == 'process_noise':
             bin_centers = [0, 0.5, 1, 2, 4]
 
         elif hyperparameter == 'initial_offset':
-            bin_centers = [0, 20, 40, 60, 80, 100]
+            bin_centers = [20, 40, 60, 80, 100]
 
         elif hyperparameter == 'initial_uncertainty':
             bin_centers = [0, 20, 40, 60, 80, 100]
@@ -141,7 +142,7 @@ def plot_MAE():
             bin_centers = [0, 20, 40, 60, 80, 100]
 
         elif hyperparameter == 'observation_uncertainty':
-            bin_centers = [0.2, 0.4, 0.6, 0.8, 1.0, 2.0]
+            bin_centers = [0.2, 0.4, 0.8, 1.6, 3.2]
 
         elif hyperparameter == 'specal_noise':
             bin_centers = [1, 2, 3]
@@ -212,7 +213,7 @@ def plot_MAE():
         grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
         ax_spread[i, j].set_ylabel('ELA Spread [m]')
-        yticks_positions = np.linspace(0,1, 4)
+        yticks_positions = np.linspace(0,0.5, 4)
         ax_para[i, j].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
         grad_axis_para.set_yticks(yticks_positions,  ['%.4f' % (e * max_gradient) for e in yticks_positions])
         ax_spread[i, j].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
@@ -228,14 +229,14 @@ def plot_MAE():
 
             ax[i, j].grid(axis="y", color="lightgray", linestyle="-")
             ax[i, j].grid(axis="x", color="lightgray", linestyle="-", which='minor')
-            #ax[i, j].set_ylim(-0.25, 1.25)
+            ax[i, j].set_ylim(-0.025, 0.525)
             ax[i, j].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
             ax[i, j].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
             ax[i, j].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)
             ax[i, j].yaxis.set_tick_params(left=False)
             # ax[i,j].xaxis.set_tick_params(bottom=True, which='minor',color="lightgray")
             ax[i, j].xaxis.set_tick_params(bottom=False, which='both', )
-            ax[i, j].set_yscale('log')
+            #ax[i, j].set_yscale('log')
 
             grad_axis.yaxis.set_tick_params(right=False)
             handles, labels = ax[i, j].get_legend_handles_labels()

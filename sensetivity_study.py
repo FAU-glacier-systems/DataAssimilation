@@ -4,7 +4,7 @@ import numpy as np
 from data_assimilation import DataAssimilation
 import argparse
 import shutil
-np.random.seed(52)
+
 
 def main(hyperparameter_range):
     with open('ReferenceSimulation/params.json') as f:
@@ -13,6 +13,9 @@ def main(hyperparameter_range):
         base_ela = smb[1][3]
         base_abl_grad = smb[1][1]
         base_acc_grad = smb[1][2]
+        seed = params['seed']
+
+        np.random.seed(seed)
 
 
     initial_offsets = np.random.randint(0, 100, size=30)
@@ -25,6 +28,7 @@ def main(hyperparameter_range):
             covered_area = 2
             ensemble_size = 25
             observation_uncertainty = 0.2
+            seeds=np.random.randint(0, 1000, size=10)
 
             if hyperparameter == 'Area':
                 covered_area = value
@@ -40,6 +44,8 @@ def main(hyperparameter_range):
             for i in range(number_of_experiments):
                 initial_offset = int(initial_offsets[i])
                 initial_spread = int(initial_offsets[i])
+                seeds = int(seeds[i])
+
 
                 if hyperparameter == 'initial_offset':
                     initial_offset = value
@@ -74,12 +80,13 @@ def main(hyperparameter_range):
                           "observation_uncertainty": observation_uncertainty,
                           "observations_file": "ReferenceSimulation/output.nc",
                           "output_dir": output_dir,
-                          "visualise": False
+                          "visualise": False,
+                          "seed": seed,
                           }
 
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
-                with open(output_dir + f"params_o_{initial_offset}_s_{initial_spread}.json", 'w') as f:
+                with open(output_dir + f"params_o_{initial_offset}_s_{initial_spread}_seed_{seed}.json", 'w') as f:
                     json.dump(params, f, indent=4, separators=(',', ': '))
 
                 DA = DataAssimilation(params)

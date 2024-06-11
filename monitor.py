@@ -16,6 +16,7 @@ class Monitor:
         self.params = params
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
+        self.seed = params['seed']
         self.monitor_dir = self.output_dir + 'Plot/'
         if not os.path.exists(self.monitor_dir):
             os.makedirs(self.monitor_dir)
@@ -516,4 +517,4 @@ class Monitor:
             # axi.legend(framealpha=1)
 
         plt.tight_layout()
-        plt.savefig(self.output_dir+f'iterations_o_{self.initial_offset}_s_{self.initial_spread}.png', dpi=300)
+        plt.savefig(self.output_dir+f'iterations_o_{self.initial_offset}_s_{self.initial_spread}_seed_{self.seed}.png', dpi=300)

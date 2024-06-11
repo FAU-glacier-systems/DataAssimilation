@@ -15,11 +15,6 @@ def main(hyperparameter_range):
         base_abl_grad = smb[1][1]
         base_acc_grad = smb[1][2]
 
-
-
-
-    initial_offsets = np.random.randint(0, 100, size=30)
-
     for hyperparameter in hyperparameter_range.keys():
         print("Start Hyperparameter: ", hyperparameter)
 
@@ -27,6 +22,8 @@ def main(hyperparameter_range):
             # default
             covered_area = 2
             ensemble_size = 25
+            initial_offset = 60
+            initial_spread = 60
             observation_uncertainty = 0.2
             seeds=np.random.randint(0, 1000, size=10)
 
@@ -42,11 +39,7 @@ def main(hyperparameter_range):
             number_of_experiments = 10
 
             for i in range(number_of_experiments):
-                initial_offset = int(initial_offsets[i])
-                initial_spread = int(initial_offsets[i])
                 seed = int(seeds[i])
-
-
                 if hyperparameter == 'initial_offset':
                     initial_offset = value
                     initial_spread = value

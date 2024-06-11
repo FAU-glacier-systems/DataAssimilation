@@ -83,7 +83,8 @@ def plot_MAE():
             MAX_spread_total = np.append(MAX_spread_total, MAX_spread)
 
         # Normalise
-        # MAX = [100, 0.05, 0.05]
+        MAX_para_total = [1000, 0.01, 0.01]
+        MAX_spread_total = [1000, 0.02, 0.02]
         print(int(MAX_para_total[0]))
 
         max_gradient = np.max(MAX_para_total[1:])
@@ -125,10 +126,10 @@ def plot_MAE():
             bin_centers = [1, 2, 4, 5, 10, 20]
 
         elif hyperparameter == 'covered_area':
-            bin_centers = [0.2, 0.5, 1, 2, 10]
+            bin_centers = [0.1, 0.2, 0.5, 1, 2, 10]
 
         elif hyperparameter == 'ensemble_size':
-            bin_centers = [3, 5, 10, 25, 50]
+            bin_centers = [3, 5, 10, 25, 50, 100]
 
         elif hyperparameter == 'process_noise':
             bin_centers = [0, 0.5, 1, 2, 4]
@@ -170,7 +171,7 @@ def plot_MAE():
             j = fignum // 2
             bplot_para = ax_para[i, j].boxplot(bin_list_para,
                                                positions=np.arange(x, len(bin_list_para) * 3, 3) - ((x - 1) * 0.44),
-                                               showmeans=True, showfliers=True, patch_artist=True,
+                                               showmeans=True, showfliers=False, patch_artist=True,
                                                boxprops=dict(facecolor=colormap[x * 3 + 2], color=colormap[x * 3 + 1]),
                                                capprops=dict(color=colormap[x * 3 + 1]),
                                                whiskerprops=dict(color=colormap[x * 3 + 1]),
@@ -184,7 +185,7 @@ def plot_MAE():
             bplot_spreadd = ax_spread[i, j].boxplot(bin_list_spread,
                                                     positions=np.arange(x, len(bin_list_spread) * 3, 3) - (
                                                                 (x - 1) * 0.44),
-                                                    showmeans=True, showfliers=True, patch_artist=True,
+                                                    showmeans=True, showfliers=False, patch_artist=True,
                                                     boxprops=dict(facecolor=colormap[x * 3 + 2],
                                                                   color=colormap[x * 3 + 1]),
                                                     capprops=dict(color=colormap[x * 3 + 1]),
@@ -206,21 +207,32 @@ def plot_MAE():
             ax_spread[i, j].plot(np.arange(x, len(bin_list_spread) * 3, 3) - ((x - 1) * 0.44), bin_means_spread,
                                  color=colormap[x * 3], marker=marker[x], label=label, zorder=10 + (-abs(x - 1)))
         # ax[i,j].plot(np.arange(1, len(bin_centers) + 1), bin_medians, color=median_color)
+        ax_para[i, j].set_yscale('log')
         grad_axis_para = ax_para[i, j].secondary_yaxis('right')
+        grad_axis_para.set_yscale('log')
         grad_axis_para.set_ylabel('Gradient Error [m/yr/m]')
         ax_para[i, j].set_ylabel('ELA Error [m]')
 
+        ax_spread[i, j].set_yscale('log')
         grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
+        grad_axis_spread.set_yscale('log')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
         ax_spread[i, j].set_ylabel('ELA Spread [m]')
-        yticks_positions = np.linspace(0,1, 4)
+
+
+
+        yticks_positions = np.logspace(-3,0, 4)
+
         ax_para[i, j].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
         grad_axis_para.set_yticks(yticks_positions,  ['%.4f' % (e * max_gradient) for e in yticks_positions])
         ax_spread[i, j].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
         grad_axis_spread.set_yticks(yticks_positions, ['%.4f' % (e * max_gradient_spread) for e in yticks_positions])
 
         for ax, grad_axis in [(ax_para, grad_axis_para), (ax_spread, grad_axis_spread)]:
-
+            ax[i, j].get_yaxis().set_tick_params(which='minor', size=0)
+            ax[i, j].get_yaxis().set_tick_params(which='minor', width=0)
+            grad_axis.get_yaxis().set_tick_params(which='minor', size=0)
+            grad_axis.get_yaxis().set_tick_params(which='minor', width=0)
             ax[i, j].spines['top'].set_visible(False)
             ax[i, j].spines['right'].set_visible(False)
             ax[i, j].spines['bottom'].set_visible(False)
@@ -229,24 +241,24 @@ def plot_MAE():
 
             ax[i, j].grid(axis="y", color="lightgray", linestyle="-")
             ax[i, j].grid(axis="x", color="lightgray", linestyle="-", which='minor')
-            ax[i, j].set_ylim(-0.025, 1.025)
+            ax[i, j].set_ylim(10**-3.1, 1.2)
             ax[i, j].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
             ax[i, j].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
             ax[i, j].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)
             ax[i, j].yaxis.set_tick_params(left=False)
             # ax[i,j].xaxis.set_tick_params(bottom=True, which='minor',color="lightgray")
             ax[i, j].xaxis.set_tick_params(bottom=False, which='both', )
-            #ax[i, j].set_yscale('log')
+
 
             grad_axis.yaxis.set_tick_params(right=False)
             handles, labels = ax[i, j].get_legend_handles_labels()
 
             if hyperparameter == 'covered_area':
-                ax[i, j].set_xlabel("Covered Area ($a$) [%]")
+                ax[i, j].set_xlabel("Covered Area [%]")
             elif hyperparameter == 'dt':
                 ax[i, j].set_xlabel("Observation Interval ($dt$) [years]")
             elif hyperparameter == 'ensemble_size':
-                ax[i, j].set_xlabel('Ensemble Size ($N$)')
+                ax[i, j].set_xlabel('Ensemble Size')
             elif hyperparameter == 'process_noise':
                 ax[i, j].set_xlabel('Process Noise ($Q$)')
             elif hyperparameter == 'initial_offset':
@@ -257,6 +269,8 @@ def plot_MAE():
                 ax[i, j].set_xlabel('Specal Noise')
             elif hyperparameter == 'bias':
                 ax[i, j].set_xlabel('Elevation Bias')
+            elif hyperparameter == 'observation_uncertainty':
+                ax[i, j].set_xlabel('Elevation Change Uncertainty [m/yr]')
             else:
                 ax[i, j].set_xlabel(hyperparameter)
 

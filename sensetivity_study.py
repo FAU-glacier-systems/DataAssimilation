@@ -44,7 +44,7 @@ def main(hyperparameter_range):
             for i in range(number_of_experiments):
                 initial_offset = int(initial_offsets[i])
                 initial_spread = int(initial_offsets[i])
-                seeds = int(seeds[i])
+                seed = int(seeds[i])
 
 
                 if hyperparameter == 'initial_offset':

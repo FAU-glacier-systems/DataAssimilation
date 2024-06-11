@@ -10,14 +10,16 @@ remote_base_dir="gwgi026h@fritz:/home/saturn/gwgi/gwgi026h/DataAssimilation/Resu
 
 #local_base_dir="Results/Results_observation_uncertainty"
 #local_base_dir="Results/Results_Area"
+#local_base_dir="Results/Results_initial_offset"
 local_base_dir="Results/Results_Ensemble_Size"
 
 mkdir -p "${local_base_dir}"
 # Define the area numbers
+#areas=(0.1)
 #areas=(0.2  0.5  1  2  10)
 #areas=(0.2  0.4  0.8  1.6  3.2)
-#areas=( 20 40 60 80 100)
-areas=(3 5 10 25 50)
+areas=( 100)
+#areas=(3 5 10 25 50)
 #areas=(5 10 20 30 40 50)
 # Loop through each area and execute the scp command
 for area in "${areas[@]}"; do

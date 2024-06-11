@@ -5,6 +5,7 @@ from data_assimilation import DataAssimilation
 import argparse
 import shutil
 
+np.random.seed(45)
 
 def main(hyperparameter_range):
     with open('ReferenceSimulation/params.json') as f:
@@ -13,9 +14,8 @@ def main(hyperparameter_range):
         base_ela = smb[1][3]
         base_abl_grad = smb[1][1]
         base_acc_grad = smb[1][2]
-        seed = params['seed']
 
-        np.random.seed(seed)
+
 
 
     initial_offsets = np.random.randint(0, 100, size=30)

@@ -18,13 +18,15 @@ os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # np.random.seed(1233)
-np.random.seed(37)
+#np.random.seed(37)
 
 
 class DataAssimilation:
     def __init__(self, params):
         # Save arguments
         self.params = params
+        self.seed = params['seed']
+        np.random.seed(self.seed)
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
         self.ensemble_dir = Path(self.output_dir) / "Ensemble/"
@@ -163,7 +165,7 @@ class DataAssimilation:
 
     def save_results(self, estimates):
         self.params['result'] = [list(sigma) for sigma in estimates[-1]]
-        with open(self.output_dir + f"result_o_{self.initial_offset}_s_{self.initial_spread}.json", 'w') as f:
+        with open(self.output_dir + f"result_o_{self.initial_offset}_s_{self.initial_spread}_seed_{self.seed}.json", 'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
 
     def initialize_ensemble_fields(self):

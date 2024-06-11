@@ -213,7 +213,7 @@ def plot_MAE():
         grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
         ax_spread[i, j].set_ylabel('ELA Spread [m]')
-        yticks_positions = np.linspace(0,0.5, 4)
+        yticks_positions = np.linspace(0,1, 4)
         ax_para[i, j].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
         grad_axis_para.set_yticks(yticks_positions,  ['%.4f' % (e * max_gradient) for e in yticks_positions])
         ax_spread[i, j].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
@@ -229,7 +229,7 @@ def plot_MAE():
 
             ax[i, j].grid(axis="y", color="lightgray", linestyle="-")
             ax[i, j].grid(axis="x", color="lightgray", linestyle="-", which='minor')
-            ax[i, j].set_ylim(-0.025, 0.525)
+            ax[i, j].set_ylim(-0.025, 1.025)
             ax[i, j].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
             ax[i, j].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
             ax[i, j].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)

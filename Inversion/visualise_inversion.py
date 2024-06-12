@@ -2,14 +2,15 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_file = 'ReferenceSimulation/output.nc'
-optimized_file = 'Inversion/geology-optimized.nc'
-figure_path = "Inversion/sliding_arrhenius.pdf"
+output_file = '../ReferenceSimulation/output.nc'
+optimized_file = 'geology-optimized.nc'
+figure_path = "inversion_result.pdf"
 
 ds = xr.open_dataset(output_file)
 ds_optimized = xr.open_dataset(optimized_file)
 
 icemask = np.array(ds_optimized["icemask"])
+surface = np.array(ds_optimized["usurf"])
 inversion = True
 if inversion:
     arrhenius = np.array(ds_optimized["arrhenius"])
@@ -24,49 +25,62 @@ else:
 
 velocity_obs = np.array(ds_optimized["velsurfobs_mag"])
 
-
-fig, ax = plt.subplots(1, 4, figsize=(17,5))
+fig, ax = plt.subplots(1, 4, figsize=(15, 5))
 plt.subplots_adjust(left=0, bottom=0.05, right=0.95, top=0.95, wspace=0.1, hspace=0.1)
 
-
+for i in range(4):
+    ax[i].imshow(surface, cmap='gray', vmin=1450, vmax=3600)
 velocity_obs[icemask < 0.01] = None
-vel_img = ax[0].imshow(velocity_obs, vmin=0, vmax=70, cmap="magma")
+vel_img = ax[0].imshow(velocity_obs, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
 cbar.ax.set_ylabel('surface velocity [m/yr]', rotation=90)
-ax[ 0].invert_yaxis()
-ax[ 0].set_xlim(35,85)
-ax[ 0].set_ylim(35,125)
 ax[0].set_title("Observed velocity [Millan22]")
 
 velocity_iter = velocity
 velocity_iter[icemask < 0.01] = None
-vel_img = ax[ 1].imshow(velocity_iter, vmin=0, vmax=70, cmap="magma")
+vel_img = ax[1].imshow(velocity_iter, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
 cbar.ax.set_ylabel('surface velocity [m/yr]', rotation=90)
-ax[1].invert_yaxis()
-ax[ 1].set_xlim(35,85)
 
-ax[ 1].set_ylim(35,125)
 ax[1].set_title("Modelled velocity")
 
-thickness[icemask<0.01] = None
-img = ax[2].imshow(thickness, cmap='Blues')
+thickness[icemask < 0.01] = None
+img = ax[2].imshow(thickness, cmap='Blues', zorder=2)
 cbar = fig.colorbar(img)
 cbar.ax.invert_yaxis()
 cbar.ax.set_ylabel('thickness [$m$]', rotation=90)
-ax[2].invert_yaxis()
-ax[ 2].set_xlim(35,85)
-ax[ 2].set_ylim(35,125)
+
 ax[2].set_title("Optimized thickness ")
 
 slidingco_iter = slidingco
 slidingco_iter[icemask < 0.01] = None
-img = ax[3].imshow(slidingco_iter)
+img = ax[3].imshow(slidingco_iter, zorder=2)
 cbar = fig.colorbar(img)
 cbar.ax.set_ylabel('slidingco $[?]$', rotation=90)
-ax[3].invert_yaxis()
-ax[ 3].set_xlim(35,85)
-ax[ 3].set_ylim(35,125)
-ax[ 3].set_title("Optimized slidingco")
+
+ax[3].set_title("Optimized slidingco")
+
+
+def formatter(x, pos):
+    del pos
+    return str(int(x * 100 / 1000))
+
+for i in range(4):
+    ax[i].invert_yaxis()
+    ax[i].set_xlim(35, 85)
+    ax[i].set_ylim(35, 125)
+
+    ax[i].xaxis.set_major_formatter(formatter)
+    ax[i].yaxis.set_major_formatter(formatter)
+    ax[i].grid(axis="y", color="black", linestyle="--", zorder=0, alpha=.2)
+    ax[i].grid(axis="x", color="black", linestyle="--", zorder=0, alpha=.2)
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax[i].spines[axis].set_linewidth(0)
+    ax[i].set_xlabel('$km$', color='gray')
+    ax[i].tick_params(axis='x', colors='gray')
+    ax[i].tick_params(axis='y', colors='gray')
+
+
 #fig.suptitle("inversion", fontsize=32)
+plt.tight_layout()
 plt.savefig(figure_path, format='pdf')

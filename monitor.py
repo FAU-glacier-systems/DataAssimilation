@@ -481,29 +481,35 @@ class Monitor:
 
     def plot_iterations(self, estimates):
         colorscale = plt.get_cmap('tab20')
-        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
         ax_ela = ax[0]
-        ax_ela.set_title('Equilibrium Line Altitude')
-        ax_ela.plot(range(len(estimates)), [self.smb[-1][3]]*len(estimates), color=colorscale(9), linewidth=3, linestyle='-.',)
-        ax_ela.plot(range(len(estimates)), np.array(estimates)[:, :, 0], color='gold')
-        ax_ela.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 0], axis=1), color=colorscale(2))
-        ax_ela.set_ylabel('Altitude (m)')
+        #ax_ela.set_title('Equilibrium Line Altitude')
+        ax_ela.plot(range(len(estimates)), [self.smb[-1][3]]*len(estimates), color=colorscale(9), linewidth=3,
+                    linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+        ax_ela.plot(range(len(estimates)), np.array(estimates)[:, :, 0], color='gold', zorder=1)
+        ax_ela.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 0], axis=1), color=colorscale(2),
+                    zorder=10)
+        ax_ela.set_ylabel('Equilibrium Line Altitude [m]')
         ax_ela.set_xlabel('Iterations')
 
         ax_abl = ax[1]
-        ax_abl.set_title('Ablation Gradient')
-        ax_abl.plot(range(len(estimates)), [self.smb[-1][1]] * len(estimates), color=colorscale(9), linewidth=3, linestyle='-.',)
-        ax_abl.plot(range(len(estimates)), np.array(estimates)[:, :, 1], color='gold')
-        ax_abl.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 1], axis=1), color=colorscale(2))
-        ax_abl.set_ylabel('Gradient (m/yr/m)')
+        #ax_abl.set_title('Ablation Gradient')
+        ax_abl.plot(range(len(estimates)), [self.smb[-1][1]] * len(estimates), color=colorscale(9), linewidth=3,
+                    linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+        ax_abl.plot(range(len(estimates)), np.array(estimates)[:, :, 1], color='gold', zorder=1)
+        ax_abl.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 1], axis=1), color=colorscale(2),
+                    label= 'ensemble mean', zorder=10)
+        ax_abl.set_ylabel('Ablation Gradient [m/yr/m]')
         ax_abl.set_xlabel('Iterations')
 
         ax_acc = ax[2]
-        ax_acc.set_title('Accumulation Gradient')
-        ax_acc.plot(range(len(estimates)), [self.smb[-1][2]] * len(estimates), color=colorscale(9), linewidth=3, linestyle='-.',)
-        ax_acc.plot(range(len(estimates)), np.array(estimates)[:, :, 2], color='gold')
-        ax_acc.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 2], axis=1), color=colorscale(2))
-        ax_acc.set_ylabel('Gradient (m/yr/m)')
+        #ax_acc.set_title('Accumulation Gradient')
+        ax_acc.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 2], axis=1), color=colorscale(2),
+                    label= 'Ensemble Mean', zorder=10)
+        ax_acc.plot(range(len(estimates)), np.array(estimates)[:, :, 2], color='gold', label='Ensemble Member', zorder=1)
+        ax_acc.plot(range(len(estimates)), [self.smb[-1][2]] * len(estimates), color=colorscale(9), linewidth=3,
+                    linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+        ax_acc.set_ylabel('Accumulation Gradient [m/yr/m]')
         ax_acc.set_xlabel('Iterations')
         for axi in [ax[0], ax[1], ax[2]]:
             axi.spines['top'].set_visible(False)
@@ -517,4 +523,8 @@ class Monitor:
             # axi.legend(framealpha=1)
 
         plt.tight_layout()
+        handles, labels = axi.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        fig.legend(by_label.values(), by_label.keys(), loc='upper center', ncol=3)
+        fig.subplots_adjust(top=0.9, bottom=0.15)
         plt.savefig(self.output_dir+f'iterations_o_{self.initial_offset}_s_{self.initial_spread}_seed_{self.seed}.png', dpi=300)

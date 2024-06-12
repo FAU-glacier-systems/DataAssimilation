@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 
 def plot_MAE():
     # global figure
-    fig_para, ax_para = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
-    fig_spread, ax_spread = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
+    fig_para, ax_para = plt.subplots(nrows=4, ncols=2, figsize=(10, 12), )  # layout="tight")
+    #fig_spread, ax_spread = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
 
     # run for every hyperparameters
     #for fignum, hyperparameter in enumerate(['covered_area','ensemble_size', 'process_noise', 'dt', ]):
-    for fignum, hyperparameter in enumerate([ 'covered_area', 'observation_uncertainty',  'ensemble_size', 'initial_offset']):
+    for fig_num, hyperparameter in enumerate([ 'covered_area', 'observation_uncertainty',  'ensemble_size', 'initial_offset']):
 
     #for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
 
@@ -156,20 +156,19 @@ def plot_MAE():
         mean_max = 0
         for x, label in enumerate(["Accumulation Gradient", "Equilibrium Line Altitude", "Ablation Gradient"]):
             bin_list_para = [df['MAE' + str(x)][(df[hyperparameter] == center)] for center in bin_centers]
-            bin_means_para = np.array([bins.mean() for bins in bin_list_para])
+            bin_means_para = np.array([np.median(bins) for bins in bin_list_para])
             if mean_max < max(bin_means_para):
                 mean_max = max(bin_means_para)
             bin_list_spread = [df['spread' + str(x)][(df[hyperparameter] == center)] for center in bin_centers]
-            bin_means_spread = np.array([bins.mean() for bins in bin_list_spread])
+            bin_means_spread = np.array([np.median(bins) for bins in bin_list_spread])
             if mean_max < max(bin_means_para):
                 mean_max = max(bin_means_para)
 
             print(hyperparameter)
             print([len(bin) for bin in bin_list_para])
 
-            i = fignum % 2
-            j = fignum // 2
-            bplot_para = ax_para[i, j].boxplot(bin_list_para,
+
+            bplot_para = ax_para[fig_num, 0].boxplot(bin_list_para,
                                                positions=np.arange(x, len(bin_list_para) * 3, 3) - ((x - 1) * 0.44),
                                                showmeans=True, showfliers=False, patch_artist=True,
                                                boxprops=dict(facecolor=colormap[x * 3 + 2], color=colormap[x * 3 + 1]),
@@ -182,7 +181,7 @@ def plot_MAE():
                                                               markerfacecolor="none"),
                                                medianprops=dict(linestyle='-', linewidth=4, color="none"))
 
-            bplot_spreadd = ax_spread[i, j].boxplot(bin_list_spread,
+            bplot_spreadd = ax_para[fig_num, 1].boxplot(bin_list_spread,
                                                     positions=np.arange(x, len(bin_list_spread) * 3, 3) - (
                                                                 (x - 1) * 0.44),
                                                     showmeans=True, showfliers=False, patch_artist=True,
@@ -202,89 +201,83 @@ def plot_MAE():
             # for patch in bplot['boxes']:
             #    patch.set_facecolor(colorscale(x*2+1))
             # ax[i].plot(np.arange(1, len(bin_centers) + 1), bin_var_mean, color=var_color, marker='v')
-            ax_para[i, j].plot(np.arange(x, len(bin_list_para) * 3, 3) - ((x - 1) * 0.44), bin_means_para,
+            ax_para[fig_num, 0].plot(np.arange(x, len(bin_list_para) * 3, 3) - ((x - 1) * 0.44), bin_means_para,
                                color=colormap[x * 3], marker=marker[x], label=label, zorder=10 + (-abs(x - 1)))
-            ax_spread[i, j].plot(np.arange(x, len(bin_list_spread) * 3, 3) - ((x - 1) * 0.44), bin_means_spread,
+            ax_para[fig_num, 1].plot(np.arange(x, len(bin_list_spread) * 3, 3) - ((x - 1) * 0.44), bin_means_spread,
                                  color=colormap[x * 3], marker=marker[x], label=label, zorder=10 + (-abs(x - 1)))
         # ax[i,j].plot(np.arange(1, len(bin_centers) + 1), bin_medians, color=median_color)
-        ax_para[i, j].set_yscale('log')
-        grad_axis_para = ax_para[i, j].secondary_yaxis('right')
+        ax_para[fig_num, 0].set_yscale('log')
+        grad_axis_para = ax_para[fig_num, 0].secondary_yaxis('right')
         grad_axis_para.set_yscale('log')
         grad_axis_para.set_ylabel('Gradient Error [m/yr/m]')
-        ax_para[i, j].set_ylabel('ELA Error [m]')
+        ax_para[fig_num, 0].set_ylabel('ELA Error [m]')
 
-        ax_spread[i, j].set_yscale('log')
-        grad_axis_spread = ax_spread[i, j].secondary_yaxis('right')
+        ax_para[fig_num, 1].set_yscale('log')
+        grad_axis_spread = ax_para[fig_num, 1].secondary_yaxis('right')
         grad_axis_spread.set_yscale('log')
         grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
-        ax_spread[i, j].set_ylabel('ELA Spread [m]')
+        ax_para[fig_num, 1].set_ylabel('ELA Spread [m]')
 
 
 
         yticks_positions = np.logspace(-3,0, 4)
 
-        ax_para[i, j].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
+        ax_para[fig_num, 0].set_yticks(yticks_positions, [int(MAX_para_total[0] * pos) for pos in yticks_positions])
         grad_axis_para.set_yticks(yticks_positions,  ['%.4f' % (e * max_gradient) for e in yticks_positions])
-        ax_spread[i, j].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
+        ax_para[fig_num, 1].set_yticks(yticks_positions, [int(MAX_spread_total[0] * pos) for pos in yticks_positions ])
         grad_axis_spread.set_yticks(yticks_positions, ['%.4f' % (e * max_gradient_spread) for e in yticks_positions])
 
-        for ax, grad_axis in [(ax_para, grad_axis_para), (ax_spread, grad_axis_spread)]:
-            ax[i, j].get_yaxis().set_tick_params(which='minor', size=0)
-            ax[i, j].get_yaxis().set_tick_params(which='minor', width=0)
+        for num, grad_axis in [(0, grad_axis_para), (1, grad_axis_spread)]:
+            ax_para[fig_num, num].get_yaxis().set_tick_params(which='minor', size=0)
+            ax_para[fig_num, num].get_yaxis().set_tick_params(which='minor', width=0)
             grad_axis.get_yaxis().set_tick_params(which='minor', size=0)
             grad_axis.get_yaxis().set_tick_params(which='minor', width=0)
-            ax[i, j].spines['top'].set_visible(False)
-            ax[i, j].spines['right'].set_visible(False)
-            ax[i, j].spines['bottom'].set_visible(False)
-            ax[i, j].spines['left'].set_visible(False)
+            ax_para[fig_num, num].spines['top'].set_visible(False)
+            ax_para[fig_num, num].spines['right'].set_visible(False)
+            ax_para[fig_num, num].spines['bottom'].set_visible(False)
+            ax_para[fig_num, num].spines['left'].set_visible(False)
             grad_axis.spines['right'].set_visible(False)
 
-            ax[i, j].grid(axis="y", color="lightgray", linestyle="-")
-            ax[i, j].grid(axis="x", color="lightgray", linestyle="-", which='minor')
-            ax[i, j].set_ylim(10**-3.1, 1.2)
-            ax[i, j].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
-            ax[i, j].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
-            ax[i, j].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)
-            ax[i, j].yaxis.set_tick_params(left=False)
+            ax_para[fig_num, num].grid(axis="y", color="lightgray", linestyle="-")
+            ax_para[fig_num, num].grid(axis="x", color="lightgray", linestyle="-", which='minor')
+            ax_para[fig_num, num].set_ylim(10**-3.1, 1.2)
+            ax_para[fig_num, num].set_xlim(-0.75, len(bin_list_para) * 3 - 0.25)
+            ax_para[fig_num, num].set_xticks(np.arange(-0.5, len(bin_list_para) * 3, 3), minor=True)
+            ax_para[fig_num, num].set_xticks(np.arange(1, len(bin_list_para) * 3, 3), bin_centers)
+            ax_para[fig_num, num].yaxis.set_tick_params(left=False)
             # ax[i,j].xaxis.set_tick_params(bottom=True, which='minor',color="lightgray")
-            ax[i, j].xaxis.set_tick_params(bottom=False, which='both', )
+            ax_para[fig_num, num].xaxis.set_tick_params(bottom=False, which='both', )
 
 
             grad_axis.yaxis.set_tick_params(right=False)
-            handles, labels = ax[i, j].get_legend_handles_labels()
+            handles, labels = ax_para[fig_num, num].get_legend_handles_labels()
 
             if hyperparameter == 'covered_area':
-                ax[i, j].set_xlabel("Covered Area [%]")
+                ax_para[fig_num, num].set_xlabel("Covered Area [%]")
             elif hyperparameter == 'dt':
-                ax[i, j].set_xlabel("Observation Interval ($dt$) [years]")
+                ax_para[fig_num, num].set_xlabel("Observation Interval ($dt$) [years]")
             elif hyperparameter == 'ensemble_size':
-                ax[i, j].set_xlabel('Ensemble Size')
+                ax_para[fig_num, num].set_xlabel('Ensemble Size')
             elif hyperparameter == 'process_noise':
-                ax[i, j].set_xlabel('Process Noise ($Q$)')
+                ax_para[fig_num, num].set_xlabel('Process Noise ($Q$)')
             elif hyperparameter == 'initial_offset':
-                ax[i, j].set_xlabel('Initial Offset')
+                ax_para[fig_num, num].set_xlabel('Initial Offset')
             elif hyperparameter == 'initial_uncertainty':
-                ax[i, j].set_xlabel('Initial Uncertainty')
+                ax_para[fig_num, num].set_xlabel('Initial Uncertainty')
             elif hyperparameter == 'specal_noise':
-                ax[i, j].set_xlabel('Specal Noise')
+                ax_para[fig_num, num].set_xlabel('Specal Noise')
             elif hyperparameter == 'bias':
-                ax[i, j].set_xlabel('Elevation Bias')
+                ax_para[fig_num, num].set_xlabel('Elevation Bias')
             elif hyperparameter == 'observation_uncertainty':
-                ax[i, j].set_xlabel('Elevation Change Uncertainty [m/yr]')
+                ax_para[fig_num, num].set_xlabel('Elevation Change Uncertainty [m/yr]')
             else:
-                ax[i, j].set_xlabel(hyperparameter)
+                ax_para[fig_num, num].set_xlabel(hyperparameter)
 
     fig_para.legend(handles, labels, loc='upper center', ncol=3)
     fig_para.tight_layout()
-    fig_para.subplots_adjust(top=0.9, bottom=0.1)
+    fig_para.subplots_adjust(top=0.97, bottom=0.04)
     fig_para.savefig(f'Plots/MAE_ext.pdf', format="pdf")
     fig_para.savefig(f'Plots/MAE_ext.png', format="png", dpi=300)
-
-    fig_spread.legend(handles, labels, loc='upper center', ncol=3)
-    fig_spread.tight_layout()
-    fig_spread.subplots_adjust(top=0.9, bottom=0.1)
-    fig_spread.savefig(f'Plots/spread_ext.pdf', format="pdf")
-    fig_spread.savefig(f'Plots/spread_ext.png', format="png", dpi=300)
 
 
 if __name__ == '__main__':

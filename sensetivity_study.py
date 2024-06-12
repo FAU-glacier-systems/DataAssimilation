@@ -25,7 +25,7 @@ def main(hyperparameter_range):
             initial_offset = 60
             initial_spread = 60
             observation_uncertainty = 0.2
-            seeds=np.random.randint(0, 1000, size=10)
+            seeds=[1, 2, 30, 20]
 
             if hyperparameter == 'Area':
                 covered_area = value

@@ -37,9 +37,10 @@ class DataAssimilation:
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
         self.initial_spread = params['initial_spread']
+        self.initial_offset = params['initial_offset']
 
         if self.synthetic:
-            self.initial_offset = params['initial_offset']
+
             self.observation_uncertainty = params['observation_uncertainty']
 
         self.initial_estimate = params['initial_estimate']

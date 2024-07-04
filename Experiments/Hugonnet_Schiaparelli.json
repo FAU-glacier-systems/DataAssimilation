@@ -1,18 +1,18 @@
 {
   "synthetic": false,
   "smb_simple_array": [["time", "gradabl", "gradacc", "ela", "accmax"],
-                        [2000, 0.0082, 0.0016, 2966, 100],
-                        [2020, 0.0082, 0.0016, 2966, 100]],
+                        [2000, 0, 0, 0, 100],
+                        [2020, 0, 0,0, 100]],
   "covered_area": 10,
   "num_iterations": 5,
   "ensemble_size": 50,
   "time_interval": 20,
   "initial_offset": 60,
-  "initial_estimate": [3500, 0.006, 0.012],
-  "initial_spread": [[100, 0, 0],[0,1e-4,0],[0,0,1e-4]],
+  "initial_estimate": [500, 0.005, 0.005],
+  "initial_spread": 60,
   "process_noise" : 0,
   "observations_file": "Hugonnet/merged_dataset.nc",
-  "output_dir": "Results/Results_real/",
+  "output_dir": "Results/Results_schiaparelli/",
   "visualise": true,
   "seed": 350
 }

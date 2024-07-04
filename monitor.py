@@ -1,13 +1,9 @@
-import json
 import copy
-import random
 import os.path
 import numpy as np
-from skimage import measure
 import matplotlib.pyplot as plt
-import rasterio
-import matplotlib.font_manager as fm
-import netCDF4 as nc
+import xarray as xr
+
 
 
 class Monitor:
@@ -33,7 +29,8 @@ class Monitor:
         if self.synthetic:
             self.observation_uncertainty = params['observation_uncertainty']
 
-        self.observed_glacier = nc.Dataset(params['observations_file'])
+        with xr.open_dataset(params['observations_file']) as ds:
+            self.observed_glacier = ds
 
         self.observations = observations
         self.observation_uncertainty_field = observation_uncertainty_field
@@ -46,8 +43,8 @@ class Monitor:
         self.year_range_repeat = np.repeat(self.year_range, 2)[1:]
 
         self.res = self.observed_glacier['x'][1] - self.observed_glacier['x'][0]
-        self.map_shape_x = self.observed_glacier.dimensions['x'].size
-        self.map_shape_y = self.observed_glacier.dimensions['y'].size
+        self.map_shape_x = self.observed_glacier.dims['x']
+        self.map_shape_y = self.observed_glacier.dims['y']
 
         self.bedrock = self.observed_glacier['topg'][0]
         # self.bedrock = self.bedrock[::-1]
@@ -90,8 +87,9 @@ class Monitor:
         :returns area [km²] and volume [km³] of the ground truth in given year
                  and thickness map
         """
-        thk_map = usurf - self.bedrock
+        thk_map = np.array(usurf - self.bedrock)
         # icemask = np.logical_and(self.icemask,)
+
         volume = np.sum(thk_map[self.icemask == 1]) * (self.res ** 2) / (1000 ** 3)
         low_sample = usurf[self.low_point[0], self.low_point[1]]
         high_sample = usurf[self.high_point[0], self.high_point[1]]
@@ -127,14 +125,14 @@ class Monitor:
         # draw true velocity
         ax_vel_true = ax[2, 3]
         ax_vel_true.set_title(f'Velocity in 2000')
-        vel_im = ax_vel_true.imshow(true_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
+        vel_im = ax_vel_true.imshow(true_vel, cmap='magma', vmin=0, vmax=300, origin='lower')
         fig.colorbar(vel_im, ax=ax_vel_true, location='right')
         ax_vel_true.set_title('[$m/yr$]', loc='right', x=1.15)
         ax_vel_true.xaxis.set_major_formatter(formatter)
         ax_vel_true.yaxis.set_major_formatter(formatter)
         ax_vel_true.set_xlabel('$km$')
-        ax_vel_true.set_xlim(20, 100)
-        ax_vel_true.set_ylim(30, 130)
+        #ax_vel_true.set_xlim(20, 100)
+        #ax_vel_true.set_ylim(30, 130)
         # ax_vel_true.set_yticks([])
 
         # draw modeled velocity
@@ -142,15 +140,15 @@ class Monitor:
         ax_vel_model.set_title(f'Mean Difference Surface Velocity')
         modeled_mean_vel = np.mean(ensemble_velo, axis=0)
         #vel_im = ax_vel_model.imshow(true_vel - modeled_mean_vel, cmap='bwr_r', vmin=-30, vmax=30, origin='lower')
-        vel_im = ax_vel_model.imshow(modeled_mean_vel, cmap='magma', vmin=0, vmax=70, origin='lower')
+        vel_im = ax_vel_model.imshow(modeled_mean_vel, cmap='magma', vmin=0, vmax=300, origin='lower')
 
         fig.colorbar(vel_im, ax=ax_vel_model, location='right')
         ax_vel_model.set_title('[$m/yr$]', loc='right', x=1.15)
         ax_vel_model.xaxis.set_major_formatter(formatter)
         ax_vel_model.yaxis.set_major_formatter(formatter)
         ax_vel_model.set_xlabel('$km$')
-        ax_vel_model.set_xlim(20, 100)
-        ax_vel_model.set_ylim(30, 130)
+        #ax_vel_model.set_xlim(20, 100)
+        #ax_vel_model.set_ylim(30, 130)
         # ax_vel_model.set_yticks([])
 
         # plot volume
@@ -318,7 +316,8 @@ class Monitor:
 
         observations = self.observations[year_index]
 
-        usurf_im = ax_obs_usurf.imshow(observations, cmap='Blues_r', vmin=1450, vmax=3600, origin='lower')
+        usurf_im = ax_obs_usurf.imshow(observations, cmap='Blues_r',  origin='lower')
+
         # observation_glacier = copy.copy(observations)
         # observation_glacier[self.icemask==0] = None
         # usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=2200, vmax=3600, origin='lower', zorder=2)
@@ -333,7 +332,8 @@ class Monitor:
                              edgecolors='gray', linewidths=0.8,
                              marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
 
-        blues = plt.cm.get_cmap('Blues_r')
+        import matplotlib as mpl
+        blues = mpl.colormaps['Blues_r']
 
         ax_obs_usurf.scatter(self.low_point[1], self.low_point[0],
                              edgecolors='gray', marker='v', c=None, facecolors=blues(0),
@@ -348,13 +348,13 @@ class Monitor:
         ax_obs_usurf.xaxis.set_major_formatter(formatter)
         ax_obs_usurf.yaxis.set_major_formatter(formatter)
         ax_obs_usurf.set_xlabel('$km$')
-        ax_obs_usurf.set_xlim(20, 100)
-        ax_obs_usurf.set_ylim(30, 130)
+        #ax_obs_usurf.set_xlim(20, 100)
+        #ax_obs_usurf.set_ylim(30, 130)
 
         legend = ax_obs_usurf.legend(loc='upper left', framealpha=.5)
-        legend.legendHandles[1]._sizes = [100]
-        legend.legendHandles[1]._linewidths = [2]
-        legend.legendHandles[1]._facecolors = [colorscale(1)]
+        legend.legend_handles[1]._sizes = [100]
+        legend.legend_handles[1]._linewidths = [2]
+        legend.legend_handles[1]._facecolors = [colorscale(1)]
 
         # plot difference
         ax_obs_diff = ax[2, 0]
@@ -362,8 +362,8 @@ class Monitor:
         surface_dif = np.mean(ensemble_usurfs, axis=0) - observations
         usurf_diff_im = ax_obs_diff.imshow(surface_dif, vmin=-50, vmax=50, cmap='bwr_r', origin='lower')
         cbar = fig.colorbar(usurf_diff_im, ax=ax_obs_diff, location='right')
-        ax_obs_diff.set_xlim(20, 100)
-        ax_obs_diff.set_ylim(30, 130)
+        #ax_obs_diff.set_xlim(20, 100)
+        #ax_obs_diff.set_ylim(30, 130)
         ax_obs_diff.set_title('[$m$]', loc='right', x=1.15)
 
         ax_obs_diff.xaxis.set_major_formatter(formatter)
@@ -401,9 +401,9 @@ class Monitor:
         # draw true surface mass balance
         ax_smb = ax[1, 3]
         ax_smb.set_title(f'Surface Mass Balance in {int(year)}')
-        background = ax_smb.imshow(observations, cmap='gray', vmin=1450, vmax=3600, origin='lower')
+        background = ax_smb.imshow(observations, cmap='gray',  origin='lower')
 
-        smb_im = ax_smb.imshow(esti_smb, cmap='RdBu', vmin=-8, vmax=8, origin='lower', zorder=5)
+        smb_im = ax_smb.imshow(esti_smb, cmap='RdBu', vmin=-10, vmax=10, origin='lower', zorder=5)
         fig.colorbar(smb_im, ax=ax_smb, location='right', ticks=range(-10, 11, 5))
         text_y, text_x = esti_smb.shape
         mb = np.sum(esti_smb[self.icemask == 1]) / np.sum(self.icemask)
@@ -418,8 +418,8 @@ class Monitor:
         ax_smb.set_xlabel('$km$')
         # ax[1, 3].set_yticks([])
 
-        ax_smb.set_xlim(20, 100)
-        ax_smb.set_ylim(30, 130)
+        #ax_smb.set_xlim(20, 100)
+        #ax_smb.set_ylim(30, 130)
 
         # true_smb
         ax_hidden_smb = ax[2, 1]
@@ -434,8 +434,8 @@ class Monitor:
         ax_hidden_smb.xaxis.set_major_formatter(formatter)
         ax_hidden_smb.yaxis.set_major_formatter(formatter)
         ax_hidden_smb.set_xlabel('$km$')
-        ax_hidden_smb.set_xlim(20, 100)
-        ax_hidden_smb.set_ylim(30, 130)
+        #ax_hidden_smb.set_xlim(20, 100)
+        #ax_hidden_smb.set_ylim(30, 130)
 
         for axi in [ax[0, 0], ax[0, 1], ax[0, 2], ax[1, 0], ax[1, 1], ax[1, 2]]:
             axi.spines['top'].set_visible(False)
@@ -481,35 +481,46 @@ class Monitor:
 
     def plot_iterations(self, estimates):
         colorscale = plt.get_cmap('tab20')
+        estimates = np.array(estimates)
+        estimates[:,:,1:3] *= 0.91
         fig, ax = plt.subplots(1, 3, figsize=(12, 4))
         ax_ela = ax[0]
         #ax_ela.set_title('Equilibrium Line Altitude')
         ax_ela.plot(range(len(estimates)), [self.smb[-1][3]]*len(estimates), color=colorscale(9), linewidth=3,
                     linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+        #ax_ela.fill_between(range(len(estimates)), [2845]*len(estimates),
+        #                    [3155]*len(estimates), color=colorscale(9), alpha=0.2)
         ax_ela.plot(range(len(estimates)), np.array(estimates)[:, :, 0], color='gold', zorder=1)
         ax_ela.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 0], axis=1), color=colorscale(2),
                     zorder=10)
-        ax_ela.set_ylabel('Equilibrium Line Altitude [m]')
+        ax_ela.set_ylabel('Equilibrium Line Altitude [$m$]')
         ax_ela.set_xlabel('Iterations')
 
         ax_abl = ax[1]
         #ax_abl.set_title('Ablation Gradient')
         ax_abl.plot(range(len(estimates)), [self.smb[-1][1]] * len(estimates), color=colorscale(9), linewidth=3,
                     linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+        #ax_abl.fill_between(range(len(estimates)), [0.00556]*len(estimates),
+        #                    [0.01141]*len(estimates), color=colorscale(9), alpha=0.2)
+
         ax_abl.plot(range(len(estimates)), np.array(estimates)[:, :, 1], color='gold', zorder=1)
         ax_abl.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 1], axis=1), color=colorscale(2),
                     label= 'ensemble mean', zorder=10)
-        ax_abl.set_ylabel('Ablation Gradient [m/yr/m]')
+        ax_abl.set_ylabel('Ablation Gradient [$m~w.e.~a^{-1}~m^{-1}$]')
         ax_abl.set_xlabel('Iterations')
 
         ax_acc = ax[2]
         #ax_acc.set_title('Accumulation Gradient')
         ax_acc.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 2], axis=1), color=colorscale(2),
                     label= 'Ensemble Mean', zorder=10)
+
+
         ax_acc.plot(range(len(estimates)), np.array(estimates)[:, :, 2], color='gold', label='Ensemble Member', zorder=1)
         ax_acc.plot(range(len(estimates)), [self.smb[-1][2]] * len(estimates), color=colorscale(9), linewidth=3,
                     linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
-        ax_acc.set_ylabel('Accumulation Gradient [m/yr/m]')
+        #ax_acc.fill_between(range(len(estimates)), [0.000216] * len(estimates),
+        #                    [0.00244] * len(estimates), color=colorscale(9), alpha=0.2, label='Extremes [GLAMOS]')
+        ax_acc.set_ylabel('Accumulation Gradient [$m~w.e.~a^{-1}~m^{-1}$]')
         ax_acc.set_xlabel('Iterations')
         for axi in [ax[0], ax[1], ax[2]]:
             axi.spines['top'].set_visible(False)
@@ -525,6 +536,6 @@ class Monitor:
         plt.tight_layout()
         handles, labels = axi.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
-        fig.legend(by_label.values(), by_label.keys(), loc='upper center', ncol=3)
+        fig.legend(by_label.values(), by_label.keys(), loc='upper center', ncol=4)
         fig.subplots_adjust(top=0.9, bottom=0.15)
         plt.savefig(self.output_dir+f'iterations_o_{self.initial_offset}_s_{self.initial_spread}_seed_{self.seed}.png', dpi=300)

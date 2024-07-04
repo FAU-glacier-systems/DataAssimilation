@@ -33,14 +33,14 @@ for i in range(4):
 velocity_obs[icemask < 0.01] = None
 vel_img = ax[0].imshow(velocity_obs, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity [m/yr]', rotation=90)
+cbar.ax.set_ylabel('surface velocity [$m~a^{-1}$]', rotation=90)
 ax[0].set_title("Observed velocity [Millan22]")
 
 velocity_iter = velocity
 velocity_iter[icemask < 0.01] = None
 vel_img = ax[1].imshow(velocity_iter, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity [m/yr]', rotation=90)
+cbar.ax.set_ylabel('surface velocity [$m~a^{-1}$]', rotation=90)
 
 ax[1].set_title("Modelled velocity")
 
@@ -76,9 +76,9 @@ for i in range(4):
     ax[i].grid(axis="x", color="black", linestyle="--", zorder=0, alpha=.2)
     for axis in ['top', 'bottom', 'left', 'right']:
         ax[i].spines[axis].set_linewidth(0)
-    ax[i].set_xlabel('$km$', color='gray')
-    ax[i].tick_params(axis='x', colors='gray')
-    ax[i].tick_params(axis='y', colors='gray')
+    ax[i].set_xlabel('$km$', color='black')
+    ax[i].tick_params(axis='x', colors='black')
+    ax[i].tick_params(axis='y', colors='black')
 
 
 #fig.suptitle("inversion", fontsize=32)

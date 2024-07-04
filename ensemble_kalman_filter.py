@@ -208,7 +208,7 @@ class EnsembleKalmanFilter(object):
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
         print("Initialize ensemble")
-        # self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
+        self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
         for i in range(self.N):
             sigma = copy.copy(x)
@@ -308,9 +308,6 @@ class EnsembleKalmanFilter(object):
         year = int(self.year)
 
 
-
-
-
         devices = tf.config.list_physical_devices('GPU')
 
         if devices:
@@ -331,7 +328,7 @@ class EnsembleKalmanFilter(object):
 
                 # Wait for all tasks to complete
                 for future in futures:
-                    future.result(timeout=120)
+                    future.result(timeout=180)
 
             #for i, s in enumerate(self.sigmas):
             #    task(s, dt, i, year)

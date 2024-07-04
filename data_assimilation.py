@@ -5,10 +5,9 @@ import traceback
 import time
 import os
 import json
-import netCDF4 as nc
 import copy
 import numpy as np
-import xarray as xr
+from netCDF4 import Dataset
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 import matplotlib.pyplot as plt
 import monitor
@@ -28,21 +27,19 @@ class DataAssimilation:
         self.seed = params['seed']
         np.random.seed(self.seed)
         self.synthetic = params['synthetic']
+        self.visualise = params['visualise']
         self.output_dir = params['output_dir']
         self.ensemble_dir = Path(self.output_dir) / "Ensemble/"
 
         self.covered_area = params['covered_area']
         self.ensemble_size = params['ensemble_size']
+        self.initial_offset = params['initial_offset']
+        if self.synthetic:
+            self.observation_uncertainty = params['observation_uncertainty']
+        self.initial_spread = params['initial_spread']
         self.process_noise = params['process_noise']
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
-        self.initial_spread = params['initial_spread']
-        self.initial_offset = params['initial_offset']
-
-        if self.synthetic:
-
-            self.observation_uncertainty = params['observation_uncertainty']
-
         self.initial_estimate = params['initial_estimate']
 
         # placeholders
@@ -50,16 +47,15 @@ class DataAssimilation:
         self.ensemble_velo = []
 
         # Change between synthetic and real observations ###
-        self.observed_glacier = nc.Dataset(params['observations_file'])
+        self.observed_glacier = Dataset(params['observations_file'])
         self.hidden_smb = params['smb_simple_array']
 
         # Extract metadata from ground observations
-        self.year_range = np.array(self.observed_glacier['time'])[::self.time_interval]
+        self.year_range = np.array(self.observed_glacier['time']).astype(int)[::self.time_interval]
         self.start_year = self.year_range[0]
         self.icemask = np.array(self.observed_glacier['icemask'])[0]
         self.surface = np.array(self.observed_glacier['usurf'])[0]
         self.bedrock = self.observed_glacier['topg'][0]
-        self.visualise = params['visualise']
 
         # sample observation points
         gx, gy = np.where(self.icemask)
@@ -101,16 +97,10 @@ class DataAssimilation:
 
         # Initial estimate
         state_x = np.array(self.initial_estimate).astype(float)
-
-        # Initialize prior (uncertainty) P
-        prior_x = np.zeros((len(state_x), len(state_x)))
-        prior_x[0, 0] = self.initial_spread ** 2 * 100
-        prior_x[1, 1] = self.initial_spread ** 2 * 0.00000001
-        prior_x[2, 2] = self.initial_spread ** 2 * 0.00000001
+        prior_x = np.array(self.initial_spread).astype(float)
 
         dim_z = len(self.observation_points)
-        print(state_x)
-        print([prior_x[0,0], prior_x[1,1], prior_x[2,2]])
+
         # Create Ensemble Kalman Filter
         ensemble = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.time_interval, N=self.ensemble_size,
                         hx=self.generate_observation, fx=self.forward_model,
@@ -119,19 +109,19 @@ class DataAssimilation:
         # Update Process noise (Q)
         ensemble.Q = np.zeros_like(prior_x)
         ensemble.Q[0, 0] = 100 * self.process_noise
-        ensemble.Q[1, 1] = 0.00000001 * self.process_noise
-        ensemble.Q[2, 2] = 0.00000001 * self.process_noise
+        ensemble.Q[1, 1] = 1e-8 * self.process_noise
+        ensemble.Q[2, 2] = 1e-8 * self.process_noise
 
         # Compute Observation noise (R) of EnKF
         self.usurf = np.array(self.observed_glacier['usurf'])
+
         if self.synthetic:
             uncertainty_factor = np.arange(len(self.usurf)) * self.observation_uncertainty
-            observation_uncertainty_field = np.array([self.icemask * f for f in uncertainty_factor])
+            self.observation_uncertainty_field = np.array([self.icemask * f for f in uncertainty_factor])
         else:
-            observation_uncertainty_field = np.array(self.observed_glacier['obs_error'])
+            self.observation_uncertainty_field = np.array(self.observed_glacier['obs_error'])
 
-        self.observation_uncertainty_field = observation_uncertainty_field
-        ensemble.R = np.eye(dim_z) * observation_uncertainty_field[
+        ensemble.R = np.eye(dim_z) * self.observation_uncertainty_field[
             0, self.observation_points[:, 0], self.observation_points[:, 1]]
 
         return ensemble
@@ -139,12 +129,13 @@ class DataAssimilation:
     def run_iterations(self, ensemble, visualise=True):
         estimates = [copy.copy(ensemble.sigmas)]
 
-
         for iteration in range(self.num_iterations):
             ensemble.year = self.start_year
 
             # Initialize ensemble surface elevation and velocity
-            self.initialize_ensemble_fields()
+            self.ensemble_usurfs = np.array([copy.copy(self.usurf[0]) for _ in range(self.ensemble_size)])
+            self.ensemble_velo = np.array([np.zeros_like(self.usurf[0]) for _ in range(self.ensemble_size)])
+
             monitor_instance = monitor.Monitor(self.params, self.usurf, self.observation_uncertainty_field,
                                                self.observation_points)
             if visualise:
@@ -153,9 +144,43 @@ class DataAssimilation:
 
             for year in self.year_range[:-1]:
                 print("==== %i ====" % year)
-                year_index = int((ensemble.year - self.start_year))
+                year_index = ensemble.year - self.start_year
+                # Predict
+                start_time = time.time()
+                ### PREDICT ####
+                ensemble.predict()
+                print("Prediction time: ", time.time() - start_time)
+                ensemble.year += self.time_interval
 
-                self.predict_and_update(ensemble, year_index, monitor_instance, visualise=visualise)
+                # Plot predictions
+                if visualise:
+                    monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
+
+                # Update
+                year_index = int((ensemble.year - self.start_year))
+                # Get noisy observation
+                noisy_usurf = self.usurf[year_index]
+
+                # Sample random noise for each ensemble member to add to the difference
+                random_factors = np.random.normal(0, 1, self.ensemble_size)
+                uncertainty_field_year = self.observation_uncertainty_field[year_index]
+                observation_noise_samples = np.array([uncertainty_field_year * rf for rf in random_factors])
+
+                sampled_observations = noisy_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
+                e_r = observation_noise_samples[:, self.observation_points[:, 0], self.observation_points[:, 1]]
+
+                # Update hidden parameters
+                R = np.eye(len(self.observation_points)) * self.observation_uncertainty_field[
+                    year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
+
+                ### UPDATE ####
+                ensemble.update(sampled_observations, e_r, R)
+
+                # Update the surface elevation
+                self.ensemble_usurfs = np.array([copy.copy(noisy_usurf) for _ in range(self.ensemble_size)])
+
+                if visualise:
+                    monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
 
             estimates.append(copy.copy(ensemble.sigmas))
 
@@ -166,54 +191,8 @@ class DataAssimilation:
 
     def save_results(self, estimates):
         self.params['result'] = [list(sigma) for sigma in estimates[-1]]
-        with open(self.output_dir + f"result_o_{self.initial_offset}_s_{self.initial_spread}_seed_{self.seed}.json", 'w') as f:
+        with open(self.output_dir + f"result_seed_{self.seed}.json", 'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
-
-    def initialize_ensemble_fields(self):
-        # Initialize ensemble surface elevation
-        self.ensemble_usurfs = np.array([copy.copy(self.usurf[0]) for _ in range(self.ensemble_size)])
-        self.ensemble_velo = np.array([np.zeros_like(self.usurf[0]) for _ in range(self.ensemble_size)])
-
-    def predict_and_update(self, ensemble, year_index, monitor_instance, visualise=True):
-        # Predict
-        start_time = time.time()
-        ensemble.predict()
-        print("Prediction time: ", time.time() - start_time)
-        ensemble.year += self.time_interval
-
-        # Plot predictions
-        if visualise:
-            monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
-
-        # Update
-        year_index = int((ensemble.year - self.start_year))
-        self.update_ensemble(ensemble, year_index)
-
-        if visualise:
-            monitor_instance.plot(ensemble.year, ensemble.sigmas, self.ensemble_usurfs, self.ensemble_velo)
-
-    def update_ensemble(self, ensemble, year_index):
-        # Get noisy observation
-        noisy_usurf = self.usurf[year_index]
-
-
-        # Sample random noise for each ensemble member to add to the difference
-        random_factors = np.random.normal(0, 1, self.ensemble_size)
-        uncertainty_field_year = self.observation_uncertainty_field[year_index]
-        observation_noise_samples = np.array([uncertainty_field_year * rf for rf in random_factors])
-
-        sampled_observations = noisy_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
-        e_r = observation_noise_samples[:, self.observation_points[:, 0], self.observation_points[:, 1]]
-
-        # Update hidden parameters
-        R = np.eye(len(self.observation_points)) * self.observation_uncertainty_field[
-            year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
-
-        # update ensemble
-        ensemble.update(sampled_observations, e_r, R)
-
-        # Update the surface elevation
-        self.ensemble_usurfs = np.array([copy.copy(noisy_usurf) for _ in range(self.ensemble_size)])
 
 
     def forward_model(self, state_x, dt, i, year):
@@ -231,7 +210,7 @@ class DataAssimilation:
                     [year_next, grad_abl, grad_acc, ela, 100]],
                 "iflo_emulator": "iceflow-model",
                 "lncd_input_file": 'input.nc',
-                "wncd_output_file": f'output_{year}.nc',
+                "wncd_output_file": f'output_{year_next}.nc',
                 "time_start": year,
                 "time_end": year_next,
                 "iflo_retrain_emulator_freq": 0,
@@ -243,20 +222,17 @@ class DataAssimilation:
 
         # create new input.nc
         # TODO
-        input_file = self.ensemble_dir / f"{i:03}/init_input.nc"
+        input_file = self.ensemble_dir / f"{i:03}/input.nc"
+        shutil.copy2(self.ensemble_dir / f"{i:03}/init_input.nc", input_file)
         try:
-            with xr.open_dataset(input_file) as ds:
+            with Dataset(input_file, 'r+') as ds:
+
                 # load usurf from ensemble
                 usurf = self.ensemble_usurfs[i]
-                ds['usurf'] = xr.DataArray(usurf, dims=('y', 'x'))
+                ds.variables['usurf'][:] = usurf
 
                 thickness = usurf - self.bedrock
-                thk_da = xr.DataArray(thickness, dims=('y', 'x'))
-                thk_da = xr.DataArray(thickness, dims=('y', 'x'))
-                ds['thk'] = thk_da
-
-                # ds_drop = ds.drop_vars("thkinit")
-                ds.to_netcdf(self.ensemble_dir / f'{i:03}/input.nc')
+                ds.variables['thk'][:] = thickness
 
         except:
             traceback.print_exc()
@@ -269,7 +245,7 @@ class DataAssimilation:
             print("could not run igm_run")
         # update state x and return
         try:
-            with xr.open_dataset(self.ensemble_dir / f'{i:03}/output_{year}.nc') as new_ds:
+            with Dataset(self.ensemble_dir / f'{i:03}/output_{year_next}.nc') as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:
@@ -285,7 +261,6 @@ class DataAssimilation:
         h(x)
         :returns thickness map as 1D array
         """
-
         usurf = self.ensemble_usurfs[i]
 
         modelled_observations = usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
@@ -307,15 +282,10 @@ def main():
     with open(arguments.experiment, 'r') as f:
         params = json.load(f)
 
-    ### START DATAASSIMILATION ###
+    ### START DATA ASSIMILATION ###
     DA = DataAssimilation(params)
-
     ensemble = DA.initialize_ensemble()
-
-    # Run loop of predictions and updates
     estimates = DA.run_iterations(ensemble)
-
-    # Evaluate results
     results = DA.save_results(estimates)
 
     return results

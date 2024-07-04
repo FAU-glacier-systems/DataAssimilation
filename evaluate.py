@@ -5,30 +5,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# plt.style.use('seaborn-v0_8-whitegrid')
-
-def plot_MAE():
+def plot_results():
     # global figure
-    fig_para, ax_para = plt.subplots(nrows=4, ncols=2, figsize=(10, 12), )  # layout="tight")
-    #fig_spread, ax_spread = plt.subplots(nrows=2, ncols=2, figsize=(10, 5), )  # layout="tight")
+    fig_para, ax_para = plt.subplots(nrows=4, ncols=2, figsize=(10, 12))
 
     # run for every hyperparameters
-    #for fignum, hyperparameter in enumerate(['covered_area','ensemble_size', 'process_noise', 'dt', ]):
-    for fig_num, hyperparameter in enumerate([ 'covered_area', 'observation_uncertainty',  'ensemble_size', 'initial_offset']):
+    for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'observation_uncertainty', 'initial_offset']):
 
-    #for fignum, hyperparameter in enumerate(['initial_offset', 'initial_uncertainty', 'specal_noise', 'bias']):
 
-    # translate name to folder name
-        if hyperparameter == 'ensemble_size':
-            experiment_folder = 'Results/Results_Ensemble_Size/'
-        elif hyperparameter == 'covered_area':
-            experiment_folder = 'Results/Results_Area/'
-        elif hyperparameter == 'dt':
-            experiment_folder = 'Results/Results_Observation_Interval/'
-        elif hyperparameter == 'process_noise':
-            experiment_folder = 'Results/Results_Process_Noise/'
-        else:
-            experiment_folder = 'Results/Results_' + hyperparameter + '/'
+        experiment_folder = 'Results/Results_' + hyperparameter + '/'
 
         # load result json files
         results = []
@@ -154,7 +139,7 @@ def plot_MAE():
         # group the MAE by bin_centers\\
         marker = ["^", "o", "v", ]
         mean_max = 0
-        for x, label in enumerate(["Accumulation Gradient", "Equilibrium Line Altitude", "Ablation Gradient"]):
+        for x, label in enumerate(["Accumulation Gradient", "Equilibrium Line Altitude (ELA)", "Ablation Gradient"]):
             bin_list_para = [df['MAE' + str(x)][(df[hyperparameter] == center)] for center in bin_centers]
             bin_means_para = np.array([np.median(bins) for bins in bin_list_para])
             if mean_max < max(bin_means_para):
@@ -209,14 +194,14 @@ def plot_MAE():
         ax_para[fig_num, 0].set_yscale('log')
         grad_axis_para = ax_para[fig_num, 0].secondary_yaxis('right')
         grad_axis_para.set_yscale('log')
-        grad_axis_para.set_ylabel('Gradient Error [m/yr/m]')
-        ax_para[fig_num, 0].set_ylabel('ELA Error [m]')
+        grad_axis_para.set_ylabel('Gradient Error [$m~a^{-1}~m^{-1}$]')
+        ax_para[fig_num, 0].set_ylabel('ELA Error [$m$]')
 
         ax_para[fig_num, 1].set_yscale('log')
         grad_axis_spread = ax_para[fig_num, 1].secondary_yaxis('right')
         grad_axis_spread.set_yscale('log')
-        grad_axis_spread.set_ylabel('Gradient Spread [m/yr/m]')
-        ax_para[fig_num, 1].set_ylabel('ELA Spread [m]')
+        grad_axis_spread.set_ylabel('Gradient Spread [$m~a^{-1}~m^{-1}$]')
+        ax_para[fig_num, 1].set_ylabel('ELA Spread [$m$]')
 
 
 
@@ -269,7 +254,7 @@ def plot_MAE():
             elif hyperparameter == 'bias':
                 ax_para[fig_num, num].set_xlabel('Elevation Bias')
             elif hyperparameter == 'observation_uncertainty':
-                ax_para[fig_num, num].set_xlabel('Elevation Change Uncertainty [m/yr]')
+                ax_para[fig_num, num].set_xlabel('Elevation Change Uncertainty [$m~a^{-1}$]')
             else:
                 ax_para[fig_num, num].set_xlabel(hyperparameter)
 
@@ -281,4 +266,4 @@ def plot_MAE():
 
 
 if __name__ == '__main__':
-    plot_MAE()
+    plot_results()

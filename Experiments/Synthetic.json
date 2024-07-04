@@ -4,7 +4,7 @@
   "smb_simple_array": [["time", "gradabl", "gradacc", "ela", "accmax"],
                         [2000, 0.009, 0.005, 2966, 100],
                         [2020, 0.009, 0.005, 2966, 100]],
-  "covered_area": 2,
+  "covered_area": 1,
   "num_iterations": 1,
   "ensemble_size": 25,
   "time_interval": 20,

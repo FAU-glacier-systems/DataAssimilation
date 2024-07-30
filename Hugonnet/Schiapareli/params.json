@@ -1,0 +1,5 @@
+{
+  "inversion_file": "../Inversion/geology-optimized.nc",
+  "RGI_ID": "RGI60-17.03160",
+  "output_file": "../Hugonnet/observations.nc"
+}

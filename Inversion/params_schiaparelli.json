@@ -1,0 +1,52 @@
+{
+    // Modules
+    "modules_preproc": ["oggm_shop", "infersmb", "optimize"],
+    "modules_process": ["clim_oggm"],
+    "modules_postproc": [],
+
+    // Input
+    "oggm_RGI_ID" : "RGI2000-v7.0-G-17-15343",
+    "oggm_RGI_version" : 7,
+    "oggm_thk_source" : "millan_ice_thickness",
+    "oggm_RGI_product" : "G", 
+  
+  
+    // Inversion
+    "opti_control": ["thk"],
+    "opti_cost": ["velsurf"],
+
+    "oggm_sub_entity_mask" : true,
+
+    //"opti_infer_params": false,
+
+    //"opti_tidewater_glacier" : true,
+  
+    // Confidence levels
+    "opti_velsurfobs_std" 	: 10, 
+    // default = 1 (absolut value)
+
+    "opti_retrain_iceflow_model" : true,
+
+    // Regu
+    "opti_regu_param_slidingco"     : 1000,
+    // smoothing, default = 1, 
+
+    // Other
+    "opti_smooth_anisotropy_factor"	: 0.2, 
+    // default = 0.2
+    
+    "opti_convexity_weight"		: 400,
+    // default = 0.002 
+
+    "iflo_init_slidingco" : 0.1,
+    
+    // Num of runs
+    "opti_nbitmax"			: 500,
+
+    "opti_regu_param_thk": 0.01,
+
+    // Outputs
+    "opti_vars_to_save": ["usurf", "thk","topg", "slidingco", "velsurf_mag", "velsurfobs_mag", "divflux","icemask", "arrhenius", "thkobs", "dhdt"],
+    "opti_plot2d_live" : false,	
+    "opti_plot2d": false
+  }

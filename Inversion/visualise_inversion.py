@@ -2,11 +2,11 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-output_file = '../ReferenceSimulation/output.nc'
-optimized_file = 'geology-optimized.nc'
-figure_path = "inversion_result.pdf"
+#output_file = '../ReferenceSimulation/output.nc'
+optimized_file = 'Rhone/geology-optimized.nc'
+figure_path = "Rhone/inversion_result.pdf"
 
-ds = xr.open_dataset(output_file)
+#ds = xr.open_dataset(output_file)
 ds_optimized = xr.open_dataset(optimized_file)
 
 icemask = np.array(ds_optimized["icemask"])
@@ -67,8 +67,8 @@ def formatter(x, pos):
 
 for i in range(4):
     ax[i].invert_yaxis()
-    ax[i].set_xlim(35, 85)
-    ax[i].set_ylim(35, 125)
+    #ax[i].set_xlim(35, 85)
+    #ax[i].set_ylim(35, 125)
 
     ax[i].xaxis.set_major_formatter(formatter)
     ax[i].yaxis.set_major_formatter(formatter)

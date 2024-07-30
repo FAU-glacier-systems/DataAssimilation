@@ -1,0 +1,23 @@
+{
+  "seed": 350,
+  "synthetic": true,
+  "visualise": true,
+
+
+  "covered_area": 10,
+  "ensemble_size": 50,
+  "initial_offset": 0,
+  "observation_uncertainty": 0.2,
+
+  "initial_estimate": [3500, 0.006, 0.012],
+  "initial_spread": [[1e5, 0, 0],[0,1e-3,0],[0,0,1e-3]],
+
+  "process_noise" : 0,
+  "time_interval": 20,
+  "num_iterations": 5,
+
+  "observations_file": "ReferenceSimulation/observations.nc",
+  "geology_file": "Inversion/Rhone/geology-optimized.nc",
+  "output_dir": "Experiments/Synthetic_Rhone/"
+
+}

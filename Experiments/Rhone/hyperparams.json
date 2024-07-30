@@ -1,0 +1,23 @@
+{
+  "synthetic": false,
+  "visualise": true,
+
+  "covered_area": 10,
+  "ensemble_size": 25,
+
+  "initial_estimate": [3500, 0.006, 0.006],
+  "initial_spread": [[1e5, 0, 0],[0,1e-4,0],[0,0,1e-4]],
+
+  "reference_smb" : [2000, 0.0082, 0.0016, 2966, 100],
+
+  "process_noise" : 0,
+
+  "time_interval": 20,
+  "num_iterations": 5,
+
+  "observations_file": "Hugonnet/Rhone/observations.nc",
+  "geology_file": "Inversion/Rhone/geology-optimized.nc",
+  "output_dir": "Experiments/Rhone/",
+
+  "seed": 420
+}

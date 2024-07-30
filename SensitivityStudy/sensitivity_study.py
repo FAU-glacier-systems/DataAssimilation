@@ -53,7 +53,7 @@ def main(hyperparameter_range):
                                   [0, initial_offset ** 2 * 1e-8, 0],
                                   [0, 0, initial_offset ** 2 * 1e-8]]
 
-                output_dir = f"Results/Results_{hyperparameter}/{value}/"
+                output_dir = f"Results/Sensetivity_{hyperparameter}/{value}/"
                 params = dict(synthetic=True,
                               RGI_ID="RGI60-11.01238",
                               smb_simple_array=smb,
@@ -66,7 +66,7 @@ def main(hyperparameter_range):
                               time_interval=20,
                               num_iterations=5,
                               process_noise=0,
-                              observations_file="ReferenceSimulation/output.nc",
+                              observations_file="ReferenceSimulation/observations.nc",
                               output_dir=output_dir,
                               visualise=False,
                               seed=seed)
@@ -78,8 +78,7 @@ def main(hyperparameter_range):
 
                 ### START DATA ASSIMILATION ###
                 DA = DataAssimilation(params)
-                ensemble = DA.initialize_ensemble()
-                estimates = DA.run_iterations(ensemble, visualise=False)
+                estimates = DA.run_iterations(visualise=False)
                 DA.save_results(estimates)
 
 

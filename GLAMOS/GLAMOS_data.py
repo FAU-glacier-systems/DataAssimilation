@@ -84,9 +84,9 @@ def moving_average(data, window_size):
 
 
 ### GEODETIC ###
-file_path_hugonnet = '../Hugonnet/merged_dataset.nc'
-file_path_oggm = '../OGGM_shop/input_saved.nc'
-oggm_nc = xr.open_dataset(file_path_oggm)
+file_path_hugonnet = '../Hugonnet/Rhone/observations.nc'
+#file_path_oggm = '../OGGM_shop/Rhone/input_saved.nc'
+#oggm_nc = xr.open_dataset(file_path_oggm)
 hugonnet_nc = xr.open_dataset(file_path_hugonnet)
 
 geodetic_mb = utils.get_geodetic_mb_dataframe()
@@ -109,7 +109,7 @@ geodetic_mb_dmdtda_err_2010_2020 = geodetic_mb_2010_2020['err_dmdtda'].values[0]
 dhdt = np.array(hugonnet_nc['dhdt'])[0]
 dhdt_error = np.array(hugonnet_nc['obs_error'])[0]
 icemask = np.array(hugonnet_nc['icemask'])[0]
-dhdt_oggm = np.array(oggm_nc['dhdt'])
+dhdt_oggm = np.array(hugonnet_nc['dhdt'])
 
 # compute specific mass balance
 dhdt[icemask == 0] = 0
@@ -130,14 +130,14 @@ hugonnet_mass_balance *= 0.91
 # hugonnet_error *= 0.85
 
 # ensembel results
-results_file = '../Results/Results_real/result_o_60_s_60_seed_350.json'
+results_file = '../Experiments/Rhone/result_seed_111.json'
 with open(results_file, 'r') as f:
     results = json.load(f)
 
-ensemble_results = np.array(results['result'])
-usurf = oggm_nc['usurf']
+ensemble_results = np.array(results['final_ensemble'])
+usurf = hugonnet_nc['usurf'][0]
 usurf2020 = usurf - dhdt*10
-icemask = oggm_nc['icemask']
+icemask = hugonnet_nc['icemask'][0]
 
 mbs = []
 for ensemble_member in ensemble_results:
@@ -205,6 +205,9 @@ for start_date, group_df in rhone_glacier_group:
     time.append(start_date.year)
 
 avg_ela = sum(ELA) / len(ELA)
+print(np.std(np.array(ELA)))
+print(np.std(np.array(grad_abl)))
+print(np.std(np.array(grad_acc)))
 avg_grad_abl = sum(grad_abl) / len(grad_abl)
 avg_grad_acc = sum(grad_acc) / len(grad_acc)
 
@@ -226,7 +229,7 @@ a1 = fig.add_subplot(gs[1])
 scatter_bins = a0.scatter(date, elevation - 50, c=mass_balance, cmap='seismic_r',
                           vmin=-6, vmax=6,
                           marker='s', s=300, zorder=2)
-fig.colorbar(scatter_bins, ax=a0, label='Mass Balance [$m~w.e.~a^{-1}$]')
+fig.colorbar(scatter_bins, ax=a0, label='Mass Balance (m w.e. a$^{-1}$)')
 
 # plot ELA and mean ELA
 a0.scatter(np.array(time) - 0.03, ELA, alpha=0.3, c='black', label="Equilibrium Line Altitude", marker='_', s=300,
@@ -239,9 +242,9 @@ a0.scatter(np.array(time) - 0.03, ELA, alpha=0.3, c='black', label="Equilibrium 
 # write description
 a0.set_xlabel('Year of Measurement')
 a0.set_xticks(list(np.array(time)[1::2]) + [2023, 2026],
-              list(np.array(time)[1::2]) + ['GLAMOS\n Mean', 'Ensemble\n Mean'])
+              list(np.array(time)[1::2]) + ['GLAMOS\n Mean', 'EnKF\n Mean'])
 
-a0.set_ylabel('Elevation [$m$]')
+a0.set_ylabel('Elevation (m)')
 a0.set_title('Elevation dependent Annual Mass Balance')
 a0.legend(loc='upper left')
 
@@ -283,7 +286,7 @@ avg_mass_loss = moving_average(specific_mass_balances, len(time) * 2)
 glamos_loss = avg_mass_loss[:1] * len(time)
 
 a1.plot(time, glamos_loss, label='Glaciological Mean [GLAMOS]', color='black')
-a1.plot(time, specific_mass_balances, label='Glaciological Annually[GLAMOS]', color='black', alpha=0.3)
+a1.plot(time, specific_mass_balances, label='Glaciological Annually [GLAMOS]', color='black', alpha=0.3)
 a1.text(time[0], glamos_loss[-1] + 0.03, f'{avg_mass_loss[0]:.4f} ', color='black')
 
 ensemble_mean_list = [mean_mb] * len(time20)
@@ -294,14 +297,15 @@ a1.plot([2025, 2031], [mean_mb, mean_mb], color='orange')
 a1.fill_between([2025, 2031], ensemble_var0_list, ensemble_var1_list, color='C1', alpha=0.1, zorder=0,)
 a1.text(2025, mean_mb + 0.03, f'{mean_mb:.4f}', color='C1', zorder=10)
 
-a1.set_ylabel('Mass Balance [$m~w.e.~a^{-1}$]')
+a1.set_ylabel('Mass Balance (m w.e. a$^{-1}$)')
 a1.set_ylim(-2.1, 1.1)
 a1.set_xlabel('Year')
 a1.set_xticks(list(np.array(time20)[::5]) + [2028, 2035],
-              list(np.array(time20)[::5]) + ['Ensemble\n Mean', 'Geodetic\n Mean'])
+              list(np.array(time20)[::5]) + ['EnKF\n Mean', 'Geodetic\n Mean'])
 a1.legend(loc='upper left')
 
-ensemble_results[:,1:3] *= 0.91
+ensemble_results[:,1] *= 0.91
+ensemble_results[:,2] *= 0.55
 ensemble_mean = np.mean(ensemble_results, axis=0)
 ensemble_std = np.std(ensemble_results, axis=0)
 ela = ensemble_mean[0]
@@ -327,10 +331,10 @@ a0.scatter([2023] * len(elevation_mb), elevation_bins, c=elevation_mb, cmap='sei
 
 a0.scatter([2023], avg_ela, alpha=0.3, c='black', label="Equilibrium Line Altitude", marker='_', s=300, zorder=3)
 
-a0.text(2024, avg_ela - 80, f'{int(avg_ela)} '+'$m$', rotation=90, color='black')
-a0.text(2024, avg_ela - 700, f'{avg_grad_abl:.4f} '+' $m~a^{-1}~m^{-1}$', rotation=90,
-        label='Mean Ablation Gradient', color='red')
-a0.text(2024, avg_ela + 200, f'{avg_grad_acc:.4f} '+' $m~a^{-1}~m^{-1}$', rotation=90,
+a0.text(2024, avg_ela - 100, f'$s_{{ELA}}$: {int(avg_ela)}', rotation=90, color='black')
+a0.text(2024, avg_ela - 550, f'$\gamma_{{abl}}$: {avg_grad_abl:.4f}', rotation=90, color='red')
+
+a0.text(2024, avg_ela + 250, f'$\gamma_{{acc}}$: {avg_grad_acc:.4f}', rotation=90,
         label='Mean Accumulation Gradient', color='blue')
 
 elevation_bins, elevation_mb = creat_elevation_bins(ela, gradabl, gradacc)
@@ -341,10 +345,10 @@ a0.scatter([2026] * len(elevation_mb), elevation_bins, c=elevation_mb, cmap='sei
 
 a0.scatter([2026], ela, alpha=0.3, c='black', label="Equilibrium Line Altitude", marker='_', s=300, zorder=3)
 
-a0.text(2027, ela - 80, f'{int(ela)} '+'$m$', rotation=90, color='black')
-a0.text(2027, ela - 700, f'{gradabl:.4f} '+ '$m~a^{-1}~m^{-1}$', rotation=90,
+a0.text(2027, ela - 100, f'$s_{{ELA}}$: {int(ela)}', rotation=90, color='black')
+a0.text(2027, ela - 550, f'$\gamma_{{abl}}$: {gradabl:.4f}', rotation=90,
         label='Mean Ablation Gradient', color='red')
-a0.text(2027, ela + 200, f'{gradacc:.4f} ' +'$m~a^{-1}~m^{-1}$', rotation=90,
+a0.text(2027, ela + 250, f'$\gamma_{{acc}}$: {gradacc:.4f}', rotation=90,
         label='Mean Accumulation Gradient', color='blue')
 
 # fig.colorbar(scatter_bins, cax=a0, label='m w.e./yr')

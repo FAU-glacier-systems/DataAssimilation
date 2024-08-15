@@ -1,15 +1,15 @@
 {
-  "seed": 350,
+  "seed": 420,
   "synthetic": true,
-  "visualise": true,
+  "visualise": false,
 
 
-  "covered_area": 10,
+  "covered_area": 1,
   "ensemble_size": 50,
   "initial_offset": 0,
-  "observation_uncertainty": 0.2,
+  "observation_uncertainty": 0.5,
 
-  "initial_estimate": [3500, 0.006, 0.012],
+  "initial_estimate": [3500, 0.006, 0.006],
   "initial_spread": [[1e5, 0, 0],[0,1e-3,0],[0,0,1e-3]],
 
   "process_noise" : 0,

@@ -45,6 +45,7 @@ class DataAssimilation:
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
 
+
         self.observations_file = params['observations_file']
         self.geology_file = params['geology_file']
         self.output_dir = Path(params['output_dir'])
@@ -111,8 +112,6 @@ class DataAssimilation:
 
         self.ensemble_members = []
 
-
-
         ### PARALLIZE ###
         for i in range(self.ensemble_size):
             # create folder for every ensemble member
@@ -127,7 +126,8 @@ class DataAssimilation:
             if os.path.exists(dir_name / "iceflow-model"):
                 shutil.rmtree(dir_name / "iceflow-model")
             # copy trained igm parameters
-            shutil.copytree("Inversion/iceflow-model/", dir_name / "iceflow-model/")
+            Path(self.geology_file).parent
+            shutil.copytree(Path(self.geology_file).parent / "iceflow-model/", dir_name / "iceflow-model/")
 
             self.ensemble_members.append(EnsembleMember(i, self.ensemble_dir, self.start_year))
 
@@ -168,8 +168,7 @@ class DataAssimilation:
     def run_iterations(self, visualise=True):
         estimates = [copy.copy(self.KalmanFilter.sigmas)]
 
-
-
+        #self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members)
 
         for iteration in range(self.num_iterations):
             self.KalmanFilter.year = self.start_year
@@ -177,7 +176,6 @@ class DataAssimilation:
             # Initialize ensemble surface elevation and velocity
             for member in self.ensemble_members:
                 member.reset(2000)
-
 
             if visualise:
                 self.monitor_instance.plot(iteration, self.year_range[0], self.KalmanFilter.sigmas, self.ensemble_members)
@@ -225,13 +223,15 @@ class DataAssimilation:
             estimates.append(copy.copy(self.KalmanFilter.sigmas))
 
             #if visualise:
-            self.monitor_instance.plot_iterations(estimates)
+            #self.monitor_instance.plot_iterations(estimates)
+            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members)
 
         return estimates
 
     def save_results(self, estimates):
 
         self.params['final_ensemble'] = [list(sigma) for sigma in estimates[-1]]
+        self.params['ensemble_history'] = [[list(s) for s in sigma] for sigma in estimates]
         ensemble_estimates = np.array([list(sigma) for sigma in estimates[-1]])
         self.params['final_mean_estimate']  = list(ensemble_estimates.mean(axis=0))
         with open(self.output_dir / f"result_seed_{self.seed}.json", 'w') as f:

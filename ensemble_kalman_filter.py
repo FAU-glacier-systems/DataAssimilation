@@ -293,7 +293,13 @@ class EnsembleKalmanFilter(object):
             self.sigmas[i] = abs(self.sigmas[i])
 
         self.x = np.mean(self.sigmas, axis=0)
-        self.P = self.P - dot(dot(self.K, self.S), self.K.T)
+
+        ### INFLATION ###
+
+        self.P = outer_product_sum(self.sigmas - self.x) / (N - 1)
+        #self.P = self.P - dot(dot(self.K, self.S), self.K.T)
+
+
 
         # save measurement and posterior state
         self.z = deepcopy(z)

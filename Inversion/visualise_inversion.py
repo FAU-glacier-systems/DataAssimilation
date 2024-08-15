@@ -25,7 +25,7 @@ else:
 
 velocity_obs = np.array(ds_optimized["velsurfobs_mag"])
 
-fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+fig, ax = plt.subplots(1, 4, figsize=(12, 4))
 plt.subplots_adjust(left=0, bottom=0.05, right=0.95, top=0.95, wspace=0.1, hspace=0.1)
 
 for i in range(4):
@@ -33,14 +33,14 @@ for i in range(4):
 velocity_obs[icemask < 0.01] = None
 vel_img = ax[0].imshow(velocity_obs, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity [$m~a^{-1}$]', rotation=90)
+cbar.ax.set_ylabel('surface velocity (m a$^{-1}$)', rotation=90)
 ax[0].set_title("Observed velocity [Millan22]")
 
 velocity_iter = velocity
 velocity_iter[icemask < 0.01] = None
 vel_img = ax[1].imshow(velocity_iter, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity [$m~a^{-1}$]', rotation=90)
+cbar.ax.set_ylabel('surface velocity (m a$^{-1}$)', rotation=90)
 
 ax[1].set_title("Modelled velocity")
 
@@ -48,7 +48,7 @@ thickness[icemask < 0.01] = None
 img = ax[2].imshow(thickness, cmap='Blues', zorder=2)
 cbar = fig.colorbar(img)
 cbar.ax.invert_yaxis()
-cbar.ax.set_ylabel('thickness [$m$]', rotation=90)
+cbar.ax.set_ylabel('thickness (m)', rotation=90)
 
 ax[2].set_title("Optimized thickness ")
 
@@ -67,9 +67,10 @@ def formatter(x, pos):
 
 for i in range(4):
     ax[i].invert_yaxis()
-    #ax[i].set_xlim(35, 85)
-    #ax[i].set_ylim(35, 125)
-
+    ax[i].set_xlim(15, 65)
+    ax[i].set_ylim(15, 105)
+    ax[i].yaxis.set_ticks([20, 40, 60, 80, 100])
+    ax[i].xaxis.set_ticks([ 20, 40, 60])
     ax[i].xaxis.set_major_formatter(formatter)
     ax[i].yaxis.set_major_formatter(formatter)
     ax[i].grid(axis="y", color="black", linestyle="--", zorder=0, alpha=.2)
@@ -79,6 +80,7 @@ for i in range(4):
     ax[i].set_xlabel('$km$', color='black')
     ax[i].tick_params(axis='x', colors='black')
     ax[i].tick_params(axis='y', colors='black')
+
 
 
 #fig.suptitle("inversion", fontsize=32)

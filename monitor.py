@@ -10,6 +10,7 @@ class Monitor:
     def __init__(self, params, observed_glacier, observation_uncertainty_field, observation_points, hidden_smb):
 
         self.params = params
+        self.num_iterations = params['num_iterations']
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
         self.seed = params['seed']
@@ -25,24 +26,26 @@ class Monitor:
         self.initial_estimate = params['initial_estimate']
         self.initial_spread = params['initial_spread']
 
-        if self.synthetic:
-            self.initial_offset = params['initial_offset']
-            self.observation_uncertainty = params['observation_uncertainty']
+
 
         with xr.open_dataset(params['observations_file']) as ds:
             self.observed_glacier = ds
 
-        self.observations = observed_glacier['usurf']
+        self.observations = np.array(observed_glacier['usurf'])
         self.observation_uncertainty_field = observation_uncertainty_field
         self.observation_points = observation_points
 
         self.smb = hidden_smb
+        try:
+            self.smb_std = params['reference_smb_std']
+        except:
+            self.smb_std = [0,0,0,0,0]
 
         self.year_range = np.array(self.observed_glacier['time'])[::self.time_interval]
         self.start_year = self.year_range[0]
         self.year_range_repeat = np.repeat(self.year_range, 2)[1:]
 
-        self.res = self.observed_glacier['x'][1] - self.observed_glacier['x'][0]
+        self.res = int(self.observed_glacier['x'][1] - self.observed_glacier['x'][0])
         self.map_shape_x = self.observed_glacier.dims['x']
         self.map_shape_y = self.observed_glacier.dims['y']
 
@@ -51,23 +54,29 @@ class Monitor:
         self.icemask = np.array(self.observed_glacier['icemask'][0])
         # self.icemask = self.icemask[::-1]
         #self.random_id = random.sample(range(self.ensemble_size), 4)
+        if self.synthetic:
+            self.initial_offset = params['initial_offset']
+            self.observation_uncertainty = params['observation_uncertainty']
+        else:
+            self.observation_uncertainty = np.mean(np.array(observed_glacier['obs_error'][1])[self.icemask==1])
+            print(self.observation_uncertainty)
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
         self.hist_ensemble_y = []
+        self.hist_ensemble_y_iterations = []
         self.hist_true_y = []
+        self.hist_true_y_change = []
         self.low_point = self.observation_points[0]
         self.high_point = self.observation_points[-1]
-        self.hist_true_y_noisy = []
         self.hist_true_y_uncertainty = []
 
         for year in self.year_range:
             year_index = int(year - self.start_year)
             usurf = self.observed_glacier['usurf'][year_index]
-            volume, low_point, high_point = self.glacier_properties(usurf)
-            volume_n, low_point_n, high_point_n = self.glacier_properties(self.observations[year_index])
-            self.hist_true_y.append([volume, low_point, high_point])
-            self.hist_true_y_noisy.append([volume_n, low_point_n, high_point_n])
+
+            self.hist_true_y.append(self.glacier_properties(self.observations[year_index]))
+            self.hist_true_y_change.append(self.glacier_properties_change(self.observations[year_index]))
 
             volume_uncertainty = np.sum(self.observation_uncertainty_field[year_index, self.icemask==1])/(1000*100)
             low_sample = self.observation_uncertainty_field[year_index,self.low_point[0], self.low_point[1]]
@@ -76,9 +85,8 @@ class Monitor:
             self.hist_true_y_uncertainty.append([volume_uncertainty, low_sample, high_sample])
 
         self.hist_true_y = np.array(self.hist_true_y)
-        self.hist_true_y_noisy = np.array(self.hist_true_y_noisy)
         self.hist_true_y_uncertainty = np.array(self.hist_true_y_uncertainty)
-        print()
+
 
 
     def glacier_properties(self, usurf):
@@ -95,6 +103,24 @@ class Monitor:
         high_sample = usurf[self.high_point[0], self.high_point[1]]
 
         return volume, low_sample, high_sample
+
+    def glacier_properties_change(self, usurf):
+        """
+        get real observation
+        :returns area [km²] and volume [km³] of the ground truth in given year
+                 and thickness map
+        """
+        usurf2000 = np.array(self.observed_glacier['usurf'][0])
+        
+        
+        elevation_change = np.array(usurf - usurf2000)/20
+        # icemask = np.logical_and(self.icemask,)
+
+        specific_mass_balance = np.sum(elevation_change[self.icemask == 1])/np.sum(self.icemask)
+        low_sample = elevation_change[self.low_point[0], self.low_point[1]]
+        high_sample = elevation_change[self.high_point[0], self.high_point[1]]
+
+        return specific_mass_balance, low_sample, high_sample
 
     def reset(self):
         self.hist_state_x = []
@@ -133,7 +159,7 @@ class Monitor:
         # draw true velocity
         ax_vel_true = ax[2, 3]
         ax_vel_true.set_title(f'Velocity in 2000')
-        vel_im = ax_vel_true.imshow(true_vel, cmap='magma', vmin=0, vmax=300, origin='lower')
+        vel_im = ax_vel_true.imshow(true_vel, cmap='magma', vmin=0, vmax=np.max(true_vel), origin='lower')
         fig.colorbar(vel_im, ax=ax_vel_true, location='right')
         ax_vel_true.set_title('[$m/yr$]', loc='right', x=1.15)
         ax_vel_true.xaxis.set_major_formatter(formatter)
@@ -148,7 +174,7 @@ class Monitor:
         ax_vel_model.set_title(f'Mean Difference Surface Velocity')
         modeled_mean_vel = np.mean(ensemble_velo, axis=0)
         #vel_im = ax_vel_model.imshow(true_vel - modeled_mean_vel, cmap='bwr_r', vmin=-30, vmax=30, origin='lower')
-        vel_im = ax_vel_model.imshow(modeled_mean_vel, cmap='magma', vmin=0, vmax=300, origin='lower')
+        vel_im = ax_vel_model.imshow(modeled_mean_vel, cmap='magma', vmin=0, vmax=np.max(true_vel), origin='lower')
 
         fig.colorbar(vel_im, ax=ax_vel_model, location='right')
         ax_vel_model.set_title('[$m/yr$]', loc='right', x=1.15)
@@ -161,7 +187,7 @@ class Monitor:
 
         # plot volume
         ax[0, 0].set_title('Volume')
-        ax[0, 0].plot(self.year_range, self.hist_true_y_noisy[:, 0], label="Noisy Observation",
+        ax[0, 0].plot(self.year_range, self.hist_true_y[:, 0], label="Noisy Observation",
                       color=colorscale(0), linewidth=0, marker='o', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=5)
 
@@ -192,7 +218,7 @@ class Monitor:
 
         # plot lowest point
         ax[0, 1].set_title('Elevation of Lowest Point')
-        ax[0, 1].plot(self.year_range, self.hist_true_y_noisy[:, 1], label="Noisy Observation",
+        ax[0, 1].plot(self.year_range, self.hist_true_y[:, 1], label="Noisy Observation",
                       color=colorscale(0), linewidth=0, marker='v', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=5)
 
@@ -210,8 +236,8 @@ class Monitor:
                           color=colorscale(1), linewidth=3, linestyle='-.', zorder=3)
 
         else:
-            ax[0, 1].fill_between(self.year_range, self.hist_true_y_noisy[:, 1] - self.hist_true_y_uncertainty[:, 1],
-                                  self.hist_true_y_noisy[:, 1] + self.hist_true_y_uncertainty[:, 1],
+            ax[0, 1].fill_between(self.year_range, self.hist_true_y[:, 1] - self.hist_true_y_uncertainty[:, 1],
+                                  self.hist_true_y[:, 1] + self.hist_true_y_uncertainty[:, 1],
                                   color=colorscale(1), alpha=0.2, label='Uncertainty of Observation', )
 
         ax[0, 1].set_xticks(self.year_range)
@@ -221,7 +247,7 @@ class Monitor:
 
         # plot outline
         ax[0, 2].set_title('Elevation of Highest Point')
-        ax[0, 2].plot(self.year_range, self.hist_true_y_noisy[:, 2], label="Noisy Observation",
+        ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label="Noisy Observation",
                       color=colorscale(0), linewidth=0, marker='^', fillstyle='none', markersize=10, markeredgewidth=2,
                       zorder=5)
 
@@ -238,8 +264,8 @@ class Monitor:
             ax[0, 2].plot(self.year_range, self.hist_true_y[:, 2], label='Hidden Truth',
                           color=colorscale(1), linewidth=3, linestyle='-.', zorder=3)
         else:
-            ax[0, 2].fill_between(self.year_range, self.hist_true_y_noisy[:, 2] - self.hist_true_y_uncertainty[:, 2],
-                                  self.hist_true_y_noisy[:, 2] + self.hist_true_y_uncertainty[:, 2],
+            ax[0, 2].fill_between(self.year_range, self.hist_true_y[:, 2] - self.hist_true_y_uncertainty[:, 2],
+                                  self.hist_true_y[:, 2] + self.hist_true_y_uncertainty[:, 2],
                                   color=colorscale(1), alpha=0.2, label='Observation Uncertainty')
 
         ax[0, 2].set_xticks(self.year_range)
@@ -325,7 +351,7 @@ class Monitor:
 
         observations = self.observations[year_index]
 
-        usurf_im = ax_obs_usurf.imshow(observations, cmap='Blues_r',  origin='lower')
+        usurf_im = ax_obs_usurf.imshow(observations,  cmap='RdBu', vmin=-10, vmax=10,  origin='lower')
 
         # observation_glacier = copy.copy(observations)
         # observation_glacier[self.icemask==0] = None
@@ -349,7 +375,7 @@ class Monitor:
                              lw=2, s=120, label='Lowest Point', zorder=10)
 
         cbar = fig.colorbar(usurf_im, ax=ax_obs_usurf, location='right')
-        ax_obs_usurf.set_title('[$m$]', loc='right', x=1.15)
+        ax_obs_usurf.set_title('[$m~a^{-1}$]', loc='right', x=1.15)
 
         plt.setp(ax_obs_usurf.spines.values(), color=colorscale(0))
         for axis in ['top', 'bottom', 'left', 'right']:
@@ -487,63 +513,142 @@ class Monitor:
     plt.clf()
     plt.close()
 
-    def plot_iterations(self, estimates):
-        colorscale = plt.get_cmap('tab20')
-        estimates = np.array(estimates)
-        estimates[:,:,1:3] *= 0.91
+    def plot_iterations(self, estimates, ensemble):
 
-        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
-        ax_ela = ax[0]
+        colorscale = plt.get_cmap('tab20')
+        estimates[:,:,1:3] *= 0.91
+        glacier_prop = [self.glacier_properties_change(member.usurf) for member in ensemble]
+        self.hist_ensemble_y_iterations.append(glacier_prop)
+        mean_glacier_prop = np.mean(np.array(self.hist_ensemble_y_iterations), axis=1)
+        iterations = np.arange(len(estimates))
+        iterations_total = np.arange(self.num_iterations+1)
+        #iterations_repreat = np.repeat(iterations, 2)[1:]
+        #estimates_repeat = np.repeat(estimates,2, axis=0)[:-1]
+
+
+        fig, ax = plt.subplots(2, 4, figsize=(12, 6))
+
+        ax_mb = ax[0, 0]
+        specific_mass_balance = self.hist_true_y_change[-1][0]
+        if self.synthetic:
+            ax_mb.plot(iterations_total, [specific_mass_balance] * len(iterations_total), color=colorscale(0), linewidth=3,
+                        linestyle='-.', zorder=5, label='Reference Run')
+        else:
+            ax_mb.plot(iterations_total, [specific_mass_balance] * len(iterations_total), color=colorscale(0),
+                       linewidth=3,
+                       linestyle='-.', zorder=5, label='Observation [Hugonnet21]')
+
+        ax_mb.fill_between(iterations_total,
+                           [specific_mass_balance-self.observation_uncertainty] * len(iterations_total),
+                            [specific_mass_balance + self.observation_uncertainty] * len(iterations_total),
+                           color=colorscale(0), alpha=0.2, label='Observation Uncertainty')
+
+
+        ax_mb.plot(iterations[:-1], np.array(self.hist_ensemble_y_iterations)[:,:,0], color=colorscale(5), zorder=1, marker='o',
+                   markevery=[-1], label='Ensemble Member')
+        ax_mb.plot(iterations[:-1], mean_glacier_prop[:, 0], color=colorscale(4),
+                     zorder=10, marker='o',markevery=[-1], label='Ensemble Mean')
+        ax_mb.set_ylabel('Average Elevation\nChange (m a$^{-1}$)')
+        ax_mb.set_xticklabels([])
+        # ax_ela.set_xlabel('Iterations')
+
+        ax_mb = ax[0, 1]
+        specific_mass_balance = self.hist_true_y_change[-1][1]
+        ax_mb.plot(iterations_total, [specific_mass_balance] * len(iterations_total), color=colorscale(0), linewidth=3,
+                   linestyle='-.', zorder=5)
+
+        ax_mb.fill_between(iterations_total,
+                           [specific_mass_balance - self.observation_uncertainty] * len(iterations_total),
+                           [specific_mass_balance + self.observation_uncertainty] * len(iterations_total), color=colorscale(0),
+                           alpha=0.2)
+
+        ax_mb.plot(iterations[:-1], np.array(self.hist_ensemble_y_iterations)[:, :, 1], color=colorscale(5),
+                   zorder=1, marker='v',
+                   markevery=[-1])
+        ax_mb.plot(iterations[:-1], mean_glacier_prop[:, 1], color=colorscale(4),
+                   zorder=10, marker='v', markevery=[-1])
+        ax_mb.set_ylabel('Elevation Change at \n Lowest Point  (m a$^{-1}$)')
+        ax_mb.set_xticklabels([])
+
+        ax_mb = ax[0, 2]
+        specific_mass_balance = self.hist_true_y_change[-1][2]
+        ax_mb.plot(iterations_total, [specific_mass_balance] * len(iterations_total), color=colorscale(0), linewidth=3,
+                   linestyle='-.', zorder=5)
+
+        ax_mb.fill_between(iterations_total,
+                           [specific_mass_balance - self.observation_uncertainty] * len(iterations_total),
+                           [specific_mass_balance + self.observation_uncertainty] * len(iterations_total), color=colorscale(0),
+                           alpha=0.2)
+
+        ax_mb.plot(iterations[:-1], np.array(self.hist_ensemble_y_iterations)[:, :, 2], color=colorscale(5),
+                   zorder=1, marker='^',
+                   markevery=[-1])
+        ax_mb.plot(iterations[:-1], mean_glacier_prop[:, 2], color=colorscale(4),
+                   zorder=10, marker='^', markevery=[-1])
+        ax_mb.set_ylabel('Elevation Change at \n Highest Point  (m a$^{-1}$)')
+        ax_mb.set_xticklabels([])
+
+        ax_ela = ax[1,0]
         #ax_ela.set_title('Equilibrium Line Altitude')
-        ax_ela.plot(range(len(estimates)), [self.smb[-1][3]]*len(estimates), color=colorscale(9), linewidth=3,
-                    linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
-        if not self.synthetic:
-            ax_ela.fill_between(range(len(estimates)), [2845]*len(estimates),
-                               [3155]*len(estimates), color=colorscale(9), alpha=0.2)
-        ax_ela.plot(range(len(estimates)), np.array(estimates)[:, :, 0], color='gold', zorder=1)
-        ax_ela.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 0], axis=1), color=colorscale(2),
-                    zorder=10)
-        ax_ela.set_ylabel('Equilibrium Line Altitude [$m$]')
+        if self.synthetic:
+            ax_ela.plot(iterations_total, [self.smb[-1][3]] * len(iterations_total), color=colorscale(9), linewidth=3,
+                        linestyle='-.', label='Reference Run', zorder=5)
+        else:
+            ax_ela.plot(iterations_total, [self.smb[-1][3]] * len(iterations_total), color=colorscale(9), linewidth=3,
+                        linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
+            ax_ela.fill_between(iterations_total,[self.smb[-1][3]-self.smb_std[3]]*len(iterations_total),
+                               [self.smb[-1][3]+self.smb_std[3]]*len(iterations_total), color=colorscale(9), alpha=0.2,
+                                label='Variance [GLAMOS]'                                )
+        ax_ela.plot(iterations, estimates[:, :, 0], color='gold', zorder=1, linestyle='-',
+                    marker='o', label='Ensemble Member',
+                    markevery=[-1])
+        ax_ela.plot(iterations, np.mean(estimates[:, :, 0], axis=1), color=colorscale(2),
+                    zorder=10,marker='o',markevery=[-1], label='Ensemble Mean')
+        ax_ela.set_ylabel('Equilibrium Line Altitude (m)')
         ax_ela.set_xlabel('Iterations')
 
-        ax_abl = ax[1]
+        ax_abl = ax[1,1]
         #ax_abl.set_title('Ablation Gradient')
 
         if self.synthetic:
-            ax_abl.plot(range(len(estimates)), [self.smb[-1][1]] * len(estimates), color=colorscale(9), linewidth=3,
-                        linestyle='-.', label='Reference Run SMB', zorder=5)
+            ax_abl.plot(iterations_total, [self.smb[-1][1]] * len(iterations_total), color=colorscale(9), linewidth=3,
+                        linestyle='-.', label='Reference Run', zorder=5)
 
         else:
-            ax_abl.plot(range(len(estimates)), [self.smb[-1][1]] * len(estimates), color=colorscale(9), linewidth=3,
+            ax_abl.plot(iterations_total, [self.smb[-1][1]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
-            ax_abl.fill_between(range(len(estimates)), [0.00556] * len(estimates),
-                                [0.01141] * len(estimates), color=colorscale(9), alpha=0.2)
+            ax_abl.fill_between(iterations_total, [self.smb[-1][1]-self.smb_std[1]] * len(iterations_total),
+                                [self.smb[-1][1]+self.smb_std[1]] * len(iterations_total), color=colorscale(9), alpha=0.2)
 
 
-        ax_abl.plot(range(len(estimates)), np.array(estimates)[:, :, 1], color='gold', zorder=1)
-        ax_abl.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 1], axis=1), color=colorscale(2),
-                    label= 'ensemble mean', zorder=10)
-        ax_abl.set_ylabel('Ablation Gradient [$m~w.e.~a^{-1}~m^{-1}$]')
+        ax_abl.plot(iterations, estimates[:, :, 1], color='gold', zorder=1,marker='v',markevery=[-1])
+        ax_abl.plot(iterations, np.mean(estimates[:, :, 1], axis=1), color=colorscale(2),
+                    label= 'ensemble mean', zorder=10, marker='v',markevery=[-1])
+        ax_abl.set_ylabel('Ablation Gradient (m a$^{-1}$ m$^{-1}$)')
         ax_abl.set_xlabel('Iterations')
 
-        ax_acc = ax[2]
+        ax_acc = ax[1,2]
         #ax_acc.set_title('Accumulation Gradient')
-        ax_acc.plot(range(len(estimates)), np.mean(np.array(estimates)[:, :, 2], axis=1), color=colorscale(2),
-                    label= 'Ensemble Mean', zorder=10)
+        ax_acc.plot(iterations, np.mean(estimates[:, :, 2], axis=1), color=colorscale(2),
+                    label= 'Ensemble Mean', zorder=10,marker='^',markevery=[-1])
 
 
-        ax_acc.plot(range(len(estimates)), np.array(estimates)[:, :, 2], color='gold', label='Ensemble Member', zorder=1)
+        ax_acc.plot(iterations, estimates[:, :, 2], color='gold', label='Ensemble Member', zorder=1,
+                    marker='^',markevery=[-1])
         if self.synthetic:
-            ax_acc.plot(range(len(estimates)), [self.smb[-1][2]] * len(estimates), color=colorscale(9), linewidth=3,
-                        linestyle='-.', label='Reference Run SMB', zorder=5)
+            ax_acc.plot(iterations_total, [self.smb[-1][2]] * len(iterations_total), color=colorscale(9), linewidth=3,
+                        linestyle='-.', label='Reference Run', zorder=5)
         else:
-            ax_acc.fill_between(range(len(estimates)), [0.000216] * len(estimates),
-                            [0.00244] * len(estimates), color=colorscale(9), alpha=0.2, label='Min/Max [GLAMOS]')
-            ax_acc.plot(range(len(estimates)), [self.smb[-1][2]] * len(estimates), color=colorscale(9), linewidth=3,
+            ax_acc.plot(iterations_total, [self.smb[-1][2]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
-        ax_acc.set_ylabel('Accumulation Gradient [$m~w.e.~a^{-1}~m^{-1}$]')
+            ax_acc.fill_between(iterations_total, [self.smb[-1][2]-self.smb_std[2]] * len(iterations_total),
+                            [self.smb[-1][2]+self.smb_std[2]] * len(iterations_total), color=colorscale(9), alpha=0.2)
+
+        ax_acc.set_ylabel('Accumulation Gradient (m a$^{-1}$ m$^{-1}$)')
         ax_acc.set_xlabel('Iterations')
-        for axi in [ax[0], ax[1], ax[2]]:
+
+
+        for axi in [ax[0,0], ax[0,1], ax[0,2], ax[1,0], ax[1,1], ax[1,2]]:
             axi.spines['top'].set_visible(False)
             axi.spines['right'].set_visible(False)
             axi.spines['bottom'].set_visible(False)
@@ -552,11 +657,119 @@ class Monitor:
             axi.grid(axis="x", color="lightgray", linestyle="-", zorder=0)
             axi.xaxis.set_tick_params(bottom=False)
             axi.yaxis.set_tick_params(left=False)
+            axi.xaxis.set_ticks([0,1,2,3,4,5])
+
             # axi.legend(framealpha=1)
 
-        plt.tight_layout()
-        handles, labels = axi.get_legend_handles_labels()
+        ax_obs_usurf = ax[0, 3]
+        #ax_obs_usurf.set_title('Observed\nSurface Elevation Change')
+
+        dhdt = (self.observations[-1]-self.observations[0])/20
+        dhdt[self.icemask==0] = None
+
+        usurf_im = ax_obs_usurf.imshow(dhdt, cmap='RdBu', vmin=-10, vmax=10, origin='lower', zorder=5 )
+
+        # observation_glacier = copy.copy(observations)
+        # observation_glacier[self.icemask==0] = None
+        # usurf_im = ax[0, 3].imshow(observation_glacier, cmap='Blues_r', vmin=2200, vmax=3600, origin='lower', zorder=2)
+        # observatio_sample = np.full(observations.shape, np.nan)
+        # observatio_sample[self.observation_points[:, 0], self.observation_points[:, 1]] = observations[self.observation_points[:, 0], self.observation_points[:, 1],]
+        # usurf_im_samp = ax[0, 3].imshow(observatio_sample, cmap='Blues', vmin=1500, vmax=3500, origin='lower')
+        ax_obs_usurf.scatter(self.high_point[1], self.high_point[0],
+                             edgecolors='gray', marker='^', c=None,
+                             facecolors='white', lw=1, s=50, label='Highest Point', zorder=10)
+
+        ax_obs_usurf.scatter(self.observation_points[:, 1] - 0.5, self.observation_points[:, 0],
+                             edgecolors='gray', linewidths=0.8,
+                             marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
+        import matplotlib as mpl
+        blues = mpl.colormaps['Blues_r']
+
+        ax_obs_usurf.scatter(self.low_point[1], self.low_point[0],
+                             edgecolors='gray', marker='v', c=None, facecolors=blues(0),
+                             lw=1, s=50, label='Lowest Point', zorder=10)
+
+        cbar = fig.colorbar(usurf_im, ax=ax_obs_usurf, location='right', ticks=range(-10, 11, 5))
+        #cbar.set_label('Observed Surface\nElevation Change [$m~a^{-1}$]')
+        if self.synthetic:
+            ax_obs_usurf.set_ylabel('Surface Elevation Change \n of Reference Run  (m a$^{-1}$)')
+        else:
+            ax_obs_usurf.set_ylabel('Observed Surface\nElevation Change (m a$^{-1}$)')
+        plt.setp(ax_obs_usurf.spines.values(), color=colorscale(0))
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax_obs_usurf.spines[axis].set_linewidth(3)
+
+        def formatter(x, pos):
+            del pos
+            return str(int(x * self.res / 1000))
+        ax_obs_usurf.xaxis.set_ticks([0, 20, 40, 60])
+        ax_obs_usurf.xaxis.set_major_formatter(formatter)
+        ax_obs_usurf.yaxis.set_major_formatter(formatter)
+        ax_obs_usurf.set_xticklabels([])
+        # ax_obs_usurf.set_xlim(20, 100)
+        # ax_obs_usurf.set_ylim(30, 130)
+        ### SMB plot ##
+        ela, gradabl, gradacc = np.mean(estimates[-1],axis=0)[[0, 1, 2]]
+        maxacc = 100
+
+        smb = self.observations[0] - ela
+        smb *= np.where(np.less(smb, 0), gradabl, gradacc)
+        smb = np.clip(smb, -100, maxacc)
+
+        smb = np.where((smb < 0) | (self.icemask > 0.5), smb, -10)
+        esti_smb = np.array(smb)
+
+        esti_smb[self.icemask == 0] = None
+
+
+        # draw true surface mass balance
+        ax_smb = ax[1, 3]
+        #ax_smb.set_title(f, y=-0.25, loc='center')
+
+        #background = ax_smb.imshow(, cmap='gray', origin='lower')
+
+        smb_im = ax_smb.imshow(esti_smb, cmap='RdBu', vmin=-10, vmax=10, origin='lower', zorder=5)
+        cbar = fig.colorbar(smb_im, ax=ax_smb, location='right', ticks=range(-10, 11, 5))
+        # Set color bar label with units
+        #cbar.set_label('Estimated Surface\nMass Balance [$m~a^{-1}$]')
+
+        text_y, text_x = esti_smb.shape
+        mb = np.sum(esti_smb[self.icemask == 1]) / np.sum(self.icemask)
+        #ax_smb.text(text_x / 2 - 7, text_y / 2, f'{mb:.4f} \n m/yr', zorder=10, size=20)
+        #ax_smb.set_title('[$m~a^{-1}$]', loc='right', x=1.4, y=-0.2)
+
+        plt.setp(ax_smb.spines.values(), color=colorscale(2))
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax_smb.spines[axis].set_linewidth(3)
+        ax_smb.xaxis.set_ticks([0, 20, 40, 60])
+        ax_smb.xaxis.set_major_formatter(formatter)
+        ax_smb.yaxis.set_major_formatter(formatter)
+        ax_smb.set_xlabel('km')
+
+        ax_smb.set_ylabel('Estimated Surface\nMass Balance (m a$^{-1}$)')
+        for axi in [ax[0, 3], ax[1, 3]]:
+            axi.grid(axis="y", color="black", linestyle="--", zorder=0, alpha=.2)
+            axi.grid(axis="x", color="black", linestyle="--", zorder=0, alpha=.2)
+            axi.xaxis.set_tick_params(bottom=False)
+            axi.yaxis.set_tick_params(left=False)
+            axi.set_yticklabels([])
+
+
+
+        legend = ax_obs_usurf.legend(loc='upper left', framealpha=.5, fontsize='small')
+        legend.legend_handles[1]._sizes = [50]
+        legend.legend_handles[1]._linewidths = [1]
+        legend.legend_handles[1]._facecolors = [colorscale(1)]
+
+        handles, labels = ax[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         fig.legend(by_label.values(), by_label.keys(), loc='upper center', ncol=4)
-        fig.subplots_adjust(top=0.9, bottom=0.15)
-        plt.savefig(self.output_dir+f'iterations_seed_{self.seed}.pdf', format='pdf')
+
+        handles, labels = ax[1,0].get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        fig.legend(by_label.values(), by_label.keys(), loc='lower center', ncol=4)
+
+        plt.tight_layout()
+
+        fig.subplots_adjust(top=0.92, bottom=0.15)
+        plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_{len(estimates)}.pdf', format='pdf', dpi=300)

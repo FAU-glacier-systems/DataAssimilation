@@ -13,7 +13,7 @@ def plot_results():
     for fig_num, hyperparameter in enumerate(['ensemble_size', 'covered_area', 'observation_uncertainty', 'initial_offset']):
 
 
-        experiment_folder = 'Results/Results_' + hyperparameter + '/'
+        experiment_folder = '../Experiments/Results_' + hyperparameter + '/'
 
         # load result json files
         results = []
@@ -194,14 +194,14 @@ def plot_results():
         ax_para[fig_num, 0].set_yscale('log')
         grad_axis_para = ax_para[fig_num, 0].secondary_yaxis('right')
         grad_axis_para.set_yscale('log')
-        grad_axis_para.set_ylabel('Gradient Error [$m~a^{-1}~m^{-1}$]')
-        ax_para[fig_num, 0].set_ylabel('ELA Error [$m$]')
+        grad_axis_para.set_ylabel('Gradient Error (m a$^{-1}$ m$^{-1}$)')
+        ax_para[fig_num, 0].set_ylabel('ELA Error (m)')
 
         ax_para[fig_num, 1].set_yscale('log')
         grad_axis_spread = ax_para[fig_num, 1].secondary_yaxis('right')
         grad_axis_spread.set_yscale('log')
-        grad_axis_spread.set_ylabel('Gradient Spread [$m~a^{-1}~m^{-1}$]')
-        ax_para[fig_num, 1].set_ylabel('ELA Spread [$m$]')
+        grad_axis_spread.set_ylabel('Gradient Spread (m a$^{-1}$ m$^{-1}$)')
+        ax_para[fig_num, 1].set_ylabel('ELA Spread (m)')
 
 
 
@@ -238,7 +238,7 @@ def plot_results():
             handles, labels = ax_para[fig_num, num].get_legend_handles_labels()
 
             if hyperparameter == 'covered_area':
-                ax_para[fig_num, num].set_xlabel("Covered Area [%]")
+                ax_para[fig_num, num].set_xlabel("Covered Area Fraction (%)")
             elif hyperparameter == 'dt':
                 ax_para[fig_num, num].set_xlabel("Observation Interval ($dt$) [years]")
             elif hyperparameter == 'ensemble_size':
@@ -254,15 +254,15 @@ def plot_results():
             elif hyperparameter == 'bias':
                 ax_para[fig_num, num].set_xlabel('Elevation Bias')
             elif hyperparameter == 'observation_uncertainty':
-                ax_para[fig_num, num].set_xlabel('Elevation Change Uncertainty [$m~a^{-1}$]')
+                ax_para[fig_num, num].set_xlabel('Elevation Change Uncertainty (m a$^{-1}$)')
             else:
                 ax_para[fig_num, num].set_xlabel(hyperparameter)
 
     fig_para.legend(handles, labels, loc='upper center', ncol=3)
     fig_para.tight_layout()
     fig_para.subplots_adjust(top=0.97, bottom=0.04)
-    fig_para.savefig(f'Plots/MAE_ext.pdf', format="pdf")
-    fig_para.savefig(f'Plots/MAE_ext.png', format="png", dpi=300)
+    fig_para.savefig(f'MAE_ext.pdf', format="pdf")
+    #fig_para.savefig(f'MAE_ext.png', format="png", dpi=300)
 
 
 if __name__ == '__main__':

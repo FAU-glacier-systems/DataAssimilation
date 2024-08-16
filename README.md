@@ -6,5 +6,6 @@ This repository contains the code for a data assimilation strategy coupling the 
 3. Observations are generated ether using IGM or from the elevation change map of Hugonnet et al.
 4. Our data assimilation script uses the Ensembel Kalman filter to infer Surface Mass Balance Parameters of the simple SMB module from IGM.
 
-![Pipeline Architecture](Figures/architecture.pdf)
-![Pipeline Architecture](Figures/iterations_seed_111_6.pdf)
+![Pipeline Architecture](Figures/Pipeline_architecture.svg)
+![Pipeline Architecture](Figures/iterations_seed_111_6.svg)
+![Pipeline Architecture](Figures/mass_loss.svg)

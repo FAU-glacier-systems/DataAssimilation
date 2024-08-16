@@ -1,3 +1,5 @@
+import copy
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,7 +40,7 @@ def extract_ela_gradients(group_df):
     gradient_ablation = np.polyfit(elevation[mb < 0], ablation, 1)[0]
     gradient_accumulation = np.polyfit(elevation[mb > 0], accumulation, 1)[0]
 
-    # conversion to volume
+    # conversion to sacle
     gradient_ablation = gradient_ablation / 1000
     gradient_accumulation = gradient_accumulation / 1000
     return ela, gradient_ablation, gradient_accumulation
@@ -140,12 +142,15 @@ usurf2020 = usurf - dhdt*10
 icemask = hugonnet_nc['icemask'][0]
 
 mbs = []
+
 for ensemble_member in ensemble_results:
     ela = ensemble_member[0]
-    gradabl = ensemble_member[1]*0.91
+    grad_abl = ensemble_member[1]*0.91
     grad_acc = ensemble_member[2]*0.91
-    mbs.append(compute_specific_mass_balance_from_ela(ela, gradabl, grad_acc, usurf, icemask))
+    mbs.append(compute_specific_mass_balance_from_ela(ela, grad_abl, grad_acc, usurf, icemask))
 
+np.set_printoptions(suppress=True)
+ensemble_results_we = copy.copy(ensemble_results)
 mean_mb = np.mean(mbs)
 std_mb = np.std(mbs)
 
@@ -172,10 +177,10 @@ rhone_glacier_total['annual mass balance'] = pd.to_numeric(rhone_glacier_total['
 
 # Filter rows after the year 2000
 rhone_glacier_2000_df = rhone_glacier_df[np.logical_and(rhone_glacier_df['end date of observation'].dt.year >= 2000,
-                                                        rhone_glacier_df['end date of observation'].dt.year <= 2020)]
+                                                        rhone_glacier_df['end date of observation'].dt.year <= 2019)]
 rhone_glacier_2000_total = rhone_glacier_total[
     np.logical_and(rhone_glacier_total['end date of observation'].dt.year >= 2000,
-                   rhone_glacier_total['end date of observation'].dt.year <= 2020)]
+                   rhone_glacier_total['end date of observation'].dt.year <= 2019)]
 
 rhone_glacier_total_mb = rhone_glacier_2000_total['annual mass balance'] / 1000
 
@@ -308,6 +313,8 @@ ensemble_results[:,1] *= 0.91
 ensemble_results[:,2] *= 0.55
 ensemble_mean = np.mean(ensemble_results, axis=0)
 ensemble_std = np.std(ensemble_results, axis=0)
+print(ensemble_mean)
+print(ensemble_std)
 ela = ensemble_mean[0]
 gradabl = ensemble_mean[1]
 gradacc = ensemble_mean[2]

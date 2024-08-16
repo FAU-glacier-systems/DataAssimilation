@@ -33,32 +33,32 @@ for i in range(4):
 velocity_obs[icemask < 0.01] = None
 vel_img = ax[0].imshow(velocity_obs, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity (m a$^{-1}$)', rotation=90)
-ax[0].set_title("Observed velocity [Millan22]")
+cbar.ax.set_ylabel('Surface Velocity (m a$^{-1}$)', rotation=90)
+ax[0].set_title("Observed Velocity [Millan22]")
 
 velocity_iter = velocity
 velocity_iter[icemask < 0.01] = None
 vel_img = ax[1].imshow(velocity_iter, vmin=0, vmax=70, cmap="magma", zorder=2)
 cbar = fig.colorbar(vel_img)
-cbar.ax.set_ylabel('surface velocity (m a$^{-1}$)', rotation=90)
+cbar.ax.set_ylabel('Surface Velocity (m a$^{-1}$)', rotation=90)
 
-ax[1].set_title("Modelled velocity")
+ax[1].set_title("Modelled Velocity")
 
 thickness[icemask < 0.01] = None
 img = ax[2].imshow(thickness, cmap='Blues', zorder=2)
 cbar = fig.colorbar(img)
 cbar.ax.invert_yaxis()
-cbar.ax.set_ylabel('thickness (m)', rotation=90)
+cbar.ax.set_ylabel('Thickness (m)', rotation=90)
 
-ax[2].set_title("Optimized thickness ")
+ax[2].set_title("Optimized Thickness ")
 
 slidingco_iter = slidingco
 slidingco_iter[icemask < 0.01] = None
 img = ax[3].imshow(slidingco_iter, zorder=2)
 cbar = fig.colorbar(img)
-cbar.ax.set_ylabel('slidingco $[?]$', rotation=90)
+cbar.ax.set_ylabel('Sliding Co. (MPa a$^{3}$ m$^{-3}$)', rotation=90)
 
-ax[3].set_title("Optimized slidingco")
+ax[3].set_title("Optimized Sliding Co.")
 
 
 def formatter(x, pos):
@@ -77,7 +77,7 @@ for i in range(4):
     ax[i].grid(axis="x", color="black", linestyle="--", zorder=0, alpha=.2)
     for axis in ['top', 'bottom', 'left', 'right']:
         ax[i].spines[axis].set_linewidth(0)
-    ax[i].set_xlabel('$km$', color='black')
+    ax[i].set_xlabel('km', color='black')
     ax[i].tick_params(axis='x', colors='black')
     ax[i].tick_params(axis='y', colors='black')
 

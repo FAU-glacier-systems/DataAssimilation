@@ -24,6 +24,7 @@ def plot_smb_ensemble(ensemble_json):
         plt.xlabel('Surface Mass Balance [$m~a^{-1}$]')
         plt.plot([])
         plt.savefig(f'Plots/SMB_LINE/SMB_iterations_{i}.png')
+        plt.clf()
 
 if __name__ == '__main__':
     plot_smb_ensemble('Experiments/Rhone/result_seed_420.json')

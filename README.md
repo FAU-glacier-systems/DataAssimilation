@@ -7,7 +7,8 @@ This repository contains the code for a data assimilation strategy coupling the 
 
    Observations are generated ether using IGM or from the elevation change map of Hugonnet et al.
 
+![Iterations of Ensemble Kalman Filter](Figures/Rhone_3D.gif)
 ![Pipeline](Figures/pipeline.svg)
 ![Pipeline Architecture](Figures/architecture.svg)
-![Iterations of Ensemble Kalman Filter](Figures/iterations_seed_111_6.svg)
+![Iterations of Ensemble Kalman Filter](Figures/EnKF_iterations_Rhone_real.gif)
 ![Results of Ensemble Kalman Filter compared to glaciological measurements](Figures/mass_loss.svg)

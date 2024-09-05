@@ -261,8 +261,8 @@ def plot_results():
     fig_para.legend(handles, labels, loc='upper center', ncol=3)
     fig_para.tight_layout()
     fig_para.subplots_adjust(top=0.97, bottom=0.04)
-    fig_para.savefig(f'MAE_ext.pdf', format="pdf")
-    #fig_para.savefig(f'MAE_ext.png', format="png", dpi=300)
+    #fig_para.savefig(f'MAE_ext.pdf', format="pdf")
+    fig_para.savefig(f'MAE_ext.png', format="png", dpi=300)
 
 
 if __name__ == '__main__':

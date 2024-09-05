@@ -10,7 +10,7 @@ files.sort()
 # read all frames
 frames = []
 for image in files:
-    if image.startswith('iterations_seed_111'):
+    if image.startswith('iterations_seed_11'):
         frames.append(Image.open(dir+image))
 
 
@@ -18,5 +18,5 @@ for image in files:
 frame_one = Image.open(dir+'iterations_seed_111_2.png')
 #frame_one = Image.open(dir+'glacier_surface_2000.png')
 
-frame_one.save("Plots/EnKF_iterations_Rhone_real.gif", format="GIF", append_images=frames, save_all=True, duration=1000, loop=0)
+frame_one.save("Plots/EnKF_iterations_Rhone.gif", format="GIF", append_images=frames, save_all=True, duration=1000, loop=0)
 

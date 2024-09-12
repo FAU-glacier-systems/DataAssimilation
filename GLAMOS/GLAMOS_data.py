@@ -57,15 +57,20 @@ def compute_specific_mass_balance(group_df):
     return specific_mass_balance
 
 
-def compute_specific_mass_balance_from_ela(ela, gradabl, gradacc, usurf, icemask):
+def compute_specific_mass_balance_from_ela(ela, gradabl, gradacc, usurf, thkse):
     maxacc = 100
-    smb = usurf - ela
-    smb *= np.where(np.less(smb, 0), gradabl, gradacc)
-    smb = np.clip(smb, -100, maxacc)
+    mb = []
+    for surf,thk in zip(usurf,thkse):
+        thk=np.array(thk)
+        smb = surf - ela
+        smb *= np.where(np.less(smb, 0), gradabl, gradacc)
+        smb = np.clip(smb, -100, maxacc)
+        smb = np.where((smb < 0) | (thk > 1), smb, -10)
+        print( np.sum(thk > 1))
+        mb.append(np.sum(smb[thk > 1]) / np.sum(thk > 1))
 
-    smb = np.where((smb < 0) | (icemask > 0.5), smb, -10)
-    mb = np.sum(smb[icemask == 1]) / np.sum(icemask)
-    return mb
+
+    return np.mean(mb)
 
 
 def moving_average(data, window_size):
@@ -132,22 +137,20 @@ hugonnet_mass_balance *= 0.91
 # hugonnet_error *= 0.85
 
 # ensembel results
-results_file = '../Experiments/Rhone/result_seed_111.json'
+results_file = '../Experiments/Rhone/result_seed_324.json'
 with open(results_file, 'r') as f:
     results = json.load(f)
 
 ensemble_results = np.array(results['final_ensemble'])
-usurf = hugonnet_nc['usurf'][0]
-usurf2020 = usurf - dhdt*10
-icemask = hugonnet_nc['icemask'][0]
-
+usurf = hugonnet_nc['usurf']
+thk = hugonnet_nc['thk']
 mbs = []
 
 for ensemble_member in ensemble_results:
     ela = ensemble_member[0]
     grad_abl = ensemble_member[1]*0.91
     grad_acc = ensemble_member[2]*0.91
-    mbs.append(compute_specific_mass_balance_from_ela(ela, grad_abl, grad_acc, usurf, icemask))
+    mbs.append(compute_specific_mass_balance_from_ela(ela, grad_abl, grad_acc, usurf, thk))
 
 np.set_printoptions(suppress=True)
 ensemble_results_we = copy.copy(ensemble_results)
@@ -201,7 +204,8 @@ specific_mass_balances = []
 time = []
 for start_date, group_df in rhone_glacier_group:
     ela, gradient_ablation, gradient_accumulation = extract_ela_gradients(group_df)
-    specific_mass_balance = compute_specific_mass_balance(group_df)
+    #specific_mass_balance = compute_specific_mass_balance(group_df)
+    specific_mass_balance = compute_specific_mass_balance_from_ela(ela, gradient_ablation, gradient_accumulation, usurf, thk)
 
     specific_mass_balances.append(specific_mass_balance)
     ELA.append(ela)
@@ -284,7 +288,10 @@ a1.plot([2032, 2038], [geodetic_mb_dmdtda, geodetic_mb_dmdtda], label='Geodetic 
 a1.fill_between([2032, 2038], oggm_dmdtda - geodetic_mb_dmdtda_err, oggm_dmdtda + geodetic_mb_dmdtda_err, color='C0',
                 alpha=0.1, zorder=0,
                 label='Geodetic Uncertainty [Hugonnet21]')
+
 a1.text(2032, oggm_dmdtda[-1] + 0.03, f'{geodetic_mb_dmdtda:.4f}', color='C0', zorder=10)
+
+
 
 # plot glaciological
 avg_mass_loss = moving_average(specific_mass_balances, len(time) * 2)
@@ -292,6 +299,7 @@ glamos_loss = avg_mass_loss[:1] * len(time)
 
 a1.plot(time, glamos_loss, label='Glaciological Mean [GLAMOS]', color='black')
 a1.plot(time, specific_mass_balances, label='Glaciological Annually [GLAMOS]', color='black', alpha=0.3)
+
 a1.text(time[0], glamos_loss[-1] + 0.03, f'{avg_mass_loss[0]:.4f} ', color='black')
 
 ensemble_mean_list = [mean_mb] * len(time20)

@@ -18,9 +18,6 @@ from pathlib import Path
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-# np.random.seed(1233)
-#np.random.seed(37)
-
 
 class DataAssimilation:
     def __init__(self, params):

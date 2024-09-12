@@ -2,7 +2,7 @@
   "synthetic": false,
   "visualise": false,
 
-  "covered_area": 1,
+  "covered_area": 10,
   "ensemble_size": 50,
 
   "initial_estimate": [3300, 0.005, 0.005],
@@ -20,5 +20,5 @@
   "geology_file": "Inversion/Rhone/geology-optimized.nc",
   "output_dir": "Experiments/Rhone/",
 
-  "seed": 111
+  "seed": 325
 }

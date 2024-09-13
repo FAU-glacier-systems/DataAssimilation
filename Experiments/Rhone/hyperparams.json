@@ -20,5 +20,5 @@
   "geology_file": "Inversion/Rhone/geology-optimized.nc",
   "output_dir": "Experiments/Rhone/",
 
-  "seed": 325
+  "seed": 326
 }

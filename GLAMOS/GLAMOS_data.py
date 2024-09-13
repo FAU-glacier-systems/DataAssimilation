@@ -49,13 +49,25 @@ def extract_ela_gradients(group_df):
 def compute_specific_mass_balance(group_df):
     mb = np.array(group_df['annual mass balance']).astype(float)
     area = np.array(group_df['area of elevation bin']).astype(float)
-
+    print("glamos area:",np.sum(area))
     # mass balance in m/yr
     mass_balance_bin = mb / 1000 * area
     specific_mass_balance = np.sum(mass_balance_bin) / np.sum(area)
 
     return specific_mass_balance
 
+
+def compute_specific_mass_balance_from_ela_single(ela, gradabl, gradacc, usurf, thk):
+    maxacc = 100
+
+    thk = np.array(thk)
+    smb = usurf - ela
+    smb *= np.where(np.less(smb, 0), gradabl, gradacc)
+    smb = np.clip(smb, -100, maxacc)
+    smb = np.where((smb < 0) | (thk > 1), smb, -10)
+    mb = np.sum(smb[thk > 1]) / np.sum(thk > 1)
+
+    return mb
 
 def compute_specific_mass_balance_from_ela(ela, gradabl, gradacc, usurf, thkse):
     maxacc = 100
@@ -66,11 +78,12 @@ def compute_specific_mass_balance_from_ela(ela, gradabl, gradacc, usurf, thkse):
         smb *= np.where(np.less(smb, 0), gradabl, gradacc)
         smb = np.clip(smb, -100, maxacc)
         smb = np.where((smb < 0) | (thk > 1), smb, -10)
-        print( np.sum(thk > 1))
         mb.append(np.sum(smb[thk > 1]) / np.sum(thk > 1))
+        print("hugonnet area: ", np.sum(np.sum(thk>1)))
 
 
     return np.mean(mb)
+
 
 
 def moving_average(data, window_size):
@@ -202,10 +215,10 @@ grad_abl = []
 grad_acc = []
 specific_mass_balances = []
 time = []
-for start_date, group_df in rhone_glacier_group:
+for i, (start_date, group_df) in enumerate(rhone_glacier_group):
     ela, gradient_ablation, gradient_accumulation = extract_ela_gradients(group_df)
-    #specific_mass_balance = compute_specific_mass_balance(group_df)
-    specific_mass_balance = compute_specific_mass_balance_from_ela(ela, gradient_ablation, gradient_accumulation, usurf, thk)
+    specific_mass_balance = compute_specific_mass_balance(group_df)
+    specific_mass_balance = compute_specific_mass_balance_from_ela_single(ela, gradient_ablation, gradient_accumulation, usurf[7+i], thk[7+i])
 
     specific_mass_balances.append(specific_mass_balance)
     ELA.append(ela)

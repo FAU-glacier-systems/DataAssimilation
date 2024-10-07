@@ -50,7 +50,7 @@ cbar = fig.colorbar(img)
 cbar.ax.invert_yaxis()
 cbar.ax.set_ylabel('Thickness (m)', rotation=90)
 
-ax[2].set_title("Optimized Thickness ")
+ax[2].set_title("Optimised Thickness ")
 
 slidingco_iter = slidingco
 slidingco_iter[icemask < 0.01] = None
@@ -58,7 +58,7 @@ img = ax[3].imshow(slidingco_iter, zorder=2)
 cbar = fig.colorbar(img)
 cbar.ax.set_ylabel('Sliding Co. (MPa a$^{3}$ m$^{-3}$)', rotation=90)
 
-ax[3].set_title("Optimized Sliding Co.")
+ax[3].set_title("Optimised Sliding Co.")
 
 
 def formatter(x, pos):

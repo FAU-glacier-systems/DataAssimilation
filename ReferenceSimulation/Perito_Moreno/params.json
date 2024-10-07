@@ -1,0 +1,28 @@
+{
+  "modules_preproc": ["load_ncdf"],
+  "modules_process": ["smb_simple",
+                      "iceflow",
+                      "time",
+                      "thk"
+  ],
+  "modules_postproc": ["print_info",
+                       "write_ncdf", "anim_plotly"],
+
+  "lncd_input_file": "../../Inversion/Perito_Moreno/geology-optimized.nc",
+  "iflo_emulator": "../../Inversion/Perito_Moreno/iceflow-model",
+
+
+  "smb_simple_array": [
+                        ["time", "gradabl", "gradacc", "ela", "accmax"],
+                           [2000, 0.009, 0.005, 500, 100],
+                            [2020, 0.009, 0.005, 500, 100]
+                      ],
+  "wncd_output_file" : "output.nc",
+
+  "time_start": 2000.0,
+  "time_end": 2020.0,
+  "time_save": 1,
+  "iflo_retrain_emulator_freq": 0,
+
+  "wncd_vars_to_save": ["topg", "thk", "smb", "velsurf_mag", "arrhenius", "slidingco", "icemask", "usurf"]
+}

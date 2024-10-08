@@ -3,14 +3,14 @@
   "visualise": true,
 
   "covered_area": 10,
-  "ensemble_size": 25,
+  "ensemble_size": 50,
 
-  "initial_estimate": [500, 0.005, 0.005],
+  "initial_estimate": [1000, 0.005, 0.005],
   "initial_spread": [[1e5, 0, 0],[0,1e-4,0],[0,0,1e-4]],
 
   "process_noise" : 0,
 
-  "time_interval": 2,
+  "time_interval": 10,
   "num_iterations": 5,
 
   "observations_file": "Hugonnet/Perito_Moreno/observations.nc",

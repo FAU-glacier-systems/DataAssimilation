@@ -317,7 +317,7 @@ class EnsembleKalmanFilter(object):
         devices = tf.config.list_physical_devices('GPU')
 
         if devices:
-            #if True:
+        #if True:
             print("GPU is available.")
             for i, s in enumerate(self.sigmas):
                 member = ensemble_members[i]

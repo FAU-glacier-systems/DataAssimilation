@@ -3,7 +3,7 @@ import numpy as np
 from scipy.ndimage import zoom
 
 # Load the NetCDF file
-file_path = 'Rhone/input_saved.nc'
+file_path = 'Perito_Moreno/input_saved.nc'
 ds = xr.open_dataset(file_path)
 
 
@@ -49,5 +49,5 @@ downscaled_ds = xr.Dataset(
 )
 
 # Save the downscaled dataset to a new NetCDF file
-downscaled_file_path = 'Rhone/downscaled_file.nc'
+downscaled_file_path = 'Perito_Moreno/downscaled_file.nc'
 downscaled_ds.to_netcdf(downscaled_file_path)

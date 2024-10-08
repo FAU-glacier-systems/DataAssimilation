@@ -215,7 +215,9 @@ class DataAssimilation:
 
                 if visualise:
                     self.monitor_instance.plot(iteration, self.KalmanFilter.year, self.KalmanFilter.sigmas, self.ensemble_members)
-                    self.monitor_instance.reset()
+
+            if visualise:
+                self.monitor_instance.reset()
 
             estimates.append(copy.copy(self.KalmanFilter.sigmas))
 

@@ -3,6 +3,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
+from matplotlib.ticker import MaxNLocator
 
 
 
@@ -41,7 +42,8 @@ class Monitor:
         except:
             self.smb_std = [0,0,0,0,0]
 
-        self.year_range = np.array(self.observed_glacier['time'])[::self.time_interval]
+        self.year_range = np.array(self.observed_glacier['time'])[::self.time_interval].astype(int)
+
         self.start_year = self.year_range[0]
         self.year_range_repeat = np.repeat(self.year_range, 2)[1:]
 
@@ -59,7 +61,6 @@ class Monitor:
             self.observation_uncertainty = params['observation_uncertainty']
         else:
             self.observation_uncertainty = np.mean(np.array(observed_glacier['obs_error'][1])[self.icemask==1])
-            print(self.observation_uncertainty)
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
@@ -284,13 +285,18 @@ class Monitor:
                       np.array(self.hist_state_x)[:, 0], label='Ensemble Kalman Filter',
                       color=colorscale(2), marker='o', markersize=10, markevery=[-1], linewidth=2, zorder=4)
 
+
         ax[1, 0].plot([self.smb[1][0], self.smb[-1][0]], [self.smb[1][3], self.smb[-1][3]], label='Hidden Parameter',
                       color=colorscale(9),
                       linewidth=3, linestyle='-.', zorder=3)
 
         # ax[1, 1].set_ylim(2000, 4500)
+        ax[1, 0].set_xlim(self.year_range[0], self.year_range[-1])
+        #ax[1, 0].set_xticks(self.year_range)
+
+        ax[1, 0].xaxis.set_major_locator(MaxNLocator(integer=True))
+
         ax[1, 0].set_xlabel('$year$')
-        ax[1, 0].set_xticks(self.year_range)
         ax[1, 0].margins(x=0)
         # ax[1, 1].yaxis.set_label_position("right")
         ax[1, 0].set_title('[$m$]', loc='left')
@@ -313,7 +319,8 @@ class Monitor:
                       color=colorscale(9), linewidth=3, linestyle='-.', zorder=3)
 
         # ax[1, 2].set_ylim(0, 0.03)
-        ax[1, 1].set_xticks(self.year_range)
+        ax[1, 1].set_xlim(self.year_range[0], self.year_range[-1])
+        ax[1, 1].xaxis.set_major_locator(MaxNLocator(integer=True))
         ax[1, 1].set_xlabel('$year$')
         # ax[1, 2].yaxis.set_label_position("right")
         ax[1, 1].set_title('[$m/yr/m$]', loc='left')
@@ -336,7 +343,8 @@ class Monitor:
 
         # ax[1, 3].set_ylim(0, 0.03)
         ax[1, 2].set_xticks(self.year_range)
-        ax[1, 2].set_xlabel('$year$')
+        ax[1, 2].set_xlim(self.year_range[0], self.year_range[-1])
+        ax[1, 2].xaxis.set_major_locator(MaxNLocator(integer=True))
         # ax[1, 3].yaxis.set_label_position("right")
         ax[1, 2].set_title('[$m/yr/m$]', loc='left')
         # ax[1, 3].yaxis.tick_right()
@@ -350,8 +358,10 @@ class Monitor:
         ax_obs_usurf.set_title(f'Surface Elevation in {int(year)}')
 
         observations = self.observations[year_index]
+        dhdt = (self.observations[-1] - self.observations[0]) / 20
+        dhdt[self.icemask == 0] = None
 
-        usurf_im = ax_obs_usurf.imshow(observations,  cmap='RdBu', vmin=-10, vmax=10,  origin='lower')
+        usurf_im = ax_obs_usurf.imshow(dhdt,  cmap='RdBu', vmin=-10, vmax=10,  origin='lower')
 
         # observation_glacier = copy.copy(observations)
         # observation_glacier[self.icemask==0] = None
@@ -499,6 +509,7 @@ class Monitor:
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
             plt.savefig(self.monitor_dir + f'report_{iteration}_{year}_update.png', format='png', dpi=300)
+            plt.savefig(self.monitor_dir + 'monitor.png', format='png', dpi=300)
             pass
         else:
             #plt.savefig(self.monitor_dir + 'report%i_predict.png' % year, format='png', dpi=300)
@@ -593,12 +604,13 @@ class Monitor:
         if self.synthetic:
             ax_ela.plot(iterations_total, [self.smb[-1][3]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Reference Run', zorder=5)
-        else:
+        elif self.smb[-1][3] is not None:
             ax_ela.plot(iterations_total, [self.smb[-1][3]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
             ax_ela.fill_between(iterations_total,[self.smb[-1][3]-self.smb_std[3]]*len(iterations_total),
                                [self.smb[-1][3]+self.smb_std[3]]*len(iterations_total), color=colorscale(9), alpha=0.2,
                                 label='Variance [GLAMOS]'                                )
+
         ax_ela.plot(iterations, estimates[:, :, 0], color='gold', zorder=1, linestyle='-',
                     marker='o', label='Ensemble Member',
                     markevery=[-1])

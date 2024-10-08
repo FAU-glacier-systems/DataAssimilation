@@ -3,7 +3,7 @@
   "modules_process": [],
   "modules_postproc": [],
 
-  "lncd_input_file": "../../OGGM_shop/Perito_Moreno/input_saved.nc",
+  "lncd_input_file": "../../OGGM_shop/Perito_Moreno/downscaled_file.nc",
 
   "opti_control": ["thk", "usurf","slidingco"],
   "opti_cost": ["velsurf","icemask", "usurf", "divfluxfcz"],

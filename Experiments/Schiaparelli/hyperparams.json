@@ -1,0 +1,23 @@
+{
+  "synthetic": false,
+  "visualise": true,
+
+  "covered_area": 10,
+  "ensemble_size": 16,
+
+
+  "initial_estimate": [700, 0.02, 0.002],
+  "initial_spread": [[1e5, 0, 0],[0,1e-4,0],[0,0,1e-4]],
+
+
+  "process_noise" : 1,
+
+  "time_interval": 20,
+  "num_iterations": 5,
+
+  "observations_file": "Hugonnet/observations.nc",
+  "geology_file": "Inversion/geology-optimized.nc",
+  "output_dir": "Experiments/Schiaparelli/",
+
+  "seed": 350
+}

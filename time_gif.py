@@ -15,97 +15,19 @@ from types import SimpleNamespace
 import xarray as xr
 
 
-# read output.nc
-ds = xr.open_dataset('ReferenceSimulation/output.nc', engine="netcdf4")
+
 if not os.path.exists('Plots/3D/'):
     os.mkdir('Plots/3D/')
 
-
-
-import matplotlib.cm as cm  # Import the Matplotlib colormap library
-
-# create HTML layout for app
-fig = go.Figure()
-app = Dash(__name__)
-app.layout = html.Div(
-    [
-        html.Div(
-            [
-                # dropdown menu for property
-                html.Div(
-                    children=[
-                        dcc.Dropdown(
-                            ["thickness [m]", "velocity [m/a]", "SMB [m]", "surface elevation [m]"],
-                            "thickness [m]",
-                            id="property",
-                        )
-                    ],
-                    style={"margin-bottom": "10px"},
-                ),
-                # slider for camera-position in x-y-plane
-                html.Div(
-                    dcc.Slider(
-                        id="camera_angle",
-                        step=9,
-                        value=45,
-                        min=0,
-                        max=180,
-                        marks=None,
-                        drag_value=45,
-                        included=False,
-                    )
-                ),
-                # 3D surface plot
-                dcc.Graph(id="mnt_surface", figure=fig),
-            ],
-            style={"width": "95%", "height": "800px", "display": "inline-block"},
-        ),
-        # slider for camera-position on z-axis
-        html.Div(
-            children=[
-                dcc.Slider(
-                    id="camera_height",
-                    step=0.2,
-                    value=1.5,
-                    min=0,
-                    max=2,
-                    vertical=True,
-                    drag_value=1.5,
-                    marks=None,
-                    verticalHeight=600,
-                    included=False,
-                )
-            ],
-            style={
-                "width": "5%",
-                "display": "inline-block",
-                "text_align": "center",
-            },
-        ),
-    ],
-    style={
-        "font-family": "monospace",
-        "font-size": "x-large",
-    },
-)
-
-
-### update graph everytime an input is changed
-@app.callback(
-    Output("mnt_surface", "figure"),
-    Input("property", "value"),
-    Input("camera_angle", "drag_value"),
-    Input("camera_height", "drag_value"),
-)
 def updata_graph(property, camera_angle, camera_height, year_iterate):
     # load params
-    path_to_json_saved = "params_saved.json"
+    path_to_json_saved = "ReferenceSimulation/params_saved.json"
     with open(path_to_json_saved, "r") as json_file:
         json_text = json_file.read()
     params = json.loads(json_text, object_hook=lambda d: SimpleNamespace(**d))
 
     # read output.nc
-    ds = xr.open_dataset(params.wncd_output_file, engine="netcdf4")
+    ds = xr.open_dataset('ReferenceSimulation/'+params.wncd_output_file, engine="netcdf4")
 
     # get attributes from ds
 
@@ -122,29 +44,12 @@ def updata_graph(property, camera_angle, camera_height, year_iterate):
         bedrock = glacier_surfaces[0] - thicknesses[0]
 
     # choose property that is displayed on the glacier surface
-    if property == "thickness [m]":
-        property_maps = thicknesses
-        color_scale = "Blues"
-        max_property_map = np.max(property_maps)
-        min_property_map = np.min(property_maps)
-    elif property == "velocity [m/a]":
-        property_maps = velocities
-        color_scale = "magma"
-        max_property_map = np.max(property_maps)
-        min_property_map = np.min(property_maps)
-    elif property == "SMB [m]":
-        property_maps = smbs
-        color_scale = "rdbu"
-        max_property_map = np.max(property_maps)
-        min_property_map = np.min(property_maps)
-        max_dis = np.max([abs(max_property_map), abs(min_property_map)])
-        max_property_map = max_dis
-        min_property_map = -max_dis
-    elif property == "surface elevation [m]":
-        property_maps = glacier_surfaces
-        max_property_map = np.max(property_maps)
-        min_property_map = np.min(property_maps)
-        color_scale = "Blues_r"
+
+    property_maps = thicknesses
+    color_scale = "Blues"
+    max_property_map = np.max(property_maps)
+    min_property_map = np.min(property_maps)
+
 
     # make edges equal so that it looks like a volume
     max_bedrock = np.max(bedrock)
@@ -155,15 +60,7 @@ def updata_graph(property, camera_angle, camera_height, year_iterate):
     bedrock_border[:, 0] = min_bedrock
     bedrock_border[:, -1] = min_bedrock
 
-    # aim to mimic the matplotlib terrain
-    custom_colorscale = [
-        [0.0, "rgb(224,205,169)"],
-        [0.2, "rgb(180,170,150)"],
-        [0.4, "rgb(135,135,135)"],
-        [0.6, "rgb(130,90,50)"],
-        [0.8, "rgb(120,80,40)"],
-        [1.0, "rgb(100,70,30)"],
-    ]
+
 
     # create time frames for slider
 
@@ -280,14 +177,12 @@ def updata_graph(property, camera_angle, camera_height, year_iterate):
         ),
     )
     # create figure
-
-
     fig = go.Figure(fig_dict)
     fig.update_traces(showscale=False)
     fig.update_layout(title={'text': str(year_iterate), 'font': {'size': 50}, 'x': 0.5, 'y': 0.9})
 
     fig.write_image(f"Plots/3D/glacier_surface_{year}.png", width=1500, height=1200, scale=0.75)
 
-for year in np.arange(2000, 2101)[:]:
+for year in np.arange(2000, 2021)[:]:
     print(year)
     updata_graph("surface elevation [m]", year-2000, 1.5, year)

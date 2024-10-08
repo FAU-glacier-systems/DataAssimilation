@@ -31,6 +31,7 @@ from filterpy.common import pretty_str, outer_product_sum
 from concurrent.futures import ThreadPoolExecutor
 import tensorflow as tf
 
+
 class EnsembleKalmanFilter(object):
     """
     This implements the ensemble Kalman filter (EnKF). The EnKF uses
@@ -158,7 +159,7 @@ class EnsembleKalmanFilter(object):
       Dynamic Systems. CRC Press, second edition. 2012. pp, 257-9.
     """
 
-    def __init__(self, x, P, dim_z, dt, N, hx, fx, start_year):
+    def __init__(self, x, P, dim_z, dt, N, start_year):
         if dim_z <= 0:
             raise ValueError('dim_z must be greater than zero')
 
@@ -170,8 +171,8 @@ class EnsembleKalmanFilter(object):
         self.dim_z = dim_z
         self.dt = dt
         self.N = N
-        self.hx = hx
-        self.fx = fx
+        #self.hx = hx
+        #self.fx = fx
         self.K = zeros((dim_x, dim_z))
         self.z = array([[None] * self.dim_z]).T
         self.S = zeros((dim_z, dim_z))  # system uncertainty
@@ -208,7 +209,7 @@ class EnsembleKalmanFilter(object):
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
         print("Initialize ensemble")
-        # self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
+        self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
         for i in range(self.N):
             sigma = copy.copy(x)
@@ -233,7 +234,7 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update(self, z, e_r, R=None):
+    def update(self, z, ensemble_members, observation_points, e_r, R=None, ):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -265,8 +266,8 @@ class EnsembleKalmanFilter(object):
         sigmas_h = zeros((N, dim_z))
 
         # transform sigma points into measurement space
-        for i in range(N):
-            sigmas_h[i] = self.hx(self.sigmas[i], i)
+        for i, member in enumerate(ensemble_members):
+            sigmas_h[i] = member.observe(observation_points)
 
         z_mean = np.mean(sigmas_h, axis=0)
 
@@ -292,14 +293,20 @@ class EnsembleKalmanFilter(object):
             self.sigmas[i] = abs(self.sigmas[i])
 
         self.x = np.mean(self.sigmas, axis=0)
-        self.P = self.P - dot(dot(self.K, self.S), self.K.T)
+
+        ### INFLATION ###
+
+        self.P = outer_product_sum(self.sigmas - self.x) / (N - 1)
+        #self.P = self.P - dot(dot(self.K, self.S), self.K.T)
+
+
 
         # save measurement and posterior state
         self.z = deepcopy(z)
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def predict(self):
+    def predict(self, ensemble_members):
         """ Predict next position. """
 
         N = self.N
@@ -307,37 +314,34 @@ class EnsembleKalmanFilter(object):
         dt = self.dt
         year = int(self.year)
 
-
-
-
-
         devices = tf.config.list_physical_devices('GPU')
 
         if devices:
+        #if True:
             print("GPU is available.")
             for i, s in enumerate(self.sigmas):
-                self.sigmas[i] = self.fx(s, self.dt, i, int(self.year))
+                member = ensemble_members[i]
+                self.sigmas[i] = member.forward(s, self.dt)
 
         else:
             print("No GPU found.")
 
-            def task(s, dt, i, year):
-                self.fx(s, dt, i, year)
+            def task(member, s, dt):
+                member.forward(s, dt)
 
             # Create a thread pool
             with ThreadPoolExecutor() as executor:
                 # Submit tasks to the thread pool
-                futures = [executor.submit(task, s, dt, i, year) for i, s in enumerate(self.sigmas)]
+                futures = [executor.submit(task, ensemble_members[i], s, dt) for i, s in enumerate(self.sigmas)]
 
                 # Wait for all tasks to complete
                 for future in futures:
-                    future.result(timeout=120)
+                    future.result(timeout=3600)
 
             #for i, s in enumerate(self.sigmas):
             #    task(s, dt, i, year)
 
-
-
+        # forward SMB parameters
         e = multivariate_normal(self._mean, self.Q, N)
         self.sigmas += e
 
@@ -347,7 +351,6 @@ class EnsembleKalmanFilter(object):
         # save prior
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
-
 
     def __repr__(self):
         return '\n'.join([

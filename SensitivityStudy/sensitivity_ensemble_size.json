@@ -1,0 +1,6 @@
+{
+"hyperparameter_range" : {
+        "ensemble_size": [3, 5, 10, 25, 50, 100]
+    }
+}
+

@@ -1,0 +1,5 @@
+{
+  "inversion_file": "../../Inversion/Rhone/geology-optimized.nc",
+  "RGI_ID": "RGI60-11.01238",
+  "output_file": "observations.nc"
+}

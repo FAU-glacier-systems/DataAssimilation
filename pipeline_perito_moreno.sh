@@ -2,8 +2,8 @@
 #SBATCH --nodes=1
 #SBATCH --time=24:00:00
 #SBATCH --job-name=igm
-#module load python
-#conda activate igm_p3.11
+module load python
+conda activate igm_p3.11
 
 
 # 0. Download data

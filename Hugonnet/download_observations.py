@@ -6,10 +6,10 @@ import json
 
 def download_observations(params):
     # File paths
-    inversion_file = params['inversion_file']
+    oggm_shop_file = params['oggm_shop_file']
 
     # Open datasetsmer
-    inversion_ds = Dataset(inversion_file, 'r')
+    oggm_shop_ds = Dataset(oggm_shop_file, 'r')
 
     # Geodetic mass balance data
     geodetic_mb = utils.get_geodetic_mb_dataframe()
@@ -19,17 +19,14 @@ def download_observations(params):
 
     # Convert mass to volume
     geodetic_mb_dmdtda_err /= 0.907
-    dhdt_err = np.array(inversion_ds.variables['icemask'][:]) * geodetic_mb_dmdtda_err
+    dhdt_err = np.array(oggm_shop_ds.variables['icemask'][:]) * geodetic_mb_dmdtda_err
 
-    # Define the source and target CRS
-    ulx, lrx = int(inversion_ds.variables['x'][0]), int(inversion_ds.variables['x'][-1])
-    uly, lry = int(inversion_ds.variables['y'][0]), int(inversion_ds.variables['y'][-1])
 
-    dhdt = np.array(inversion_ds.variables['dhdt'][:])
+    dhdt = np.array(oggm_shop_ds.variables['dhdt'][:])
 
     time_range = np.arange(2000, 2021).astype(float)
-    usurf_2000 = inversion_ds.variables['usurf'][:]
-    thk_2000 = inversion_ds.variables['thk'][:]
+    usurf_2000 = oggm_shop_ds.variables['usurf'][:]
+    thk_2000 = oggm_shop_ds.variables['thk'][:]
     usurf_change = []
     thk_change = []
     dhdt_errors = []
@@ -53,20 +50,20 @@ def download_observations(params):
     error_variable = np.array(dhdt_errors)
 
     topg_data = np.array([bedrock] * year_range)
-    icemask_data = np.array([inversion_ds.variables['icemask'][:]] * year_range)
+    icemask_data = np.array([oggm_shop_ds.variables['icemask'][:]] * year_range)
 
     smb = np.zeros_like(dhdt)
     smb_data = np.array([smb] * year_range)
 
-    velo = inversion_ds.variables['velsurfobs_mag'][:]
+    velo = oggm_shop_ds.variables['velsurfobs_mag'][:]
     velo_data = np.array([velo] * year_range)
 
     # Create a new netCDF file
     with Dataset(params['output_file'], 'w') as merged_ds:
         # Create dimensions
         merged_ds.createDimension('time', len(time_range))
-        merged_ds.createDimension('x', inversion_ds.dimensions['x'].size)
-        merged_ds.createDimension('y', inversion_ds.dimensions['y'].size)
+        merged_ds.createDimension('x', oggm_shop_ds.dimensions['x'].size)
+        merged_ds.createDimension('y', oggm_shop_ds.dimensions['y'].size)
 
         # Create variables
         time_var = merged_ds.createVariable('time', 'f4', ('time',))
@@ -83,8 +80,8 @@ def download_observations(params):
 
         # Assign data to variables
         time_var[:] = time_range
-        x_var[:] = inversion_ds.variables['x'][:]
-        y_var[:] = inversion_ds.variables['y'][:]
+        x_var[:] = oggm_shop_ds.variables['x'][:]
+        y_var[:] = oggm_shop_ds.variables['y'][:]
         thk_var[:] = thk_change
         usurf_var[:] = usurf_change
         topg_var[:] = topg_data

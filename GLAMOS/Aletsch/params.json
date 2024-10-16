@@ -1,0 +1,8 @@
+{
+  "file_path_hugonnet": "../Hugonnet/Aletsch/observations.nc",
+  "RGI6-ID": "RGI60-11.01450",
+  "glacier_name": "Grosser Aletschgletscher",
+  "results_file": "../Experiments/Aletsch/result_seed_12.json",
+  "ablation_density": 0.91,
+  "accumulation_density": 0.55
+}

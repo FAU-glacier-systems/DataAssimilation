@@ -714,7 +714,7 @@ class Monitor:
         def formatter(x, pos):
             del pos
             return str(int(x * self.res / 1000))
-        ax_obs_usurf.xaxis.set_ticks([0, 20, 40, 60])
+        #ax_obs_usurf.xaxis.set_ticks([0, 20, 40, 60])
         ax_obs_usurf.xaxis.set_major_formatter(formatter)
         ax_obs_usurf.yaxis.set_major_formatter(formatter)
         ax_obs_usurf.set_xticklabels([])
@@ -753,7 +753,7 @@ class Monitor:
         plt.setp(ax_smb.spines.values(), color=colorscale(2))
         for axis in ['top', 'bottom', 'left', 'right']:
             ax_smb.spines[axis].set_linewidth(3)
-        ax_smb.xaxis.set_ticks([0, 20, 40, 60])
+        #ax_smb.xaxis.set_ticks([0, 20, 40, 60])
         ax_smb.xaxis.set_major_formatter(formatter)
         ax_smb.yaxis.set_major_formatter(formatter)
         ax_smb.set_xlabel('km')

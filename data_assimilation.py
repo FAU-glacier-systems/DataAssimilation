@@ -134,7 +134,7 @@ class DataAssimilation:
         observation_points = list(result)
         """
 
-        random_state = np.random.RandomState(seed=42)
+        random_state = np.random.RandomState(seed=self.seed)
         observation_index = random_state.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
 

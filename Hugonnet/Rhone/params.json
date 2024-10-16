@@ -1,5 +1,5 @@
 {
-  "inversion_file": "../../OGGM_shop/Rhone/geology-optimized.nc",
+  "oggm_shop_file": "../OGGM_shop/Rhone/input_saved.nc",
   "RGI_ID": "RGI60-11.01238",
-  "output_file": "observations.nc"
+  "output_file": "Rhone/observations.nc"
 }

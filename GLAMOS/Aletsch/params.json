@@ -3,6 +3,7 @@
   "RGI6-ID": "RGI60-11.01450",
   "glacier_name": "Grosser Aletschgletscher",
   "results_file": "../Experiments/Aletsch/result_seed_12.json",
+  "output_dir": "Aletsch/",
   "ablation_density": 0.91,
   "accumulation_density": 0.55
 }

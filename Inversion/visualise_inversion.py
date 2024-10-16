@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #output_file = '../ReferenceSimulation/output.nc'
-optimized_file = 'Aletsch/geology-optimized.nc'
-figure_path = "Aletsch/inversion_result"
+optimized_file = 'Rhone/geology-optimized.nc'
+figure_path = "Rhone/inversion_result"
 
 #ds = xr.open_dataset(output_file)
 ds_optimized = xr.open_dataset(optimized_file)
@@ -20,7 +20,7 @@ thickness = np.array(ds_optimized["thk"])
 
 velocity_obs = np.array(ds_optimized["velsurfobs_mag"])
 
-fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+fig, ax = plt.subplots(1, 4, figsize=(14, 4))
 plt.subplots_adjust(left=0, bottom=0.05, right=0.95, top=0.95, wspace=0.1, hspace=0.1)
 
 for i in range(4):
@@ -54,11 +54,11 @@ cbar = fig.colorbar(img)
 cbar.ax.set_ylabel('Sliding Co. (MPa a$^{3}$ m$^{-3}$)', rotation=90)
 
 ax[3].set_title("Optimised Sliding Co.")
-
+resolution = ds_optimized.x[1].data-ds_optimized.x[0].data
 
 def formatter(x, pos):
     del pos
-    return str(int(x * 100 / 1000))
+    return str(int(x * resolution / 1000))
 
 for i in range(4):
     ax[i].invert_yaxis()

@@ -3,6 +3,8 @@ from netCDF4 import Dataset
 import numpy as np
 import argparse
 import json
+import numpy.ma as ma
+
 
 def download_observations(params):
     # File paths
@@ -26,7 +28,7 @@ def download_observations(params):
 
     time_range = np.arange(2000, 2021).astype(float)
     usurf_2000 = oggm_shop_ds.variables['usurf'][:]
-    thk_2000 = oggm_shop_ds.variables['thk'][:]
+    thk_2000 = oggm_shop_ds.variables['thkinit'][:]
     usurf_change = []
     thk_change = []
     dhdt_errors = []
@@ -55,7 +57,10 @@ def download_observations(params):
     smb = np.zeros_like(dhdt)
     smb_data = np.array([smb] * year_range)
 
-    velo = oggm_shop_ds.variables['velsurfobs_mag'][:]
+    uvelo = oggm_shop_ds.variables['uvelsurfobs'][:]
+    vvelo = oggm_shop_ds.variables['vvelsurfobs'][:]
+    velo = ma.sqrt(uvelo ** 2 + vvelo ** 2)
+
     velo_data = np.array([velo] * year_range)
 
     # Create a new netCDF file

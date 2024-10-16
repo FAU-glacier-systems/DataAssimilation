@@ -6,7 +6,7 @@
                       "thk"
   ],
   "modules_postproc": ["print_info",
-                       "write_ncdf", "anim_plotly"],
+                       "write_ncdf"],
 
   "lncd_input_file": "../../Inversion/Perito_Moreno/geology-optimized.nc",
   "iflo_emulator": "../../Inversion/Perito_Moreno/iceflow-model",
@@ -18,7 +18,9 @@
                             [2020, 0.009, 0.005, 500, 100]
                       ],
   "wncd_output_file" : "output.nc",
-
+  "logging": true,
+  "logging_level": 30,
+  "logging_file": "logging.txt",
   "time_start": 2000.0,
   "time_end": 2020.0,
   "time_save": 1,

@@ -509,7 +509,6 @@ class Monitor:
         plt.subplots_adjust(left=0.02, right=0.98, top=0.90, bottom=0.05)
         if len(self.hist_state_x) % 2 == 1:
             plt.savefig(self.monitor_dir + f'report_{iteration}_{year}_update.png', format='png', dpi=300)
-            plt.savefig(self.monitor_dir + 'monitor.png', format='png', dpi=300)
             pass
         else:
             #plt.savefig(self.monitor_dir + 'report%i_predict.png' % year, format='png', dpi=300)
@@ -626,7 +625,7 @@ class Monitor:
             ax_abl.plot(iterations_total, [self.smb[-1][1]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Reference Run', zorder=5)
 
-        else:
+        elif self.smb[-1][1] is not None:
             ax_abl.plot(iterations_total, [self.smb[-1][1]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
             ax_abl.fill_between(iterations_total, [self.smb[-1][1]-self.smb_std[1]] * len(iterations_total),
@@ -650,7 +649,8 @@ class Monitor:
         if self.synthetic:
             ax_acc.plot(iterations_total, [self.smb[-1][2]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Reference Run', zorder=5)
-        else:
+
+        elif self.smb[-1][2] is not None:
             ax_acc.plot(iterations_total, [self.smb[-1][2]] * len(iterations_total), color=colorscale(9), linewidth=3,
                         linestyle='-.', label='Glaciological Mean [GLAMOS]', zorder=5)
             ax_acc.fill_between(iterations_total, [self.smb[-1][2]-self.smb_std[2]] * len(iterations_total),
@@ -785,3 +785,4 @@ class Monitor:
 
         fig.subplots_adjust(top=0.92, bottom=0.15)
         plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_{len(estimates)}.pdf', format='pdf', dpi=300)
+        plt.savefig(self.monitor_dir + 'monitor.png', format='png', dpi=300)

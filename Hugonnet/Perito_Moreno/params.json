@@ -1,5 +1,5 @@
 {
-  "inversion_file": "../../Inversion/Perito_Moreno/geology-optimized.nc",
+  "inversion_file": "../Inversion/Perito_Moreno/geology-optimized.nc",
   "RGI_ID": "RGI60-17.00312",
-  "output_file": "observations.nc"
+  "output_file": "Perito_Moreno/observations.nc"
 }

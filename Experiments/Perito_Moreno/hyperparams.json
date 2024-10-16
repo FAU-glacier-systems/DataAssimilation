@@ -1,6 +1,6 @@
 {
   "synthetic": false,
-  "visualise": true,
+  "visualise": false,
 
   "covered_area": 10,
   "ensemble_size": 50,
@@ -10,7 +10,7 @@
 
   "process_noise" : 0,
 
-  "time_interval": 10,
+  "time_interval": 20,
   "num_iterations": 5,
 
   "observations_file": "Hugonnet/Perito_Moreno/observations.nc",

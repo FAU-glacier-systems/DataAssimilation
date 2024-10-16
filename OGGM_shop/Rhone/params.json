@@ -1,11 +1,14 @@
 {
-  "modules_preproc": ["oggm_shop"],
+  "modules_preproc": [
+    "oggm_shop"
+  ],
   "modules_process": [],
   "modules_postproc": [],
-
-  "oggm_RGI_ID": "RGI2000-v7.0-G-11-01706",
   "oggm_RGI_version": 7,
+  "oggm_RGI_product": "G",
+  "oggm_thk_source": "millan_ice_thickness",
+  "oggm_incl_glathida": true,
   "oggm_preprocess": false,
-  "oggm_dx": 100,
-  "oggm_incl_glathida": true
+  "oggm_dx": 50,
+  "oggm_RGI_ID": "RGI2000-v7.0-G-11-01706"
 }

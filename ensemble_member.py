@@ -46,8 +46,7 @@ class EnsembleMember:
         input_file = self.member_dir / "input.nc"
         shutil.copy2(self.member_dir / "geology-optimized.nc", input_file)
         try:
-            with Dataset(input_file, 'a') as ds:
-
+            with Dataset(input_file, 'r') as ds:
                 ds.variables['usurf'] =self.usurf
 
                 thickness = self.usurf - self.bedrock

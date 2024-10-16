@@ -1,22 +1,26 @@
 import argparse
 import shutil
-import subprocess
-import traceback
+
 import time
 import os
 import json
 import copy
 import numpy as np
-from filterpy.kalman import KalmanFilter
+import oggm
+from oggm import utils
+import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from ensemble_member import EnsembleMember
-import matplotlib.pyplot as plt
+
 from monitor import Monitor
 from pathlib import Path
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
+
 
 
 class DataAssimilation:
@@ -91,14 +95,49 @@ class DataAssimilation:
 
         icemask = np.array(geology_glacier['icemask'])
         surface = np.array(geology_glacier['usurf'])
-        bedrock = geology_glacier['topg']
+        thickness = geology_glacier['thk']
 
         gx, gy = np.where(icemask)
         glacier_points = np.array(list(zip(gx, gy)))
         num_sample_points = int((self.covered_area / 100) * np.sum(icemask))
         print('Number of points: {}'.format(num_sample_points))
-        observation_index = np.random.choice(len(glacier_points), num_sample_points, replace=False)
+
+        """
+        # Mask the arrays to only consider glacier pixels
+        masked_elevation = np.where(icemask, surface, np.nan)
+        masked_thickness = np.where(icemask, thickness, np.nan)
+
+        #  Define the bin edges based on the surface elevation range
+        elevation_min = np.nanmin(masked_elevation)
+        elevation_max = np.nanmax(masked_elevation)
+        bins = np.linspace(elevation_min, elevation_max, num_sample_points + 1)
+
+        # Assign each pixel to a bin based on the surface elevation
+        bin_indices = np.digitize(masked_elevation, bins) - 1  # -1 because bins start at 1
+
+        result = []
+    
+        for i in range(num_sample_points):
+            # Get the mask for pixels in the current bin
+            bin_mask = (bin_indices == i)
+            print(i)
+            if np.any(bin_mask):
+                # Find the maximum thickness in this bin
+                max_thickness = np.nanmax(masked_thickness[bin_mask])
+
+                # Get the indices of pixels with this maximum thickness
+                max_indices = np.where((masked_thickness == max_thickness) & bin_mask)
+
+                result.append([max_indices[0][0], max_indices[1][0]])
+
+
+        observation_points = list(result)
+        """
+
+        random_state = np.random.RandomState(seed=42)
+        observation_index = random_state.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
+
 
         def get_pixel_value(point):
             x, y = point
@@ -233,6 +272,7 @@ class DataAssimilation:
         self.params['ensemble_history'] = [[list(s) for s in sigma] for sigma in estimates]
         ensemble_estimates = np.array([list(sigma) for sigma in estimates[-1]])
         self.params['final_mean_estimate']  = list(ensemble_estimates.mean(axis=0))
+        self.params['final_std'] = list(ensemble_estimates.std(axis=0))
         with open(self.output_dir / f"result_seed_{self.seed}.json", 'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
 

@@ -211,7 +211,7 @@ class EnsembleKalmanFilter(object):
         print("Initialize ensemble")
         self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
-        rng = np.random.RandomState(420)
+        rng = np.random.RandomState(413)
         for i in range(self.N):
             sigma = copy.copy(x)
             noise_ela = rng.normal(0, np.sqrt(P[0, 0]))

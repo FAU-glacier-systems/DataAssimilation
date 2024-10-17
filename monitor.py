@@ -369,22 +369,22 @@ class Monitor:
         # observatio_sample = np.full(observations.shape, np.nan)
         # observatio_sample[self.observation_points[:, 0], self.observation_points[:, 1]] = observations[self.observation_points[:, 0], self.observation_points[:, 1],]
         # usurf_im_samp = ax[0, 3].imshow(observatio_sample, cmap='Blues', vmin=1500, vmax=3500, origin='lower')
-        ax_obs_usurf.scatter(self.high_point[1], self.high_point[0],
-                             edgecolors='gray', marker='^', c=None,
-                             facecolors='white', lw=2, s=120, label='Highest Point', zorder=10)
+        #ax_obs_usurf.scatter(self.high_point[1], self.high_point[0],
+        #                     edgecolors='gray', marker='^', c=None,
+        #                     facecolors='white', lw=2, s=120, label='Highest Point', zorder=10)
 
-        ax_obs_usurf.scatter(self.observation_points[:, 1] - 0.5, self.observation_points[:, 0],
-                             edgecolors='gray', linewidths=0.8,
-                             marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
+        #ax_obs_usurf.scatter(self.observation_points[:, 1] - 0.5, self.observation_points[:, 0],
+        #                     edgecolors='gray', linewidths=0.8,
+        #                     marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
 
         import matplotlib as mpl
         blues = mpl.colormaps['Blues_r']
 
-        ax_obs_usurf.scatter(self.low_point[1], self.low_point[0],
-                             edgecolors='gray', marker='v', c=None, facecolors=blues(0),
-                             lw=2, s=120, label='Lowest Point', zorder=10)
+        #ax_obs_usurf.scatter(self.low_point[1], self.low_point[0],
+        #                     edgecolors='gray', marker='v', c=None, facecolors=blues(0),
+        #                     lw=2, s=120, label='Lowest Point', zorder=10)
 
-        cbar = fig.colorbar(usurf_im, ax=ax_obs_usurf, location='right')
+        #cbar = fig.colorbar(usurf_im, ax=ax_obs_usurf, location='right')
         ax_obs_usurf.set_title('[$m~a^{-1}$]', loc='right', x=1.15)
 
         plt.setp(ax_obs_usurf.spines.values(), color=colorscale(0))

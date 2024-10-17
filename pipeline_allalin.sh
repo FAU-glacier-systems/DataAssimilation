@@ -6,7 +6,7 @@
 #module load cudnn/8.9.6.50-11.x
 module load python/3.9-anaconda
 conda activate igm
-
+lkjdfs
 #cd OGGM_shop/Allalin/
 #igm_run --param_file params.json
 #cd ../../

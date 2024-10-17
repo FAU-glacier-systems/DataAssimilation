@@ -785,4 +785,5 @@ class Monitor:
 
         fig.subplots_adjust(top=0.92, bottom=0.15)
         plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_{len(estimates)}.pdf', format='pdf', dpi=300)
+        plt.savefig(self.output_dir + f'Plot/iterations_seed_{self.seed}_{len(estimates)}.png', format='png', dpi=300)
         plt.savefig(self.monitor_dir + 'monitor.png', format='png', dpi=300)

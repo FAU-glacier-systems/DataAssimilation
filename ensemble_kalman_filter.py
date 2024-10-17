@@ -211,11 +211,12 @@ class EnsembleKalmanFilter(object):
         print("Initialize ensemble")
         self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
         self.sigmas = []
+        rng = np.random.RandomState(420)
         for i in range(self.N):
             sigma = copy.copy(x)
-            noise_ela = np.random.normal(0, np.sqrt(P[0, 0]))
-            noise_grad_abl = np.random.normal(0, np.sqrt(P[1, 1]))
-            noise_grad_acc = np.random.normal(0, np.sqrt(P[2, 2]))
+            noise_ela = rng.normal(0, np.sqrt(P[0, 0]))
+            noise_grad_abl = rng.normal(0, np.sqrt(P[1, 1]))
+            noise_grad_acc = rng.normal(0, np.sqrt(P[2, 2]))
             sigma[0] += noise_ela
             sigma[1] += noise_grad_abl
             sigma[2] += noise_grad_acc

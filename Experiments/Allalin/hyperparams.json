@@ -1,0 +1,22 @@
+{
+  "synthetic": false,
+  "visualise": false,
+
+  "covered_area": 10,
+  "ensemble_size": 50,
+
+  "initial_estimate": [3100, 0.005, 0.005],
+  "initial_spread": [[1e4, 0, 0],[0,1e-3,0],[0,0,1e-3]],
+
+
+  "process_noise" : 0,
+
+  "time_interval": 20,
+  "num_iterations": 5,
+
+  "observations_file": "Hugonnet/Allalin/observations.nc",
+  "geology_file": "Inversion/Allalin/geology-optimized.nc",
+  "output_dir": "Experiments/Allalin/",
+
+  "seed": 411
+}

@@ -2,8 +2,8 @@
   "file_path_hugonnet": "../Hugonnet/Rhone/observations.nc",
   "RGI6-ID": "RGI60-11.01238",
   "glacier_name": "Rhonegletscher",
-  "results_file": "../Experiments/Rhone/result_seed_330.json",
+  "results_file": "../Experiments/Rhone/result_seed_200.json",
   "output_dir": "Rhone/",
   "ablation_density": 0.91,
-  "accumulation_density": 0.91
+  "accumulation_density": 0.55
 }

@@ -9,7 +9,6 @@
   "initial_spread": [[1e4, 0, 0],[0,1e-3,0],[0,0,1e-3]],
 
   "reference_smb" : [2000, 0.0090, 0.0029, 2966, 100],
-  "reference_smb_std": [2000, 0.00127, 0.00068, 99.72, 100],
 
   "process_noise" : 0,
 
@@ -20,5 +19,5 @@
   "geology_file": "Inversion/Rhone/geology-optimized.nc",
   "output_dir": "Experiments/Rhone/",
 
-  "seed": 200
+  "seed": 211
 }

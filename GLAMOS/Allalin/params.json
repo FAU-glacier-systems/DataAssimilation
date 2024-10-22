@@ -1,8 +1,8 @@
 {
   "file_path_hugonnet": "../Hugonnet/Allalin/observations.nc",
-  "RGI6-ID": "RGI60-11.01238",
+  "RGI6-ID": "RGI60-11.02704",
   "glacier_name": "Allalingletscher",
-  "results_file": "../Experiments/Allalin/result_seed_200.json",
+  "results_file": "../Experiments/Allalin/result_seed_423.json",
   "output_dir": "Allalin/",
   "ablation_density": 0.91,
   "accumulation_density": 0.55

@@ -3,7 +3,7 @@
   "visualise": false,
 
   "covered_area": 50,
-  "ensemble_size": 50,
+  "ensemble_size": 100,
 
   "initial_estimate": [3100, 0.005, 0.005],
   "initial_spread": [[1e4, 0, 0],[0,1e-5,0],[0,0,1e-5]],
@@ -20,5 +20,5 @@
   "output_dir": "Experiments/Rhone/",
 
   "seed": 2,
-  "inflation": 1.1
+  "inflation": 1.5
 }

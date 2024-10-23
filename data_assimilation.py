@@ -232,7 +232,7 @@ class DataAssimilation:
 
             #if visualise:
             #self.monitor_instance.plot_iterations(estimates)
-            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members, inflation)
+            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members, self.inflation)
 
         return estimates
 

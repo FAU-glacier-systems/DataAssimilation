@@ -4,7 +4,9 @@ from netCDF4 import Dataset
 import numpy as np
 import subprocess
 import traceback
+import xarray as xr
 import os
+import h5py
 
 
 class EnsembleMember:
@@ -55,6 +57,7 @@ class EnsembleMember:
         except:
             traceback.print_exc()
             print("could not read input" + str(input_file))
+            exit()
 
         ### IGM RUN ###
         try:
@@ -69,6 +72,7 @@ class EnsembleMember:
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
         except:
             print("could not read output")
+            print(output_file)
 
         #os.remove(input_file)
         #os.remove(output_file)

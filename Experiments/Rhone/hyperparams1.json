@@ -2,11 +2,11 @@
   "synthetic": false,
   "visualise": false,
 
-  "covered_area": 100,
+  "covered_area": 10,
   "ensemble_size": 50,
 
-  "initial_estimate": [3300, 0.005, 0.005],
-  "initial_spread": [[1e4, 0, 0],[0,1e-3,0],[0,0,1e-3]],
+  "initial_estimate": [3100, 0.005, 0.005],
+  "initial_spread": [[1e4, 0, 0],[0,1e-5,0],[0,0,1e-5]],
 
   "reference_smb" : [2000, 0.0090, 0.0029, 2966, 100],
 
@@ -19,5 +19,6 @@
   "geology_file": "Inversion/Rhone/geology-optimized.nc",
   "output_dir": "Experiments/Rhone/",
 
-  "seed": 415
+  "seed": 1,
+  "inflation": 1.1
 }

@@ -20,7 +20,7 @@ def download_observations(params):
     geodetic_mb_dmdtda_err = geodetic_mb_2020['err_dmdtda'].values[0]
 
     # Convert mass to volume
-    geodetic_mb_dmdtda_err /= 0.907
+    geodetic_mb_dmdtda_err /= 0.91
     dhdt_err = np.array(oggm_shop_ds.variables['icemask'][:]) * geodetic_mb_dmdtda_err
 
 

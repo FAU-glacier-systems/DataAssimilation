@@ -523,7 +523,7 @@ class Monitor:
     plt.clf()
     plt.close()
 
-    def plot_iterations(self, estimates, ensemble):
+    def plot_iterations(self, estimates, ensemble, inflation):
 
         colorscale = plt.get_cmap('tab20')
         estimates[:,:,1:3] *= 0.91
@@ -691,9 +691,9 @@ class Monitor:
                              edgecolors='gray', marker='^', c=None,
                              facecolors='white', lw=1, s=50, label='Highest Point', zorder=10)
 
-        ax_obs_usurf.scatter(self.observation_points[:, 1] - 0.5, self.observation_points[:, 0],
-                             edgecolors='gray', linewidths=0.8,
-                             marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
+        #ax_obs_usurf.scatter(self.observation_points[:, 1] - 0.5, self.observation_points[:, 0],
+        #                     edgecolors='gray', linewidths=0.8,
+        #                     marker='s', c=None, facecolors='None', s=8, label='Covered Area', zorder=5)
         import matplotlib as mpl
         blues = mpl.colormaps['Blues_r']
 
@@ -784,6 +784,6 @@ class Monitor:
         plt.tight_layout()
 
         fig.subplots_adjust(top=0.92, bottom=0.15)
-        plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_{len(estimates)}.pdf', format='pdf', dpi=300)
-        plt.savefig(self.output_dir + f'Plot/iterations_seed_{self.seed}_{len(estimates)}.png', format='png', dpi=300)
-        plt.savefig(self.monitor_dir + 'monitor.png', format='png', dpi=300)
+        plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_inflation_{inflation}.pdf', format='pdf', dpi=300)
+        plt.savefig(self.output_dir + f'Plot/iterations_seed_{self.seed}_inflation_{inflation}.png', format='png', dpi=300)
+

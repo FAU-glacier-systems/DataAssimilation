@@ -18,6 +18,7 @@ from pathlib import Path
 
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit'
 
 
 
@@ -45,6 +46,7 @@ class DataAssimilation:
         self.process_noise = params['process_noise']
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
+        self.inflation = params['inflation']
 
 
         self.observations_file = params['observations_file']
@@ -102,42 +104,9 @@ class DataAssimilation:
         num_sample_points = int((self.covered_area / 100) * np.sum(icemask))
         print('Number of points: {}'.format(num_sample_points))
 
-        """
-        # Mask the arrays to only consider glacier pixels
-        masked_elevation = np.where(icemask, surface, np.nan)
-        masked_thickness = np.where(icemask, thickness, np.nan)
-
-        #  Define the bin edges based on the surface elevation range
-        elevation_min = np.nanmin(masked_elevation)
-        elevation_max = np.nanmax(masked_elevation)
-        bins = np.linspace(elevation_min, elevation_max, num_sample_points + 1)
-
-        # Assign each pixel to a bin based on the surface elevation
-        bin_indices = np.digitize(masked_elevation, bins) - 1  # -1 because bins start at 1
-
-        result = []
-    
-        for i in range(num_sample_points):
-            # Get the mask for pixels in the current bin
-            bin_mask = (bin_indices == i)
-            print(i)
-            if np.any(bin_mask):
-                # Find the maximum thickness in this bin
-                max_thickness = np.nanmax(masked_thickness[bin_mask])
-
-                # Get the indices of pixels with this maximum thickness
-                max_indices = np.where((masked_thickness == max_thickness) & bin_mask)
-
-                result.append([max_indices[0][0], max_indices[1][0]])
-
-
-        observation_points = list(result)
-        """
-
-        random_state = np.random.RandomState(seed=self.seed)
+        random_state = np.random.RandomState(seed=420)
         observation_index = random_state.choice(len(glacier_points), num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
-
 
         def get_pixel_value(point):
             x, y = point
@@ -247,7 +216,8 @@ class DataAssimilation:
                     year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
 
                 ### UPDATE ####
-                self.KalmanFilter.update(sampled_observations, self.ensemble_members, self.observation_points, e_r, R)
+                self.KalmanFilter.update(sampled_observations, self.ensemble_members, self.observation_points, e_r, R,
+                                         self.inflation)
 
                 # Update the surface elevation
                 self.ensemble_usurfs = np.array([copy.copy(observed_usurf) for _ in range(self.ensemble_size)])
@@ -262,7 +232,7 @@ class DataAssimilation:
 
             #if visualise:
             #self.monitor_instance.plot_iterations(estimates)
-            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members)
+            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members, inflation)
 
         return estimates
 
@@ -273,7 +243,7 @@ class DataAssimilation:
         ensemble_estimates = np.array([list(sigma) for sigma in estimates[-1]])
         self.params['final_mean_estimate']  = list(ensemble_estimates.mean(axis=0))
         self.params['final_std'] = list(ensemble_estimates.std(axis=0))
-        with open(self.output_dir / f"result_seed_{self.seed}.json", 'w') as f:
+        with open(self.output_dir / f"result_seed_{self.seed}_inflation_{self.inflation}.json", 'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
 
 

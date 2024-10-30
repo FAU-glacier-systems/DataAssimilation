@@ -209,9 +209,16 @@ class EnsembleKalmanFilter(object):
         if x.ndim != 1:
             raise ValueError('x must be a 1D array')
         print("Initialize ensemble")
+        """
+        from scipy.stats import qmc
+        sampler = qmc.LatinHypercube(d=self.dim_x)
+        sample = sampler.random(n=self.N)
+        self.sigmas = qmc.scale(sample, x - np.sqrt(np.diag(P)), x + np.sqrt(np.diag(P)))
+        """
         self.sigmas = multivariate_normal(mean=x, cov=P, size=self.N)
+
+        """
         self.sigmas = []
-        #rng = np.random.RandomState(413)
         for i in range(self.N):
             sigma = copy.copy(x)
             noise_ela = np.random.normal(0, np.sqrt(P[0, 0]))
@@ -222,6 +229,7 @@ class EnsembleKalmanFilter(object):
             sigma[2] += noise_grad_acc
             #sigma = abs(sigma)  # these SMB parameters are always positive
             self.sigmas.append(sigma)
+        """
 
         self.sigmas = np.ma.masked_array(self.sigmas)
         self.x = x
@@ -234,6 +242,11 @@ class EnsembleKalmanFilter(object):
         # these will always be a copy of x,P after update() is called
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
+
+    def update_finite_size(self, z, ensemble_members, observation_points, e_r, R):
+
+
+        return
 
     def update(self, z, ensemble_members, observation_points, e_r, R=None, inflation=1.05):
         """
@@ -290,17 +303,20 @@ class EnsembleKalmanFilter(object):
 
         #e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
-            self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])*inflation
+
+            self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])
             #self.sigmas[i] = abs(self.sigmas[i])
 
         self.x = np.mean(self.sigmas, axis=0)
 
         ### INFLATION ###
+        # Apply multiplicative inflation to deviations from the ensemble mean
+        for i in range(N):
+            self.sigmas[i] = self.x + inflation * (self.sigmas[i] - self.x)
+
 
         self.P = outer_product_sum(self.sigmas - self.x) / (N - 1)
         #self.P = self.P - dot(dot(self.K, self.S), self.K.T)
-
-
 
         # save measurement and posterior state
         self.z = deepcopy(z)

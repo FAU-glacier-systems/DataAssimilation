@@ -4,7 +4,7 @@
   "modules_postproc": [],
   "iflo_run_data_assimilation": true,
 
-  "lncd_input_file": "../../OGGM_shop/Allalin/input_saved.nc",
+  "lncd_input_file": "../../OGGM_shop/Allalin/down_scaled.nc",
 
   "opti_control": ["thk", "usurf","slidingco"],
   "opti_cost": ["velsurf","icemask", "usurf", "thk", "divfluxfcz"],

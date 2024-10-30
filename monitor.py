@@ -8,13 +8,13 @@ from matplotlib.ticker import MaxNLocator
 
 
 class Monitor:
-    def __init__(self, params, observed_glacier, observation_uncertainty_field, observation_points, hidden_smb):
+    def __init__(self, params, observed_glacier, observation_uncertainty_field, observation_points, hidden_smb, seed):
 
         self.params = params
         self.num_iterations = params['num_iterations']
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
-        self.seed = params['seed']
+        self.seed = seed
         self.monitor_dir = self.output_dir + 'Plot/'
         if not os.path.exists(self.monitor_dir):
             os.makedirs(self.monitor_dir)

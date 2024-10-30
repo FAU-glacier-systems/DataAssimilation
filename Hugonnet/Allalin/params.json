@@ -1,5 +1,5 @@
 {
-  "oggm_shop_file": "../OGGM_shop/Allalin/input_saved.nc",
+  "oggm_shop_file": "../OGGM_shop/Allalin/down_scaled.nc",
   "RGI_ID": "RGI60-11.02704",
   "output_file": "Allalin/observations.nc"
 }

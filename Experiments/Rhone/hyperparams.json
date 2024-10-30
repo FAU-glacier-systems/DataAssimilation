@@ -5,8 +5,8 @@
   "covered_area": 50,
   "ensemble_size": 50,
 
-  "initial_estimate": [3100, 0.005, 0.005],
-  "initial_spread": [[1e4, 0, 0],[0,1e-5,0],[0,0,1e-5]],
+  "initial_estimate": [3056, 0.0076, 0.0039],
+  "initial_spread": [[60025, 0, 0],[0,0.00001225,0],[0,0,0.00001521]],
 
   "reference_smb" : [2000, 0.0090, 0.0029, 2966, 100],
 
@@ -17,8 +17,5 @@
 
   "observations_file": "Hugonnet/Rhone/observations.nc",
   "geology_file": "Inversion/Rhone/geology-optimized.nc",
-  "output_dir": "Experiments/Rhone/",
-
-  "seed": 3,
-  "inflation": 1.1
+  "output_dir": "Experiments/Rhone/"
 }

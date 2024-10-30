@@ -25,10 +25,10 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit'
 
 
 class DataAssimilation:
-    def __init__(self, params):
+    def __init__(self, params, inflation, seed):
         # Save arguments
         self.params = params
-        self.seed = params['seed']
+        self.seed = seed
         np.random.seed(self.seed)
         self.synthetic = params['synthetic']
         self.visualise = params['visualise']
@@ -46,7 +46,7 @@ class DataAssimilation:
         self.process_noise = params['process_noise']
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
-        self.inflation = params['inflation']
+        self.inflation = inflation
 
 
         self.observations_file = params['observations_file']
@@ -167,7 +167,7 @@ class DataAssimilation:
 
 
         self.monitor_instance = Monitor(self.params, self.observed_glacier, self.observation_uncertainty_field,
-                                        self.observation_points, hidden_smb)
+                                        self.observation_points, hidden_smb, self.seed)
 
 
     def run_iterations(self, visualise=True):
@@ -258,6 +258,14 @@ def main():
                         default='Experiments/Hugonnet.json',
                         help="Path pointing to the parameter file",
                         required=True)
+    parser.add_argument("-i", "--inflation",
+                        type=float,
+                        default='1',
+                        required=True)
+    parser.add_argument("-s", "--seed",
+                        type=int,
+                        default='420',
+                        required=True)
     arguments, _ = parser.parse_known_args()
 
     # Load the JSON file with parameters
@@ -265,7 +273,7 @@ def main():
         params = json.load(f)
 
     ### START DATA ASSIMILATION ###
-    DA = DataAssimilation(params)
+    DA = DataAssimilation(params, arguments.inflation, arguments.seed)
     estimates = DA.run_iterations(params["visualise"])
     results = DA.save_results(estimates)
 

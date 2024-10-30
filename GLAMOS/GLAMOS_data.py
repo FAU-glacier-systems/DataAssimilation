@@ -6,25 +6,41 @@ import xarray as xr
 import json
 import matplotlib.gridspec as gridspec
 
+def extract_gradients(glacier_binned, elas, time):
+    abl_gradients = []
+    acc_gradients = []
+    for i,year in enumerate(time):
+        # Select rows where the year in 'end date of observation' matches the specified year
+        elevation_bin_df = glacier_binned[glacier_binned['end date of observation'].dt.year == year]
+        mb = np.array(elevation_bin_df['annual mass balance']) /1000
+        elevation = np.array(elevation_bin_df['upper elevation of bin']) -50
 
-def extract_gradients(ela, mb, elevation):
-    # Find the index of the row with the smallest absolute mass balance
-    # compute gradients
-    ablation = np.array(mb[mb < 0])
-    accumulation = np.array(mb[mb > 0])
+        # Find the index of the row with the smallest absolute mass balance
+        # compute gradients
+        ablation = np.array(mb[mb < 0])
+        accumulation = np.array(mb[mb > 0])
 
-    # Concatenate the new value
-    elevation = np.array(elevation)
-    elevation_abl = elevation[mb < 0]
-    elevation_acc = elevation[mb > 0]
+        elevation_abl = elevation[mb < 0]
+        elevation_acc = elevation[mb > 0]
 
-    adjusted_elevation_acc = elevation_acc - ela
-    adjusted_elevation_abl = elevation_abl - ela
+        adjusted_elevation_acc = elevation_acc - elas[i]
+        adjusted_elevation_abl = elevation_abl - elas[i]
 
-    gradient_accumulation = np.sum(adjusted_elevation_acc * accumulation) / np.sum(adjusted_elevation_acc ** 2)
-    gradient_ablation = np.sum(adjusted_elevation_abl * ablation) / np.sum(adjusted_elevation_abl ** 2)
+        abl_grad = np.sum(adjusted_elevation_abl * ablation) / np.sum(adjusted_elevation_abl ** 2)
+        acc_grad = np.sum(adjusted_elevation_acc * accumulation) / np.sum(adjusted_elevation_acc ** 2)
 
-    return gradient_ablation, gradient_accumulation
+        if abl_grad > 0 and abl_grad < 0.05:
+            abl_gradients.append(abl_grad)
+        else:
+            abl_gradients.append(np.nan)
+
+        if acc_grad > 0 and acc_grad < 0.05:
+            acc_gradients.append(acc_grad)
+        else:
+            acc_gradients.append(np.nan)
+
+
+    return abl_gradients, acc_gradients
 
 
 def compute_specific_mass_balance_from_ela(ela, gradabl, gradacc, usurf, thkse):
@@ -141,10 +157,8 @@ def main(params):
     avg_ela = np.nanmean(np.array(ELA))
 
     # extract gradients
-    elevation_group_df = glacier_2000_binned.groupby('upper elevation of bin')
-    elevation_series = elevation_group_df['upper elevation of bin'].mean()
-    mean_mb_elevation_bin = elevation_group_df['annual mass balance'].mean()/1000
-    avg_grad_abl, avg_grad_acc = extract_gradients(avg_ela, mean_mb_elevation_bin, elevation_series - 50)
+    grad_abl, grad_acc = extract_gradients(glacier_2000_binned, ELA, time)
+    avg_grad_abl, avg_grad_acc = np.mean(grad_abl), np.mean(grad_acc)
 
     # Extract data for plotting left plot
     date = glacier_2000_binned['end date of observation'].dt.year

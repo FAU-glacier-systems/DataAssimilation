@@ -21,14 +21,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit'
 
 
-
-
-
 class DataAssimilation:
-    def __init__(self, params, inflation, seed):
+    def __init__(self, params, inflation, seed, use_etkf, observation_noise_factor):
         # Save arguments
         self.params = params
         self.seed = seed
+        self.use_etkf = use_etkf
         np.random.seed(self.seed)
         self.synthetic = params['synthetic']
         self.visualise = params['visualise']
@@ -47,6 +45,7 @@ class DataAssimilation:
         self.time_interval = params['time_interval']
         self.num_iterations = params['num_iterations']
         self.inflation = inflation
+        self.observation_noise_factor = observation_noise_factor
 
 
         self.observations_file = params['observations_file']
@@ -134,7 +133,8 @@ class DataAssimilation:
             Path(self.geology_file).parent
             shutil.copytree(Path(self.geology_file).parent / "iceflow-model/", dir_name / "iceflow-model/")
 
-            self.ensemble_members.append(EnsembleMember(i, self.ensemble_dir, self.start_year))
+            self.ensemble_members.append(EnsembleMember(i, self.ensemble_dir,
+                                                        self.start_year))
 
 
         # Initial estimate
@@ -160,14 +160,16 @@ class DataAssimilation:
             uncertainty_factor = np.arange(len(self.usurf)) * self.observation_uncertainty
             self.observation_uncertainty_field = np.array([icemask * f for f in uncertainty_factor])
         else:
-            self.observation_uncertainty_field = np.array(self.observed_glacier['obs_error'])
+            self.observation_uncertainty_field = np.array(self.observed_glacier[
+                                                              'obs_error'])*self.observation_noise_factor
 
         self.KalmanFilter.R = np.eye(dim_z) * self.observation_uncertainty_field[
             0, self.observation_points[:, 0], self.observation_points[:, 1]]
 
 
         self.monitor_instance = Monitor(self.params, self.observed_glacier, self.observation_uncertainty_field,
-                                        self.observation_points, hidden_smb, self.seed)
+                                        self.observation_points, hidden_smb,
+                                        self.seed, self.use_etkf, self.observation_noise_factor)
 
 
     def run_iterations(self, visualise=True):
@@ -203,7 +205,8 @@ class DataAssimilation:
                 year_index = int((self.KalmanFilter.year - self.start_year))
 
                 # Sample random noise for each ensemble member to add to the difference
-                random_factors = np.random.normal(0, 1, self.ensemble_size)
+                random_factors = np.random.normal(0, 1,
+                                                  self.ensemble_size)
                 uncertainty_field_year = self.observation_uncertainty_field[year_index]
                 observation_noise_samples = np.array([uncertainty_field_year * rf for rf in random_factors])
 
@@ -216,8 +219,12 @@ class DataAssimilation:
                     year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
 
                 ### UPDATE ####
-                self.KalmanFilter.update(sampled_observations, self.ensemble_members, self.observation_points, e_r, R,
-                                         self.inflation)
+                if self.use_etkf:
+                    self.KalmanFilter.update_etkf(sampled_observations, self.ensemble_members,
+                                                  self.observation_points, e_r, R, self.inflation)
+                else:
+                    self.KalmanFilter.update(sampled_observations, self.ensemble_members,
+                                                  self.observation_points, e_r, R, self.inflation)
 
                 # Update the surface elevation
                 self.ensemble_usurfs = np.array([copy.copy(observed_usurf) for _ in range(self.ensemble_size)])
@@ -243,7 +250,12 @@ class DataAssimilation:
         ensemble_estimates = np.array([list(sigma) for sigma in estimates[-1]])
         self.params['final_mean_estimate']  = list(ensemble_estimates.mean(axis=0))
         self.params['final_std'] = list(ensemble_estimates.std(axis=0))
-        with open(self.output_dir / f"result_seed_{self.seed}_inflation_{self.inflation}.json", 'w') as f:
+        with open(self.output_dir / f"result_seed_{self.seed}"
+                                    f"_inflation_"
+                                    f"{self.inflation}_etkf_"
+                                    f"{self.use_etkf}_obsnoisefactor"
+                                    f"{self.observation_noise_factor}.json",
+                  'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
 
 
@@ -266,6 +278,14 @@ def main():
                         type=int,
                         default='420',
                         required=True)
+    parser.add_argument( "--etkf",
+                        type=bool,
+                        default=False,
+                        required=False)
+    parser.add_argument("--observation_noise_factor",
+                        type=float,
+                        default='1',
+                        required=False)
     arguments, _ = parser.parse_known_args()
 
     # Load the JSON file with parameters
@@ -273,7 +293,8 @@ def main():
         params = json.load(f)
 
     ### START DATA ASSIMILATION ###
-    DA = DataAssimilation(params, arguments.inflation, arguments.seed)
+    DA = DataAssimilation(params, arguments.inflation, arguments.seed,
+                          arguments.etkf, arguments.observation_noise_factor)
     estimates = DA.run_iterations(params["visualise"])
     results = DA.save_results(estimates)
 

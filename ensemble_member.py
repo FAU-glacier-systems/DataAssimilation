@@ -70,15 +70,19 @@ class EnsembleMember:
             with Dataset(output_file) as new_ds:
                 new_usurf = np.array(new_ds['usurf'][-1])
                 new_velo = np.array(new_ds['velsurf_mag'][-1])
+                new_thk = np.array(new_ds['thk'][-1])
         except:
             print("could not read output")
             print(output_file)
 
         #os.remove(input_file)
         #os.remove(output_file)
+
+
         self.usurf = new_usurf
         self.velo = new_velo
         self.year = year_next
+        return state_x
 
     def reset(self, year):
         self.year = year

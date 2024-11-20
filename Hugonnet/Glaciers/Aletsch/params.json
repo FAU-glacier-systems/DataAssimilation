@@ -1,0 +1,6 @@
+{
+  "oggm_shop_file": "../OGGM_shop/Aletsch/downscaled_file.nc",
+  "RGI_ID": "RGI60-11.01450",
+  "output_file": "Aletsch/observations.nc",
+  "time_period": 5
+}

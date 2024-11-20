@@ -1,5 +1,6 @@
 {
   "oggm_shop_file": "../OGGM_shop/Rhone/down_scaled.nc",
   "RGI_ID": "RGI60-11.01238",
-  "output_file": "Rhone/observations.nc"
+  "output_file": "Glaciers/Rhone/observations.nc",
+  "time_period": 5
 }

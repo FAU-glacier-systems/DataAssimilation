@@ -4,18 +4,59 @@ import numpy as np
 import argparse
 import json
 import numpy.ma as ma
+import rasterio
+import matplotlib.pyplot as plt
+from rasterio.windows import from_bounds
+
+
+
+def crop_hugonnet_to_glacier(hugonnet_dataset, oggm_shop_ds):
+    # Get bounds of the OGGM shop dataset area
+    area_x = oggm_shop_ds['x'][:]
+    area_y = oggm_shop_ds['y'][:]
+
+    # Calculate the bounds from the min and max coordinates of oggm_shop_ds
+    min_x, max_x = area_x.min(), area_x.max()
+    min_y, max_y = area_y.min(), area_y.max()
+
+    # Define the window to crop the hugonnet dataset using these bounds
+    window = from_bounds(min_x, min_y, max_x, max_y, hugonnet_dataset.transform)
+
+    # Read the data from the specified window (cropped area)
+    cropped_map = hugonnet_dataset.read(1, window=window)
+    filtered_map = np.where(cropped_map == -9999, np.nan, cropped_map)
+
+    return filtered_map
 
 
 def download_observations(params):
+
+
     # File paths
     oggm_shop_file = params['oggm_shop_file']
+    time_period = params['time_period']
+
 
     # Open datasetsmer
     oggm_shop_ds = Dataset(oggm_shop_file, 'r')
 
+    with (rasterio.open('../Hugonnet/central_europe/11_rgi60_2000-01-01_2020-01-01'
+                        '/dhdt_err/N46E008_2000-01-01_2020-01-01_dhdt_err.tif')
+          as hugonnet_dataset):
+
+        cropped_dhdt_err = crop_hugonnet_to_glacier(hugonnet_dataset, oggm_shop_ds)
+
+    with (rasterio.open('../Hugonnet/central_europe/11_rgi60_2000-01-01_2020-01-01'
+                        '/dhdt/N46E008_2000-01-01_2020-01-01_dhdt.tif')
+          as hugonnet_dataset):
+
+        cropped_dhdt = crop_hugonnet_to_glacier(hugonnet_dataset, oggm_shop_ds)
+
     # Geodetic mass balance data
     geodetic_mb = utils.get_geodetic_mb_dataframe()
     geodetic_mb = geodetic_mb[geodetic_mb.index == params['RGI_ID']]
+
+
     geodetic_mb_2020 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2020-01-01']
     geodetic_mb_dmdtda_err = geodetic_mb_2020['err_dmdtda'].values[0]
 
@@ -24,8 +65,8 @@ def download_observations(params):
     dhdt_err = np.array(oggm_shop_ds.variables['icemask'][:]) * geodetic_mb_dmdtda_err
 
 
-    dhdt = np.array(oggm_shop_ds.variables['dhdt'][:])
-
+    #dhdt = np.array(oggm_shop_ds.variables['dhdt'][:])
+    dhdt = cropped_dhdt[::-1]
     time_range = np.arange(2000, 2021).astype(float)
     usurf_2000 = oggm_shop_ds.variables['usurf'][:]
     thk_2000 = oggm_shop_ds.variables['thkinit'][:]
@@ -79,6 +120,8 @@ def download_observations(params):
         topg_var = merged_ds.createVariable('topg', 'f4', ('time', 'y', 'x'))
         icemask_var = merged_ds.createVariable('icemask', 'f4', ('time', 'y', 'x'))
         obs_error_var = merged_ds.createVariable('obs_error', 'f4', ('time', 'y', 'x'))
+        dhdt_err_var = merged_ds.createVariable('dhdt_err', 'f4', ('time', 'y',
+                                                                    'x'))
         dhdt_var = merged_ds.createVariable('dhdt', 'f4', ('time', 'y', 'x'))
         smb_var = merged_ds.createVariable('smb', 'f4', ('time', 'y', 'x'))
         velsurf_mag_var = merged_ds.createVariable('velsurf_mag', 'f4', ('time', 'y', 'x'))
@@ -92,6 +135,7 @@ def download_observations(params):
         topg_var[:] = topg_data
         icemask_var[:] = icemask_data
         obs_error_var[:] = error_variable
+        dhdt_err_var[:] = cropped_dhdt_err[::-1]
         dhdt_var[:] = dhdt_data
         smb_var[:] = smb_data
         velsurf_mag_var[:] = velo_data
@@ -104,6 +148,7 @@ def main():
                         type=str,
                         help="Path pointing to the parameter file",
                         required=True)
+
     arguments, _ = parser.parse_known_args()
 
     # Load the JSON file with parameters

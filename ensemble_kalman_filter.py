@@ -179,7 +179,7 @@ class EnsembleKalmanFilter(object):
         self.SI = zeros((dim_z, dim_z))  # inverse system uncertainty
 
         self.initialize(x, P)
-        self.Q = eye(dim_x)  # process uncertainty
+        self.Q = eye(dim_z)  # process uncertainty
         self.R = eye(dim_z)  # state uncertainty
         self.inv = np.linalg.inv
 
@@ -243,12 +243,53 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def update_finite_size(self, z, ensemble_members, observation_points, e_r, R):
+    def predict(self, ensemble_members):
+        """ Predict next position. """
 
+        N = self.N
+        dt = self.dt
+        year = int(self.year)
 
-        return
+        devices = tf.config.list_physical_devices('GPU')
 
-    def update(self, z, ensemble_members, observation_points, e_r, R=None, inflation=1.05):
+        # if devices:
+        if False:
+            print("GPU is available.")
+            for i, s in enumerate(self.sigmas):
+                member = ensemble_members[i]
+                self.sigmas[i] = member.forward(s, self.dt)
+
+        else:
+            print("No GPU found.")
+
+            def task(member, s, dt):
+                member.forward(s, dt)
+
+            # Create a thread pool
+            with ThreadPoolExecutor() as executor:
+                # Submit tasks to the thread pool
+                futures = [executor.submit(task, ensemble_members[i], s, dt) for i, s
+                           in enumerate(self.sigmas)]
+
+                # Wait for all tasks to complete
+                for future in futures:
+                    future.result(timeout=3600)
+
+            # for i, s in enumerate(self.sigmas):
+            #    task(s, dt, i, year)
+
+        # forward SMB parameters
+        e = multivariate_normal(self._mean, self.Q, N)
+        self.sigmas += e
+        self.x = np.mean(self.sigmas, axis=0)
+
+        self.P = outer_product_sum(self.sigmas - self.x) / (N - 1)
+
+        # save prior
+        self.x_prior = np.copy(self.x)
+        self.P_prior = np.copy(self.P)
+
+    def update(self, z, ensemble_members, observation_points, e_r, R=None, inflation=1.0):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -323,51 +364,59 @@ class EnsembleKalmanFilter(object):
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 
-    def predict(self, ensemble_members):
-        """ Predict next position. """
 
+    def update_etkf(self, observations, ensemble_members, observation_points, e_r, R=None, inflation_factor=1.0):
+
+        # Ensemble size and dimensions
         N = self.N
-        sigmas = self.sigmas
-        dt = self.dt
-        year = int(self.year)
+        xf = self.x
+        Xf = np.array(self.sigmas)
+        HXf = zeros((self.N, len(observations)))
 
-        devices = tf.config.list_physical_devices('GPU')
+        # transform sigma points into measurement space
+        for i, member in enumerate(ensemble_members):
+            HXf[i] = member.observe(observation_points)
 
-        #if devices:
-        if False:
-            print("GPU is available.")
-            for i, s in enumerate(self.sigmas):
-                member = ensemble_members[i]
-                self.sigmas[i] = member.forward(s, self.dt)
+        Hxf = np.mean(HXf, axis=0)
+        HXf = HXf.T
 
-        else:
-            print("No GPU found.")
+        d = observations - Hxf
+        HX_per_f = HXf - Hxf[:, np.newaxis]
+        C = np.linalg.inv(R) @ HX_per_f
+        A1 = (N-1)*np.eye(N)
+        A2 = A1 + HX_per_f.T @ C
 
-            def task(member, s, dt):
-                member.forward(s, dt)
+        X_per_f = Xf - xf
+        D = C.T @ d
+        eigs, ev = np.linalg.eigh(A2)
 
-            # Create a thread pool
-            with ThreadPoolExecutor() as executor:
-                # Submit tasks to the thread pool
-                futures = [executor.submit(task, ensemble_members[i], s, dt) for i, s in enumerate(self.sigmas)]
+        # compute perturbations
+        Wp1 = np.diag(np.sqrt(1 / eigs)) @ ev.T
+        Wp = ev @ Wp1 * np.sqrt(N - 1)
 
-                # Wait for all tasks to complete
-                for future in futures:
-                    future.result(timeout=3600)
+        # differing from pseudocode
+        D1 = np.linalg.inv(R) @ d
+        D2 = HX_per_f.T @ D1
+        wm = ev @ np.diag(1 / eigs) @ ev.T @ D2  # / np.sqrt(Ne-1)
 
-            #for i, s in enumerate(self.sigmas):
-            #    task(s, dt, i, year)
+        # Adding perturbed and mean weights
+        W = Wp + wm[:, None]
 
-        # forward SMB parameters
-        e = multivariate_normal(self._mean, self.Q, N)
-        self.sigmas += e
+        # final adding up (most costly operation)
+        Xa = xf[:, None] + np.array(X_per_f.T) @ W
 
-        self.x = np.mean(self.sigmas, axis=0)
-        self.P = outer_product_sum(self.sigmas - self.x) / (N - 1)
+        self.sigmas = Xa.T
+        self.x = xf
 
-        # save prior
-        self.x_prior = np.copy(self.x)
-        self.P_prior = np.copy(self.P)
+        ### INFLATION ###
+        # Apply multiplicative inflation to deviations from the ensemble mean
+        for i in range(N):
+            self.sigmas[i] = self.x + inflation_factor * (self.sigmas[i] - self.x)
+
+        return Xa
+
+
+
 
     def __repr__(self):
         return '\n'.join([

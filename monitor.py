@@ -8,13 +8,17 @@ from matplotlib.ticker import MaxNLocator
 
 
 class Monitor:
-    def __init__(self, params, observed_glacier, observation_uncertainty_field, observation_points, hidden_smb, seed):
+    def __init__(self, params, observed_glacier, observation_uncertainty_field, observation_points, hidden_smb,
+                 seed, use_etkf, observation_noise_factor):
 
         self.params = params
         self.num_iterations = params['num_iterations']
         self.synthetic = params['synthetic']
         self.output_dir = params['output_dir']
         self.seed = seed
+        self.observation_noise_factor = observation_noise_factor
+
+        self.use_etkf = use_etkf
         self.monitor_dir = self.output_dir + 'Plot/'
         if not os.path.exists(self.monitor_dir):
             os.makedirs(self.monitor_dir)
@@ -60,7 +64,8 @@ class Monitor:
             self.initial_offset = params['initial_offset']
             self.observation_uncertainty = params['observation_uncertainty']
         else:
-            self.observation_uncertainty = np.mean(np.array(observed_glacier['obs_error'][1])[self.icemask==1])
+            self.observation_uncertainty = np.mean(
+                self.observation_uncertainty_field[1, self.icemask==1])
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
@@ -784,6 +789,12 @@ class Monitor:
         plt.tight_layout()
 
         fig.subplots_adjust(top=0.92, bottom=0.15)
-        plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_inflation_{inflation}.pdf', format='pdf', dpi=300)
-        plt.savefig(self.output_dir + f'Plot/iterations_seed_{self.seed}_inflation_{inflation}.png', format='png', dpi=300)
+        # plt.savefig(self.output_dir+f'Plot/iterations_seed_{self.seed}_inflation_{inflation}_etkf_{self.use_etkf}.pdf',
+        #             format='pdf',
+        #             dpi=300)
+        plt.savefig(self.output_dir + f'Plot/iterations_seed_{self.seed}_inflation_{inflation}_etkf'
+                                      f'_{self.use_etkf}_'
+                                      f'noise_fa'
+                                      f'cotor{self.observation_noise_factor}.png',
+                    format='png', dpi=300)
 

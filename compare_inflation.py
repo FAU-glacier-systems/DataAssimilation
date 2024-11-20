@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 glacier_name = "Aletsch"
+ensemble_size = 100
 experiment_dir = 'Experiments/' + glacier_name
 result_files = os.listdir(experiment_dir)
 
@@ -21,7 +22,7 @@ inflation_data = {
 }
 for file in result_files:
     print(file)
-    if file.startswith('result'):
+    if file.startswith('result') :
         result = json.load(open(os.path.join(experiment_dir, file), 'r'))
         file_split = file.split('_')
 
@@ -38,8 +39,8 @@ df = pd.DataFrame(inflation_data)
 
 filter_values = {
     'Equilibrium_Line_Altitude': (2000, 4000, 'final_mean_ela', 'final_std_ela'),
-    'Ablation_Gradient': (0, 0.07, 'final_mean_grad_abl', 'final_std_grad_abl'),
-    'Accumulation_Gradient': (0, 0.07, 'final_mean_grad_acc', 'final_std_grad_acc')
+    'Ablation_Gradient': (-1, 1, 'final_mean_grad_abl', 'final_std_grad_abl'),
+    'Accumulation_Gradient': (-1, 1, 'final_mean_grad_acc', 'final_std_grad_acc')
 }
 filtered_df = df[
     (df['final_mean_ela'] >= filter_values['Equilibrium_Line_Altitude'][0]) &
@@ -78,8 +79,8 @@ for i, parameter in enumerate(filter_values.keys()):
 # Adjust layout and save both figures
 fig_scatter.tight_layout()
 fig_spread.tight_layout()
-fig_scatter.savefig(f'Plots/{glacier_name}_compare_inflation_scatter.png', dpi=300)
-fig_spread.savefig(f'Plots/{glacier_name}_compare_inflation_spread.png', dpi=300)
+fig_scatter.savefig(f'Plots/{glacier_name}_{ensemble_size}_compare_inflation_scatter.png', dpi=300)
+fig_spread.savefig(f'Plots/{glacier_name}_{ensemble_size}_compare_inflation_spread.png', dpi=300)
 
 
 

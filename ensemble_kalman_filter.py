@@ -253,7 +253,7 @@ class EnsembleKalmanFilter(object):
         devices = tf.config.list_physical_devices('GPU')
 
         # if devices:
-        if False:
+        if True:
             print("GPU is available.")
             for i, s in enumerate(self.sigmas):
                 member = ensemble_members[i]
@@ -289,7 +289,8 @@ class EnsembleKalmanFilter(object):
         self.x_prior = np.copy(self.x)
         self.P_prior = np.copy(self.P)
 
-    def update(self, z, ensemble_members, observation_points, e_r, R=None, inflation=1.0):
+    def update(self, observation, ensemble_members, observation_points, e_r,
+               inflation=1.0):
         """
         Add a new measurement (z) to the kalman filter. If z is None, nothing
         is changed.
@@ -297,7 +298,7 @@ class EnsembleKalmanFilter(object):
         Parameters
         ----------
 
-        z : np.array
+        observation : np.array
             measurement for this update.
 
         R : np.array, scalar, or None
@@ -305,19 +306,15 @@ class EnsembleKalmanFilter(object):
             one call, otherwise self.R will be used.
         """
 
-        if z is None:
+        if observation is None:
             self.z = array([[None] * self.dim_z]).T
             self.x_post = self.x.copy()
             self.P_post = self.P.copy()
             return
 
-        if R is None:
-            R = self.R
-        if np.isscalar(R):
-            R = eye(self.dim_z) * R
 
         N = self.N
-        dim_z = len(z)
+        dim_z = len(observation)
         sigmas_h = zeros((N, dim_z))
 
         # transform sigma points into measurement space
@@ -326,7 +323,7 @@ class EnsembleKalmanFilter(object):
 
         z_mean = np.mean(sigmas_h, axis=0)
 
-        P_zz = (outer_product_sum(sigmas_h - z_mean) / (N - 1)) + R
+        P_zz = (outer_product_sum(sigmas_h - z_mean) / (N - 1)) + self.R
 
         P_xz = outer_product_sum(
             self.sigmas - self.x, sigmas_h - z_mean) / (N - 1)
@@ -345,7 +342,7 @@ class EnsembleKalmanFilter(object):
         #e_r = multivariate_normal(self._mean_z, R, N)
         for i in range(N):
 
-            self.sigmas[i] += dot(self.K, z + e_r[i] - sigmas_h[i])
+            self.sigmas[i] += dot(self.K, observation + e_r[i] - sigmas_h[i])
             #self.sigmas[i] = abs(self.sigmas[i])
 
         self.x = np.mean(self.sigmas, axis=0)
@@ -360,7 +357,7 @@ class EnsembleKalmanFilter(object):
         #self.P = self.P - dot(dot(self.K, self.S), self.K.T)
 
         # save measurement and posterior state
-        self.z = deepcopy(z)
+        self.z = deepcopy(observation)
         self.x_post = self.x.copy()
         self.P_post = self.P.copy()
 

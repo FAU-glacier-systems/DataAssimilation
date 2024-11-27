@@ -25,10 +25,8 @@ conda activate igm
 # --inflation 2 --seed 21 --etkf True
 
 # 3. Data Assimilation
-for seed in 3 4 5; do
-  for observation_noise_factor in 1 2 3; do
-    python data_assimilation.py --experiment Experiments/Rhone/hyperparams.json --inflation 1 --seed $seed --observation_noise_factor $observation_noise_factor
-  done
+for seed in 1 2 3 4 5; do
+    python data_assimilation.py --experiment Experiments/Rhone/hyperparams.json --inflation 1 --seed $seed
 done
 
 

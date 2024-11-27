@@ -1,4 +1,3 @@
-from oggm import utils
 from netCDF4 import Dataset
 import numpy as np
 import argparse
@@ -34,8 +33,9 @@ def download_observations(params):
 
     # File paths
     oggm_shop_file = params['oggm_shop_file']
-    time_period = params['time_period']
 
+    time_period = params['time_period']
+    time_range = np.arange(2000, 2021).astype(float)
 
     # Open datasetsmer
     oggm_shop_ds = Dataset(oggm_shop_file, 'r')
@@ -52,57 +52,41 @@ def download_observations(params):
 
         cropped_dhdt = crop_hugonnet_to_glacier(hugonnet_dataset, oggm_shop_ds)
 
-    # Geodetic mass balance data
-    geodetic_mb = utils.get_geodetic_mb_dataframe()
-    geodetic_mb = geodetic_mb[geodetic_mb.index == params['RGI_ID']]
-
-
-    geodetic_mb_2020 = geodetic_mb[geodetic_mb['period'] == '2000-01-01_2020-01-01']
-    geodetic_mb_dmdtda_err = geodetic_mb_2020['err_dmdtda'].values[0]
-
-    # Convert mass to volume
-    geodetic_mb_dmdtda_err /= 0.91
-    dhdt_err = np.array(oggm_shop_ds.variables['icemask'][:]) * geodetic_mb_dmdtda_err
-
-
-    #dhdt = np.array(oggm_shop_ds.variables['dhdt'][:])
     dhdt = cropped_dhdt[::-1]
-    time_range = np.arange(2000, 2021).astype(float)
+    dhdt_err = cropped_dhdt_err[::-1]
+
+
+    icemask_2000 = oggm_shop_ds.variables['icemask'][:]
     usurf_2000 = oggm_shop_ds.variables['usurf'][:]
     thk_2000 = oggm_shop_ds.variables['thkinit'][:]
     usurf_change = []
     thk_change = []
-    dhdt_errors = []
+    dhdt_err_time = []
     bedrock = usurf_2000 - thk_2000
 
+
     for i, time in enumerate(time_range):
-        usurf_i = usurf_2000 + dhdt * i
-        usurf_i = np.maximum(bedrock, usurf_i)
-        dhdt_err_i = dhdt_err * i
+        # compute glacier geometry based on dhdt
+        usurf_i = np.maximum(bedrock, usurf_2000 + dhdt * i)
+        # compute uncertainty overtime
+        dhdt_err_i = dhdt_err * np.sqrt(i)
+
         usurf_change.append(usurf_i)
         thk_change.append(usurf_i - bedrock)
-        dhdt_errors.append(dhdt_err_i)
+        dhdt_err_time.append(dhdt_err_i)
 
+    # transform to numpy array
     usurf_change = np.array(usurf_change)
     thk_change = np.array(thk_change)
-    dhdt_errors = np.array(dhdt_errors)
+    dhdt_err_time = np.array(dhdt_err_time)
 
-    year_range = 21
-
-    dhdt_data = np.array([dhdt] * year_range)
-    error_variable = np.array(dhdt_errors)
-
-    topg_data = np.array([bedrock] * year_range)
-    icemask_data = np.array([oggm_shop_ds.variables['icemask'][:]] * year_range)
-
-    smb = np.zeros_like(dhdt)
-    smb_data = np.array([smb] * year_range)
-
+    # compute velocity magnitude
     uvelo = oggm_shop_ds.variables['uvelsurfobs'][:]
     vvelo = oggm_shop_ds.variables['vvelsurfobs'][:]
     velo = ma.sqrt(uvelo ** 2 + vvelo ** 2)
 
-    velo_data = np.array([velo] * year_range)
+    # create placeholder smb
+    smb = np.zeros_like(dhdt)
 
     # Create a new netCDF file
     with Dataset(params['output_file'], 'w') as merged_ds:
@@ -119,10 +103,8 @@ def download_observations(params):
         usurf_var = merged_ds.createVariable('usurf', 'f4', ('time', 'y', 'x'))
         topg_var = merged_ds.createVariable('topg', 'f4', ('time', 'y', 'x'))
         icemask_var = merged_ds.createVariable('icemask', 'f4', ('time', 'y', 'x'))
-        obs_error_var = merged_ds.createVariable('obs_error', 'f4', ('time', 'y', 'x'))
-        dhdt_err_var = merged_ds.createVariable('dhdt_err', 'f4', ('time', 'y',
-                                                                    'x'))
         dhdt_var = merged_ds.createVariable('dhdt', 'f4', ('time', 'y', 'x'))
+        dhdt_err_var = merged_ds.createVariable('dhdt_err', 'f4', ('time', 'y','x'))
         smb_var = merged_ds.createVariable('smb', 'f4', ('time', 'y', 'x'))
         velsurf_mag_var = merged_ds.createVariable('velsurf_mag', 'f4', ('time', 'y', 'x'))
 
@@ -132,13 +114,12 @@ def download_observations(params):
         y_var[:] = oggm_shop_ds.variables['y'][:]
         thk_var[:] = thk_change
         usurf_var[:] = usurf_change
-        topg_var[:] = topg_data
-        icemask_var[:] = icemask_data
-        obs_error_var[:] = error_variable
-        dhdt_err_var[:] = cropped_dhdt_err[::-1]
-        dhdt_var[:] = dhdt_data
-        smb_var[:] = smb_data
-        velsurf_mag_var[:] = velo_data
+        topg_var[:] = bedrock
+        icemask_var[:] = icemask_2000
+        dhdt_var[:] = dhdt
+        dhdt_err_var[:] = dhdt_err_time
+        smb_var[:] = smb
+        velsurf_mag_var[:] = velo
 
 
 def main():

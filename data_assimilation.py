@@ -6,12 +6,12 @@ import os
 import json
 import copy
 import numpy as np
-import oggm
-from oggm import utils
-import matplotlib.pyplot as plt
+import math
 from netCDF4 import Dataset
+
 from ensemble_kalman_filter import EnsembleKalmanFilter as EnKF
 from ensemble_member import EnsembleMember
+import gstools as gs
 
 from monitor import Monitor
 from pathlib import Path
@@ -19,6 +19,26 @@ from pathlib import Path
 os.environ['PYTHONWARNINGS'] = "ignore"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit'
+
+
+class Variogram_hugonnet(gs.CovModel):
+    def cor(self, d: np.ndarray):
+        """
+        Spatial correlation of error in mean elevation change (Hugonnet et al., 2021).
+
+        :param d: Distance between two glaciers (meters).
+
+        :return: Spatial correlation function (input = distance in meters, output = correlation between 0 and 1).
+        """
+
+        # About 50% correlation of error until 150m, 80% until 2km, etc...
+        ranges = [150, 2000, 5000, 20000, 50000, 500000]
+        psills = [0.47741896, 0.34238422, 0.06662273, 0.06900394, 0.01602816,
+                  0.02854199]
+
+        # Spatial correlation at a given distance (using sum of exponential models)
+        return 1 - np.sum((psills[i] * (1 - np.exp(- 3 * d / ranges[i])) for i in
+                           range(len(ranges))))
 
 
 class DataAssimilation:
@@ -37,7 +57,6 @@ class DataAssimilation:
             self.initial_offset = params['initial_offset']
             self.observation_uncertainty = params['observation_uncertainty']
 
-
         self.initial_estimate = params['initial_estimate']
         self.initial_spread = params['initial_spread']
 
@@ -47,12 +66,10 @@ class DataAssimilation:
         self.inflation = inflation
         self.observation_noise_factor = observation_noise_factor
 
-
         self.observations_file = params['observations_file']
         self.geology_file = params['geology_file']
         self.output_dir = Path(params['output_dir'])
         self.ensemble_dir = self.output_dir / "Ensemble/"
-
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -62,12 +79,13 @@ class DataAssimilation:
         # load observations
         self.observed_glacier = Dataset(self.observations_file)
 
-        self.year_range = np.array(self.observed_glacier['time']).astype(int)[::self.time_interval]
+        self.year_range = np.array(self.observed_glacier['time']).astype(int)[
+                          ::self.time_interval]
         self.start_year = self.year_range[0]
 
-        self.initialize_ensemble()
+        self.initialize_ensemble
 
-
+    @property
     def initialize_ensemble(self):
         # sample observation points
 
@@ -89,14 +107,14 @@ class DataAssimilation:
                               [None, None, None, None, None],
                               [None, None, None, None, None]]
 
-
-
         # load geology
         geology_glacier = Dataset(self.geology_file)
 
         icemask = np.array(geology_glacier['icemask'])
         surface = np.array(geology_glacier['usurf'])
-        thickness = geology_glacier['thk']
+        x = np.array(self.observed_glacier['x'])
+        y = np.array(self.observed_glacier['y'])
+        self.resolution = y[1] - y[0]
 
         gx, gy = np.where(icemask)
         glacier_points = np.array(list(zip(gx, gy)))
@@ -104,7 +122,8 @@ class DataAssimilation:
         print('Number of points: {}'.format(num_sample_points))
 
         random_state = np.random.RandomState(seed=420)
-        observation_index = random_state.choice(len(glacier_points), num_sample_points, replace=False)
+        observation_index = random_state.choice(len(glacier_points),
+                                                num_sample_points, replace=False)
         observation_points = glacier_points[observation_index]
 
         def get_pixel_value(point):
@@ -131,20 +150,21 @@ class DataAssimilation:
                 shutil.rmtree(dir_name / "iceflow-model")
             # copy trained igm parameters
             Path(self.geology_file).parent
-            shutil.copytree(Path(self.geology_file).parent / "iceflow-model/", dir_name / "iceflow-model/")
+            shutil.copytree(Path(self.geology_file).parent / "iceflow-model/",
+                            dir_name / "iceflow-model/")
 
             self.ensemble_members.append(EnsembleMember(i, self.ensemble_dir,
                                                         self.start_year))
-
 
         # Initial estimate
         state_x = np.array(self.initial_estimate).astype(float)
         prior_x = np.array(self.initial_spread).astype(float)
 
-        dim_z = len(self.observation_points)
+        num_points = len(self.observation_points)
 
         # Create Ensemble Kalman Filter
-        self.KalmanFilter = EnKF(x=state_x, P=prior_x, dim_z=dim_z, dt=self.time_interval, N=self.ensemble_size,
+        self.KalmanFilter = EnKF(x=state_x, P=prior_x, dim_z=num_points,
+                                 dt=self.time_interval, N=self.ensemble_size,
                                  start_year=self.start_year)
 
         # Update Process noise (Q)
@@ -157,25 +177,40 @@ class DataAssimilation:
         self.usurf = np.array(self.observed_glacier['usurf'])
 
         if self.synthetic:
-            uncertainty_factor = np.arange(len(self.usurf)) * self.observation_uncertainty
-            self.observation_uncertainty_field = np.array([icemask * f for f in uncertainty_factor])
+            uncertainty_factor = np.arange(
+                len(self.usurf)) * self.observation_uncertainty
+            self.dhdt_err = np.array([icemask * f for f in uncertainty_factor])
         else:
-            self.observation_uncertainty_field = np.array(self.observed_glacier[
-                                                              'obs_error'])*self.observation_noise_factor
+            self.dhdt_err = np.array(
+                self.observed_glacier['dhdt_err'][self.time_interval - 1])
 
-        self.KalmanFilter.R = np.eye(dim_z) * self.observation_uncertainty_field[
-            0, self.observation_points[:, 0], self.observation_points[:, 1]]
+        self.model = Variogram_hugonnet(dim=2)
+        self.srf = gs.SRF(self.model, mode_no=100)
 
+        self.srf.set_pos([y, x], "structured")
 
-        self.monitor_instance = Monitor(self.params, self.observed_glacier, self.observation_uncertainty_field,
+        # Compute the covariance matrix
+        R = np.zeros((num_points, num_points))
+        for i in range(num_points):
+            for j in range(num_points):
+                i_x, i_y = self.observation_points[i]
+                j_x, j_y = self.observation_points[j]
+                distance = math.sqrt((j_x - i_x) ** 2 + (j_y - i_y) ** 2)
+                R[i, j] = (self.dhdt_err[i_x, i_y] * self.dhdt_err[j_x, j_y] *
+                           self.model.cor(distance))
+
+        self.KalmanFilter.R = R
+
+        self.monitor_instance = Monitor(self.params, self.observed_glacier,
+                                        self.dhdt_err,
                                         self.observation_points, hidden_smb,
-                                        self.seed, self.use_etkf, self.observation_noise_factor)
-
+                                        self.seed, self.use_etkf,
+                                        self.observation_noise_factor)
 
     def run_iterations(self, visualise=True):
         estimates = [copy.copy(self.KalmanFilter.sigmas)]
 
-        #self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members)
+        # self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members)
 
         for iteration in range(self.num_iterations):
             self.KalmanFilter.year = self.start_year
@@ -185,7 +220,9 @@ class DataAssimilation:
                 member.reset(2000)
 
             if visualise:
-                self.monitor_instance.plot(iteration, self.year_range[0], self.KalmanFilter.sigmas, self.ensemble_members)
+                self.monitor_instance.plot(iteration, self.year_range[0],
+                                           self.KalmanFilter.sigmas,
+                                           self.ensemble_members)
 
             for year in self.year_range[:-1]:
                 print("==== %i ====" % year)
@@ -199,16 +236,19 @@ class DataAssimilation:
 
                 # Plot predictions
                 if visualise:
-                    self.monitor_instance.plot(iteration, self.KalmanFilter.year, self.KalmanFilter.sigmas, self.ensemble_members)
+                    self.monitor_instance.plot(iteration, self.KalmanFilter.year,
+                                               self.KalmanFilter.sigmas,
+                                               self.ensemble_members)
 
                 # Update
                 year_index = int((self.KalmanFilter.year - self.start_year))
-
+                """
                 # Sample random noise for each ensemble member to add to the difference
                 random_factors = np.random.normal(0, 1,
                                                   self.ensemble_size)
                 uncertainty_field_year = self.observation_uncertainty_field[year_index]
                 observation_noise_samples = np.array([uncertainty_field_year * rf for rf in random_factors])
+               
 
                 observed_usurf = self.usurf[year_index]
                 sampled_observations = observed_usurf[self.observation_points[:, 0], self.observation_points[:, 1]]
@@ -217,38 +257,59 @@ class DataAssimilation:
                 # Update hidden parameters
                 R = np.eye(len(self.observation_points)) * self.observation_uncertainty_field[
                     year_index, self.observation_points[:, 0], self.observation_points[:, 1]]
+                """
+                observed_usurf = self.usurf[year_index]
+                sampled_observations = observed_usurf[
+                    self.observation_points[:, 0], self.observation_points[:, 1]]
+
+                spatial_random_fields = [self.srf(seed=i) for i in
+                                         range(self.ensemble_size)]
+                observation_noise_samples = self.dhdt_err * spatial_random_fields
+
+                e_r = observation_noise_samples[:, self.observation_points[:, 0],
+                      self.observation_points[:, 1]]
 
                 ### UPDATE ####
                 if self.use_etkf:
-                    self.KalmanFilter.update_etkf(sampled_observations, self.ensemble_members,
-                                                  self.observation_points, e_r, R, self.inflation)
+                    self.KalmanFilter.update_etkf(sampled_observations,
+                                                  self.ensemble_members,
+                                                  self.observation_points, e_r,
+                                                  self.inflation)
                 else:
-                    self.KalmanFilter.update(sampled_observations, self.ensemble_members,
-                                                  self.observation_points, e_r, R, self.inflation)
+                    self.KalmanFilter.update(sampled_observations,
+                                             self.ensemble_members,
+                                             self.observation_points, e_r,
+                                             self.inflation)
 
                 # Update the surface elevation
-                self.ensemble_usurfs = np.array([copy.copy(observed_usurf) for _ in range(self.ensemble_size)])
+                # self.ensemble_usurfs = np.array([copy.copy(observed_usurf) for _
+                # in range(self.ensemble_size)])
 
                 if visualise:
-                    self.monitor_instance.plot(iteration, self.KalmanFilter.year, self.KalmanFilter.sigmas, self.ensemble_members)
+                    self.monitor_instance.plot(iteration, self.KalmanFilter.year,
+                                               self.KalmanFilter.sigmas,
+                                               self.ensemble_members)
 
             if visualise:
                 self.monitor_instance.reset()
 
             estimates.append(copy.copy(self.KalmanFilter.sigmas))
 
-            #if visualise:
-            #self.monitor_instance.plot_iterations(estimates)
-            self.monitor_instance.plot_iterations(np.array(estimates), self.ensemble_members, self.inflation)
+            # if visualise:
+            # self.monitor_instance.plot_iterations(estimates)
+            self.monitor_instance.plot_iterations(np.array(estimates),
+                                                  self.ensemble_members,
+                                                  self.inflation)
 
         return estimates
 
     def save_results(self, estimates):
 
         self.params['final_ensemble'] = [list(sigma) for sigma in estimates[-1]]
-        self.params['ensemble_history'] = [[list(s) for s in sigma] for sigma in estimates]
+        self.params['ensemble_history'] = [[list(s) for s in sigma] for sigma in
+                                           estimates]
         ensemble_estimates = np.array([list(sigma) for sigma in estimates[-1]])
-        self.params['final_mean_estimate']  = list(ensemble_estimates.mean(axis=0))
+        self.params['final_mean_estimate'] = list(ensemble_estimates.mean(axis=0))
         self.params['final_std'] = list(ensemble_estimates.std(axis=0))
         with open(self.output_dir / f"result_seed_{self.seed}"
                                     f"_inflation_"
@@ -257,9 +318,6 @@ class DataAssimilation:
                                     f"{self.observation_noise_factor}.json",
                   'w') as f:
             json.dump((self.params), f, indent=4, separators=(',', ': '))
-
-
-
 
 
 def main():
@@ -278,7 +336,7 @@ def main():
                         type=int,
                         default='420',
                         required=True)
-    parser.add_argument( "--etkf",
+    parser.add_argument("--etkf",
                         type=bool,
                         default=False,
                         required=False)

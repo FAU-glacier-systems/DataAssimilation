@@ -65,7 +65,7 @@ class Monitor:
             self.observation_uncertainty = params['observation_uncertainty']
         else:
             self.observation_uncertainty = np.mean(
-                self.observation_uncertainty_field[1, self.icemask==1])
+                self.observation_uncertainty_field[self.icemask==1])
 
         self.hist_state_x = []
         self.hist_ensemble_x = []
@@ -84,9 +84,12 @@ class Monitor:
             self.hist_true_y.append(self.glacier_properties(self.observations[year_index]))
             self.hist_true_y_change.append(self.glacier_properties_change(self.observations[year_index]))
 
-            volume_uncertainty = np.sum(self.observation_uncertainty_field[year_index, self.icemask==1])/(1000*100)
-            low_sample = self.observation_uncertainty_field[year_index,self.low_point[0], self.low_point[1]]
-            high_sample = self.observation_uncertainty_field[year_index,self.high_point[0], self.high_point[1]]
+            # TODO
+            #volume_uncertainty = np.sum(self.observation_uncertainty_field[
+            # self.icemask==1])/(1000*100)
+            volume_uncertainty = 0.26
+            low_sample = self.observation_uncertainty_field[self.low_point[0], self.low_point[1]]
+            high_sample = self.observation_uncertainty_field[self.high_point[0], self.high_point[1]]
 
             self.hist_true_y_uncertainty.append([volume_uncertainty, low_sample, high_sample])
 
@@ -554,8 +557,12 @@ class Monitor:
                        linestyle='-.', zorder=5, label='Observation [Hugonnet21]')
 
         ax_mb.fill_between(iterations_total,
-                           [specific_mass_balance-self.observation_uncertainty] * len(iterations_total),
-                            [specific_mass_balance + self.observation_uncertainty] * len(iterations_total),
+                           [specific_mass_balance
+                            -self.hist_true_y_uncertainty[0,0]]
+                            * len(iterations_total),
+                           [specific_mass_balance
+                            + self.hist_true_y_uncertainty[0, 0]]
+                           * len(iterations_total),
                            color=colorscale(0), alpha=0.2, label='Observation Uncertainty')
 
 
@@ -573,8 +580,12 @@ class Monitor:
                    linestyle='-.', zorder=5)
 
         ax_mb.fill_between(iterations_total,
-                           [specific_mass_balance - self.observation_uncertainty] * len(iterations_total),
-                           [specific_mass_balance + self.observation_uncertainty] * len(iterations_total), color=colorscale(0),
+                           [specific_mass_balance
+                            - self.hist_true_y_uncertainty[0, 1]]
+                           * len(iterations_total),
+                           [specific_mass_balance
+                            + self.hist_true_y_uncertainty[0, 1]]
+                           * len(iterations_total), color=colorscale(0),
                            alpha=0.2)
 
         ax_mb.plot(iterations[:-1], np.array(self.hist_ensemble_y_iterations)[:, :, 1], color=colorscale(5),
@@ -591,8 +602,12 @@ class Monitor:
                    linestyle='-.', zorder=5)
 
         ax_mb.fill_between(iterations_total,
-                           [specific_mass_balance - self.observation_uncertainty] * len(iterations_total),
-                           [specific_mass_balance + self.observation_uncertainty] * len(iterations_total), color=colorscale(0),
+                           [specific_mass_balance
+                            - self.hist_true_y_uncertainty[0, 2]]
+                           * len(iterations_total),
+                           [specific_mass_balance
+                            + self.hist_true_y_uncertainty[0, 2]]
+                           * len(iterations_total), color=colorscale(0),
                            alpha=0.2)
 
         ax_mb.plot(iterations[:-1], np.array(self.hist_ensemble_y_iterations)[:, :, 2], color=colorscale(5),
